@@ -1,0 +1,10 @@
+# Arquivos temporários e pastas de dados brutos
+ENC__ARQUIVOS/
+*.zip
+*.log
+*.tmp
+test_output*.csv
+
+# Build artifacts
+open-dronelog/target/
+open-dronelog/node_modules/

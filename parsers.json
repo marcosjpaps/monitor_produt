@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "kml": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\Users\\Topologia\\Documents\\Drone\\parse_kml.ps1",
+        "$INPUT",
+        "$OUTPUT"
+      ]
+    }
+  }
+}

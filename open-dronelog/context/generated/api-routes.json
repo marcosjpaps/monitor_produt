@@ -1,0 +1,296 @@
+{
+  "sourceFingerprint": "d5e6ea92258779cee4515a28b63e28be7257d175abbf434f0a41634e77bbfedd",
+  "sourceFile": "src-tauri/src/server.rs",
+  "routes": [
+    {
+      "path": "/api/import",
+      "method": "POST",
+      "handler": "import_log"
+    },
+    {
+      "path": "/api/manual_flight",
+      "method": "POST",
+      "handler": "create_manual_flight"
+    },
+    {
+      "path": "/api/flights",
+      "method": "GET",
+      "handler": "get_flights"
+    },
+    {
+      "path": "/api/flight_data",
+      "method": "GET",
+      "handler": "get_flight_data"
+    },
+    {
+      "path": "/api/overview",
+      "method": "GET",
+      "handler": "get_overview_stats"
+    },
+    {
+      "path": "/api/battery_capacity_history",
+      "method": "GET",
+      "handler": "get_battery_full_capacity_history"
+    },
+    {
+      "path": "/api/flights/delete",
+      "method": "DELETE",
+      "handler": "delete_flight"
+    },
+    {
+      "path": "/api/flights/delete_all",
+      "method": "DELETE",
+      "handler": "delete_all_flights"
+    },
+    {
+      "path": "/api/flights/deduplicate",
+      "method": "POST",
+      "handler": "deduplicate_flights"
+    },
+    {
+      "path": "/api/flights/name",
+      "method": "PUT",
+      "handler": "update_flight_name"
+    },
+    {
+      "path": "/api/flights/notes",
+      "method": "PUT",
+      "handler": "update_flight_notes"
+    },
+    {
+      "path": "/api/flights/color",
+      "method": "PUT",
+      "handler": "update_flight_color"
+    },
+    {
+      "path": "/api/flights/tags/add",
+      "method": "POST",
+      "handler": "add_flight_tag"
+    },
+    {
+      "path": "/api/flights/tags/remove",
+      "method": "POST",
+      "handler": "remove_flight_tag"
+    },
+    {
+      "path": "/api/tags",
+      "method": "GET",
+      "handler": "get_all_tags"
+    },
+    {
+      "path": "/api/tags/remove_auto",
+      "method": "POST",
+      "handler": "remove_all_auto_tags"
+    },
+    {
+      "path": "/api/settings/smart_tags",
+      "method": "GET",
+      "handler": "get_smart_tags_enabled"
+    },
+    {
+      "path": "/api/settings/smart_tags",
+      "method": "POST",
+      "handler": "set_smart_tags_enabled"
+    },
+    {
+      "path": "/api/settings/enabled_tag_types",
+      "method": "GET",
+      "handler": "get_enabled_tag_types"
+    },
+    {
+      "path": "/api/settings/enabled_tag_types",
+      "method": "POST",
+      "handler": "set_enabled_tag_types"
+    },
+    {
+      "path": "/api/settings/value",
+      "method": "GET",
+      "handler": "get_setting_value"
+    },
+    {
+      "path": "/api/settings/value",
+      "method": "POST",
+      "handler": "set_setting_value"
+    },
+    {
+      "path": "/api/regenerate_smart_tags",
+      "method": "POST",
+      "handler": "regenerate_smart_tags"
+    },
+    {
+      "path": "/api/regenerate_flight_smart_tags/:id",
+      "method": "POST",
+      "handler": "regenerate_flight_smart_tags"
+    },
+    {
+      "path": "/api/has_api_key",
+      "method": "GET",
+      "handler": "has_api_key"
+    },
+    {
+      "path": "/api/api_key_type",
+      "method": "GET",
+      "handler": "get_api_key_type"
+    },
+    {
+      "path": "/api/set_api_key",
+      "method": "POST",
+      "handler": "set_api_key"
+    },
+    {
+      "path": "/api/remove_api_key",
+      "method": "DELETE",
+      "handler": "remove_api_key"
+    },
+    {
+      "path": "/api/app_data_dir",
+      "method": "GET",
+      "handler": "get_app_data_dir"
+    },
+    {
+      "path": "/api/battery_pairs",
+      "method": "GET",
+      "handler": "get_battery_pairs"
+    },
+    {
+      "path": "/api/app_log_dir",
+      "method": "GET",
+      "handler": "get_app_log_dir"
+    },
+    {
+      "path": "/api/allowed_log_extensions",
+      "method": "GET",
+      "handler": "get_allowed_log_extensions"
+    },
+    {
+      "path": "/api/backup",
+      "method": "GET",
+      "handler": "export_backup"
+    },
+    {
+      "path": "/api/backup/restore",
+      "method": "POST",
+      "handler": "import_backup"
+    },
+    {
+      "path": "/api/sync/config",
+      "method": "GET",
+      "handler": "get_sync_config"
+    },
+    {
+      "path": "/api/sync/blacklist",
+      "method": "GET",
+      "handler": "get_sync_blacklist"
+    },
+    {
+      "path": "/api/sync/blacklist",
+      "method": "POST",
+      "handler": "add_sync_blacklist"
+    },
+    {
+      "path": "/api/sync/blacklist",
+      "method": "DELETE",
+      "handler": "remove_sync_blacklist"
+    },
+    {
+      "path": "/api/sync/blacklist/details",
+      "method": "GET",
+      "handler": "get_sync_blacklist_details"
+    },
+    {
+      "path": "/api/sync/blacklist/all",
+      "method": "DELETE",
+      "handler": "clear_sync_blacklist"
+    },
+    {
+      "path": "/api/sync/log_event",
+      "method": "POST",
+      "handler": "sync_log_event"
+    },
+    {
+      "path": "/api/sync/files",
+      "method": "GET",
+      "handler": "get_sync_files"
+    },
+    {
+      "path": "/api/sync/file",
+      "method": "POST",
+      "handler": "sync_single_file"
+    },
+    {
+      "path": "/api/sync",
+      "method": "POST",
+      "handler": "sync_from_folder"
+    },
+    {
+      "path": "/api/equipment_names",
+      "method": "GET",
+      "handler": "get_equipment_names"
+    },
+    {
+      "path": "/api/equipment_names",
+      "method": "POST",
+      "handler": "set_equipment_name"
+    },
+    {
+      "path": "/api/profiles",
+      "method": "GET",
+      "handler": "list_profiles"
+    },
+    {
+      "path": "/api/profiles/active",
+      "method": "GET",
+      "handler": "get_active_profile"
+    },
+    {
+      "path": "/api/profiles/switch",
+      "method": "POST",
+      "handler": "switch_profile"
+    },
+    {
+      "path": "/api/profiles/delete",
+      "method": "POST",
+      "handler": "delete_profile_endpoint"
+    },
+    {
+      "path": "/api/profiles/set_password",
+      "method": "POST",
+      "handler": "set_profile_password"
+    },
+    {
+      "path": "/api/profiles/remove_password",
+      "method": "POST",
+      "handler": "remove_profile_password"
+    },
+    {
+      "path": "/api/profiles/has_master_password",
+      "method": "GET",
+      "handler": "has_master_password"
+    },
+    {
+      "path": "/api/supporter/verify",
+      "method": "POST",
+      "handler": "verify_supporter_code"
+    },
+    {
+      "path": "/api/supporter/status",
+      "method": "GET",
+      "handler": "get_supporter_status"
+    },
+    {
+      "path": "/api/supporter/remove",
+      "method": "POST",
+      "handler": "remove_supporter_badge"
+    },
+    {
+      "path": "/api/supporter/donation",
+      "method": "GET",
+      "handler": "get_donation_acknowledged"
+    },
+    {
+      "path": "/api/supporter/donation",
+      "method": "POST",
+      "handler": "set_donation_acknowledged"
+    }
+  ]
+}

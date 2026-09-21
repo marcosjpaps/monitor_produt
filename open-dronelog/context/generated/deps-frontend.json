@@ -1,0 +1,41 @@
+{
+  "sourceFingerprint": "318d3d72aa5b82422f627bcb2469485e4206d4fe824b895d58602055655064d9",
+  "packageName": "open-dronelog",
+  "projectVersion": "3.3.1",
+  "dependencies": [
+    "@deck.gl/layers",
+    "@deck.gl/maplibre",
+    "@tauri-apps/api",
+    "@tauri-apps/plugin-dialog",
+    "@tauri-apps/plugin-fs",
+    "@tauri-apps/plugin-log",
+    "@tauri-apps/plugin-opener",
+    "@tauri-apps/plugin-shell",
+    "echarts",
+    "echarts-for-react",
+    "html2canvas",
+    "i18next",
+    "js-sha256",
+    "maplibre-gl",
+    "react",
+    "react-day-picker",
+    "react-dom",
+    "react-dropzone",
+    "react-i18next",
+    "react-icons",
+    "react-map-gl",
+    "tauri-plugin-android-fs-api",
+    "zustand"
+  ],
+  "devDependencies": [
+    "@tauri-apps/cli",
+    "@types/react",
+    "@types/react-dom",
+    "@vitejs/plugin-react",
+    "autoprefixer",
+    "postcss",
+    "tailwindcss",
+    "typescript",
+    "vite"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "domain.architecture",
+  "version": 1,
+  "title": "Architecture Overview",
+  "status": "active",
+  "owners": ["Arpan Ghosh"],
+  "updated_at": "2026-03-29T00:00:00Z",
+  "verified_from": [
+    { "path": "src/lib/api.ts", "note": "Unified adapter between Tauri invoke and web fetch" },
+    { "path": "src-tauri/src/server.rs", "note": "REST route registration and handlers" },
+    { "path": "src-tauri/src/main.rs", "note": "Feature-gated app startup" },
+    { "path": "src-tauri/tauri.android.conf.json", "note": "Android-specific Tauri config override for APK bootstrap" },
+    { "path": "scripts/mobile/run-android-dev.sh", "note": "Android development command wrapper" }
+  ],
+  "content": {
+    "deployment_modes": ["desktop-tauri", "web-docker", "android-tauri-bootstrap"],
+    "entry_points": {
+      "desktop": "src-tauri/src/main.rs",
+      "web": "src-tauri/src/server.rs",
+      "android": "src-tauri/src/main.rs"
+    },
+    "bridge": "src/lib/api.ts",
+    "core_modules": [
+      "src-tauri/src/database.rs",
+      "src-tauri/src/parser.rs",
+      "src-tauri/src/profile_auth.rs",
+      "src-tauri/src/session_store.rs"
+    ]
+  }
+}
