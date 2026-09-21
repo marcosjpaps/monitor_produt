@@ -2193,7 +2193,7 @@
       document.body.removeChild(a);
     }
 
-    // BAIXAR KML DE UM TALHÃO ESPECÍFICO (POLÍGONO DO TALHÃO + RASTROS ASSOCIADOS)
+    // BAIXAR KML EXCLUSIVO DO TALHÃO (SOMENTE O POLÍGONO / CONTORNO DO TALHÃO, SEM O VOO)
     function downloadSpecificTalhao(farmName, talhaoName, flightId) {
       if (!talhaoName && !flightId) {
         showToast("Nenhum talhão especificado para download.");
@@ -2212,108 +2212,99 @@
         });
       }
 
-      // 2. Localizar os voos deste talhão ou o voo específico
-      let matchingFlights = [];
+      // 2. Se não encontrou pelo nome direto, procura pelo voo correspondente
+      let flightRef = null;
       if (flightId) {
-        const directFlight = flights.find(f => f.id === flightId);
-        if (directFlight) matchingFlights.push(directFlight);
+        flightRef = flights.find(f => f.id === flightId);
       }
-      flights.forEach(f => {
-        const matchesT = f.talhao && talhaoName && String(f.talhao).trim().toLowerCase() === String(talhaoName).trim().toLowerCase();
-        const matchesF = !farmName || !f.farm || String(f.farm).trim().toLowerCase() === String(farmName).trim().toLowerCase();
-        if (matchesT && matchesF && !matchingFlights.some(mf => mf.id === f.id)) {
-          matchingFlights.push(f);
-        }
-      });
+      if (!farmObj && flightRef) {
+        farmObj = savedFarms.find(sf => {
+          const matchT = sf.talhao && flightRef.talhao && String(sf.talhao).trim().toLowerCase() === String(flightRef.talhao).trim().toLowerCase();
+          const matchF = !flightRef.farm || !sf.nomeFaz || String(sf.nomeFaz).trim().toLowerCase() === String(flightRef.farm).trim().toLowerCase();
+          return matchT && matchF;
+        });
+      }
 
-      if (!farmObj && matchingFlights.length === 0) {
-        showToast(`Talhão "${talhaoName || ''}" não possui dados geométricos para download.`);
+      const cleanFarm = farmName || (farmObj && farmObj.nomeFaz) || (flightRef && flightRef.farm) || '';
+      const cleanTalhao = talhaoName || (farmObj && farmObj.talhao) || (flightRef && flightRef.talhao) || 'talhao';
+      const cleanVariedade = (farmObj && farmObj.variedade) || (flightRef && flightRef.variedade) || '';
+      const cleanZona = (farmObj && farmObj.zona) || (flightRef && flightRef.zona) || '';
+      const cleanPlantio = (farmObj && farmObj.plantio) || (flightRef && flightRef.plantio) || '';
+      const cleanArea = (farmObj && farmObj.areaTotal) ? farmObj.areaTotal.toFixed(2) : (flightRef && flightRef.area ? flightRef.area.toFixed(2) : '0.00');
+
+      let coordsList = null;
+      if (farmObj && farmObj.coords && farmObj.coords.length >= 3) {
+        coordsList = [...farmObj.coords];
+      } else if (flightRef && flightRef.coords && flightRef.coords.length >= 3) {
+        // Se ainda não houver shapefile importado para o talhão, cria polígono envolvente do voo
+        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+        flightRef.coords.forEach(c => {
+          if (c[0] < minLat) minLat = c[0];
+          if (c[0] > maxLat) maxLat = c[0];
+          if (c[1] < minLng) minLng = c[1];
+          if (c[1] > maxLng) maxLng = c[1];
+        });
+        const pad = 0.0003;
+        coordsList = [
+          [minLat - pad, minLng - pad],
+          [maxLat + pad, minLng - pad],
+          [maxLat + pad, maxLng + pad],
+          [minLat - pad, maxLng + pad],
+          [minLat - pad, minLng - pad]
+        ];
+      }
+
+      if (!coordsList || coordsList.length < 3) {
+        showToast(`Geometria do Talhão "${cleanTalhao}" não encontrada. Importe o Shapefile/KML de talhões.`);
         return;
       }
 
-      const cleanFarm = farmName || (farmObj && farmObj.nomeFaz) || (matchingFlights[0] && matchingFlights[0].farm) || '';
-      const cleanTalhao = talhaoName || (farmObj && farmObj.talhao) || (matchingFlights[0] && matchingFlights[0].talhao) || 'talhao';
-      const cleanVariedade = (farmObj && farmObj.variedade) || (matchingFlights[0] && matchingFlights[0].variedade) || '';
-      const cleanZona = (farmObj && farmObj.zona) || (matchingFlights[0] && matchingFlights[0].zona) || '';
-      const cleanPlantio = (farmObj && farmObj.plantio) || (matchingFlights[0] && matchingFlights[0].plantio) || '';
-      const cleanArea = (farmObj && farmObj.areaTotal) ? farmObj.areaTotal.toFixed(2) : (matchingFlights.reduce((acc, f) => acc + (f.area || 0), 0)).toFixed(2);
+      // Garante fechamento do anel linear do polígono
+      const first = coordsList[0];
+      const last = coordsList[coordsList.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        coordsList.push(first);
+      }
+      const coordsStr = coordsList.map(c => `${c[1]},${c[0]},0`).join(' ');
 
       let kml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       kml += `<kml xmlns="http://www.opengis.net/kml/2.2">\n`;
       kml += `  <Document>\n`;
       kml += `    <name>Talhao ${cleanTalhao}${cleanFarm ? ' - ' + cleanFarm : ''}</name>\n`;
-      kml += `    <description>Exportado do AgroDrone - Talhão ${cleanTalhao} (${cleanArea} ha)</description>\n`;
+      kml += `    <description>Polígono do Talhão ${cleanTalhao} (${cleanArea} ha)</description>\n`;
 
-      // Estilo do Polígono do Talhão (Linha âmbar e preenchimento suave)
+      // Estilo do Talhão: Borda âmbar nítida e preenchimento suave
       kml += `    <Style id="talhaoPolyStyle">\n`;
       kml += `      <LineStyle>\n`;
-      kml += `        <color>ff00b4ff</color>\n`;
-      kml += `        <width>2.5</width>\n`;
+      kml += `        <color>ff00b4ff</color>\n`; // Cor âmbar #f59e0b
+      kml += `        <width>3.0</width>\n`;
       kml += `      </LineStyle>\n`;
       kml += `      <PolyStyle>\n`;
-      kml += `        <color>4000b4ff</color>\n`;
+      kml += `        <color>4d00b4ff</color>\n`; // 30% opacidade
       kml += `      </PolyStyle>\n`;
       kml += `    </Style>\n`;
 
-      // Se temos o polígono do talhão (do Shapefile ou KML importado)
-      if (farmObj && farmObj.coords && farmObj.coords.length >= 3) {
-        let coordsList = [...farmObj.coords];
-        const first = coordsList[0];
-        const last = coordsList[coordsList.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          coordsList.push(first);
-        }
-        const coordsStr = coordsList.map(c => `${c[1]},${c[0]},0`).join(' ');
-
-        kml += `    <Placemark>\n`;
-        kml += `      <name>Talhão ${cleanTalhao} - ${cleanFarm || 'Fazenda'}</name>\n`;
-        kml += `      <styleUrl>#talhaoPolyStyle</styleUrl>\n`;
-        kml += `      <ExtendedData>\n`;
-        kml += `        <Data name="Fazenda"><value>${cleanFarm}</value></Data>\n`;
-        kml += `        <Data name="Talhao"><value>${cleanTalhao}</value></Data>\n`;
-        kml += `        <Data name="Zona"><value>${cleanZona}</value></Data>\n`;
-        kml += `        <Data name="Variedade"><value>${cleanVariedade}</value></Data>\n`;
-        kml += `        <Data name="Plantio"><value>${cleanPlantio}</value></Data>\n`;
-        kml += `        <Data name="Area_ha"><value>${cleanArea}</value></Data>\n`;
-        kml += `      </ExtendedData>\n`;
-        kml += `      <Polygon>\n`;
-        kml += `        <outerBoundaryIs>\n`;
-        kml += `          <LinearRing>\n`;
-        kml += `            <coordinates>${coordsStr}</coordinates>\n`;
-        kml += `          </LinearRing>\n`;
-        kml += `        </outerBoundaryIs>\n`;
-        kml += `      </Polygon>\n`;
-        kml += `    </Placemark>\n`;
-      }
-
-      // Se temos rastros de voos correspondentes, adiciona ao KML
-      matchingFlights.forEach((f, idx) => {
-        if (!f.coords || f.coords.length < 2) return;
-        const col = getDroneColor(f.drone);
-        const kmlCol = "ff" + col.slice(5, 7) + col.slice(3, 5) + col.slice(1, 3);
-        const cStr = f.coords.map(c => `${c[1]},${c[0]},${f.height || 0}`).join(' ');
-
-        kml += `    <Style id="routeStyle_${idx}">\n`;
-        kml += `      <LineStyle><color>${kmlCol}</color><width>2.5</width></LineStyle>\n`;
-        kml += `    </Style>\n`;
-        kml += `    <Placemark>\n`;
-        kml += `      <name>Voo: ${f.drone} - ${f.date} (${f.sprayL}L | ${f.area}ha)</name>\n`;
-        kml += `      <styleUrl>#routeStyle_${idx}</styleUrl>\n`;
-        kml += `      <ExtendedData>\n`;
-        kml += `        <Data name="Aeronave"><value>${f.drone}</value></Data>\n`;
-        kml += `        <Data name="Piloto"><value>${f.pilot || ''}</value></Data>\n`;
-        kml += `        <Data name="Calda_L"><value>${f.sprayL}</value></Data>\n`;
-        kml += `        <Data name="Area_ha"><value>${f.area}</value></Data>\n`;
-        kml += `        <Data name="Taxa_L_ha"><value>${f.rate}</value></Data>\n`;
-        kml += `        <Data name="Faixa_m"><value>${f.spacing}</value></Data>\n`;
-        kml += `        <Data name="Velocidade_kmh"><value>${(f.speed * 3.6).toFixed(1)}</value></Data>\n`;
-        kml += `      </ExtendedData>\n`;
-        kml += `      <LineString>\n`;
-        kml += `        <tessellate>1</tessellate>\n`;
-        kml += `        <coordinates>${cStr}</coordinates>\n`;
-        kml += `      </LineString>\n`;
-        kml += `    </Placemark>\n`;
-      });
+      kml += `    <Placemark>\n`;
+      kml += `      <name>Talhão ${cleanTalhao}${cleanFarm ? ' - ' + cleanFarm : ''}</name>\n`;
+      kml += `      <styleUrl>#talhaoPolyStyle</styleUrl>\n`;
+      kml += `      <ExtendedData>\n`;
+      kml += `        <Data name="Fazenda"><value>${cleanFarm}</value></Data>\n`;
+      kml += `        <Data name="Talhao"><value>${cleanTalhao}</value></Data>\n`;
+      kml += `        <Data name="Zona"><value>${cleanZona}</value></Data>\n`;
+      kml += `        <Data name="Variedade"><value>${cleanVariedade}</value></Data>\n`;
+      kml += `        <Data name="Plantio"><value>${cleanPlantio}</value></Data>\n`;
+      kml += `        <Data name="Area_ha"><value>${cleanArea}</value></Data>\n`;
+      kml += `      </ExtendedData>\n`;
+      kml += `      <Polygon>\n`;
+      kml += `        <extrude>1</extrude>\n`;
+      kml += `        <altitudeMode>clampToGround</altitudeMode>\n`;
+      kml += `        <outerBoundaryIs>\n`;
+      kml += `          <LinearRing>\n`;
+      kml += `            <coordinates>${coordsStr}</coordinates>\n`;
+      kml += `          </LinearRing>\n`;
+      kml += `        </outerBoundaryIs>\n`;
+      kml += `      </Polygon>\n`;
+      kml += `    </Placemark>\n`;
 
       kml += `  </Document>\n`;
       kml += `</kml>`;
