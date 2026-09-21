@@ -342,6 +342,59 @@
 </head>
 <body>
 
+  <!-- TELA DE LOGIN -->
+  <div id="loginOverlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:linear-gradient(135deg, #090e17 0%, #0d1522 50%, #06101e 100%); z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#131d2e; border:1px solid rgba(56,189,248,0.25); border-radius:16px; width:100%; max-width:400px; padding:32px 28px; box-shadow:0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(56,189,248,0.1); text-align:center;">
+      <div style="width:60px; height:60px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#38bdf8;">
+        <i data-lucide="plane" style="width:30px; height:30px;"></i>
+      </div>
+      
+      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">AgroDrone</h2>
+      <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:24px;">Painel de Aplicação & Atributos</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" style="text-align:left;">
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; text-transform:uppercase;">E-mail de Acesso</label>
+          <div style="position:relative;">
+            <i data-lucide="mail" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#64748b;"></i>
+            <input type="email" id="txtEmail" required placeholder="marcos220896antonio@gmail.com" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 12px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; text-transform:uppercase;">Senha</label>
+          <div style="position:relative;">
+            <i data-lucide="lock" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#64748b;"></i>
+            <input type="password" id="txtPassword" required placeholder="••••••••" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 36px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
+            <button type="button" onclick="togglePasswordVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:#64748b; cursor:pointer; padding:4px; display:flex; align-items:center;">
+              <i id="eyeIcon" data-lucide="eye" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginError" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:8px 12px; border-radius:8px; font-size:0.78rem; margin-bottom:16px; text-align:center;">
+          E-mail ou senha incorretos.
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:0.75rem; color:#94a3b8;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkRemember" checked style="accent-color:#0284c7;">
+            <span>Lembrar meu acesso</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnLoginSubmit" style="width:100%; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:white; border:none; padding:11px; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 15px rgba(2,132,199,0.35);">
+          <i data-lucide="log-in" style="width:18px; height:18px;"></i>
+          <span>Entrar no Sistema</span>
+        </button>
+      </form>
+      
+      <div style="margin-top:22px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.72rem; color:#64748b;">
+        AgroDrone • Acesso Restrito & Seguro
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div id="toast">Notificação</div>
 
@@ -406,6 +459,16 @@
       <button class="btn btn-outline" style="color:#10b981; border-color:rgba(16,185,129,0.5);" onclick="restoreAll()" title="Restaura rotas excluídas">
         <i data-lucide="rotate-ccw"></i> Restaurar Rotas
       </button>
+
+      <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
+        <span style="font-size:0.72rem; color:#94a3b8; display:flex; align-items:center; gap:5px;">
+          <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
+          <span style="color:#e2e8f0; font-weight:600;">marcos220896antonio@gmail.com</span>
+        </span>
+        <button class="btn btn-outline" style="padding:2px 6px; font-size:0.68rem; color:#f87171; border-color:rgba(239,68,68,0.4);" onclick="logout()" title="Encerrar sessão">
+          <i data-lucide="log-out" style="width:11px; height:11px;"></i> Sair
+        </button>
+      </div>
     </div>
   </header>
 
@@ -672,6 +735,88 @@
   <script src="dados_voos.js"></script>
 
   <script>
+    // AUTENTICAÇÃO E CONTROLE DE ACESSO
+    const AUTH_CONFIG = {
+      email: "marcos220896antonio@gmail.com",
+      pass: "Veredas*202026"
+    };
+
+    function checkAuth() {
+      const isAuth = localStorage.getItem('agrodrone_auth') || sessionStorage.getItem('agrodrone_auth');
+      const overlay = document.getElementById('loginOverlay');
+      const userBadge = document.getElementById('userBadgeContainer');
+      if (isAuth === 'true') {
+        if (overlay) overlay.style.display = 'none';
+        if (userBadge) userBadge.style.display = 'flex';
+      } else {
+        if (overlay) overlay.style.display = 'flex';
+        if (userBadge) userBadge.style.display = 'none';
+        setTimeout(() => {
+          const el = document.getElementById('txtEmail');
+          if (el) el.focus();
+        }, 150);
+      }
+    }
+
+    function handleLogin(e) {
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('txtEmail').value.trim().toLowerCase();
+      const passInput = document.getElementById('txtPassword').value.trim();
+      const remember = document.getElementById('chkRemember').checked;
+      const errorBox = document.getElementById('loginError');
+
+      if (emailInput === AUTH_CONFIG.email.toLowerCase() && passInput === AUTH_CONFIG.pass) {
+        if (errorBox) errorBox.style.display = 'none';
+        if (remember) {
+          localStorage.setItem('agrodrone_auth', 'true');
+          localStorage.setItem('agrodrone_user', emailInput);
+        } else {
+          sessionStorage.setItem('agrodrone_auth', 'true');
+          sessionStorage.setItem('agrodrone_user', emailInput);
+        }
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) overlay.style.display = 'none';
+        const userBadge = document.getElementById('userBadgeContainer');
+        if (userBadge) userBadge.style.display = 'flex';
+        showToast("Login realizado com sucesso! Bem-vindo ao AgroDrone.");
+        if (window.lucide) lucide.createIcons();
+      } else {
+        if (errorBox) {
+          errorBox.style.display = 'block';
+          errorBox.innerText = "E-mail ou senha incorretos. Verifique suas credenciais.";
+        }
+      }
+    }
+
+    function logout() {
+      if (!confirm("Deseja realmente sair do sistema?")) return;
+      localStorage.removeItem('agrodrone_auth');
+      localStorage.removeItem('agrodrone_user');
+      sessionStorage.removeItem('agrodrone_auth');
+      sessionStorage.removeItem('agrodrone_user');
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.style.display = 'flex';
+      const userBadge = document.getElementById('userBadgeContainer');
+      if (userBadge) userBadge.style.display = 'none';
+      const pass = document.getElementById('txtPassword');
+      if (pass) pass.value = '';
+      showToast("Sessão encerrada.");
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('txtPassword');
+      const eye = document.getElementById('eyeIcon');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (eye) eye.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        if (eye) eye.setAttribute('data-lucide', 'eye');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
     // CORES DOS DRONES
     const DRONE_COLORS = {
       'DAGRO T100': '#38bdf8',
@@ -745,6 +890,7 @@
     // CARREGAMENTO
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      checkAuth();
 
       // Se todas as rotas foram marcadas como excluídas anteriormente, limpa para não abrir em branco
       if (window.PRELOADED_FLIGHTS && deletedIds.size >= window.PRELOADED_FLIGHTS.length) {
