@@ -972,6 +972,16 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // CORES DOS DRONES
     const DRONE_COLORS = {
       'DAGRO T100': '#38bdf8',
@@ -1590,9 +1600,20 @@
               ${f.farm ? `<span class="tag-farm">${f.farm}</span>` : '<span style="color:#64748b;">-</span>'}
             </td>
             <td>
-              ${f.talhao ? `<b style="color:#f8fafc;">${f.talhao}</b>` : '<span style="color:#64748b;">-</span>'}
+              <div style="display:inline-flex; align-items:center; gap:6px;">
+                ${f.talhao ? `<b style="color:#f8fafc;">${escapeHtml(f.talhao)}</b>` : '<span style="color:#64748b;">-</span>'}
+                ${f.talhao ? `
+                  <button onclick="event.stopPropagation(); downloadSpecificTalhao('${escapeHtml(f.farm || '')}', '${escapeHtml(f.talhao)}', '${f.id}')" 
+                          title="Baixar arquivo KML deste talhão (${escapeHtml(f.talhao)})" 
+                          style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; padding:2px 5px; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:all 0.15s ease;"
+                          onmouseover="this.style.background='#0284c7'; this.style.color='#fff';"
+                          onmouseout="this.style.background='rgba(56,189,248,0.12)'; this.style.color='#38bdf8';">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                ` : ''}
+              </div>
             </td>
-            <td style="color:#a3e635; font-size:0.72rem;">${f.variedade || '-'}</td>
+            <td style="color:#a3e635; font-size:0.72rem;">${escapeHtml(f.variedade || '-')}</td>
             <td>
               <span class="tag-drone" style="background:${color}22; color:${color}; border:1px solid ${color}44;">
                 ${f.drone}
@@ -2172,6 +2193,136 @@
       document.body.removeChild(a);
     }
 
+    // BAIXAR KML DE UM TALHÃO ESPECÍFICO (POLÍGONO DO TALHÃO + RASTROS ASSOCIADOS)
+    function downloadSpecificTalhao(farmName, talhaoName, flightId) {
+      if (!talhaoName && !flightId) {
+        showToast("Nenhum talhão especificado para download.");
+        return;
+      }
+
+      // 1. Localizar o talhão correspondente em savedFarms
+      let farmObj = null;
+      if (savedFarms && savedFarms.length > 0) {
+        farmObj = savedFarms.find(sf => {
+          const matchTalhao = sf.talhao && String(sf.talhao).trim().toLowerCase() === String(talhaoName).trim().toLowerCase();
+          if (farmName && sf.nomeFaz) {
+            return matchTalhao && String(sf.nomeFaz).trim().toLowerCase() === String(farmName).trim().toLowerCase();
+          }
+          return matchTalhao;
+        });
+      }
+
+      // 2. Localizar os voos deste talhão ou o voo específico
+      let matchingFlights = [];
+      if (flightId) {
+        const directFlight = flights.find(f => f.id === flightId);
+        if (directFlight) matchingFlights.push(directFlight);
+      }
+      flights.forEach(f => {
+        const matchesT = f.talhao && talhaoName && String(f.talhao).trim().toLowerCase() === String(talhaoName).trim().toLowerCase();
+        const matchesF = !farmName || !f.farm || String(f.farm).trim().toLowerCase() === String(farmName).trim().toLowerCase();
+        if (matchesT && matchesF && !matchingFlights.some(mf => mf.id === f.id)) {
+          matchingFlights.push(f);
+        }
+      });
+
+      if (!farmObj && matchingFlights.length === 0) {
+        showToast(`Talhão "${talhaoName || ''}" não possui dados geométricos para download.`);
+        return;
+      }
+
+      const cleanFarm = farmName || (farmObj && farmObj.nomeFaz) || (matchingFlights[0] && matchingFlights[0].farm) || '';
+      const cleanTalhao = talhaoName || (farmObj && farmObj.talhao) || (matchingFlights[0] && matchingFlights[0].talhao) || 'talhao';
+      const cleanVariedade = (farmObj && farmObj.variedade) || (matchingFlights[0] && matchingFlights[0].variedade) || '';
+      const cleanZona = (farmObj && farmObj.zona) || (matchingFlights[0] && matchingFlights[0].zona) || '';
+      const cleanPlantio = (farmObj && farmObj.plantio) || (matchingFlights[0] && matchingFlights[0].plantio) || '';
+      const cleanArea = (farmObj && farmObj.areaTotal) ? farmObj.areaTotal.toFixed(2) : (matchingFlights.reduce((acc, f) => acc + (f.area || 0), 0)).toFixed(2);
+
+      let kml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      kml += `<kml xmlns="http://www.opengis.net/kml/2.2">\n`;
+      kml += `  <Document>\n`;
+      kml += `    <name>Talhao ${cleanTalhao}${cleanFarm ? ' - ' + cleanFarm : ''}</name>\n`;
+      kml += `    <description>Exportado do AgroDrone - Talhão ${cleanTalhao} (${cleanArea} ha)</description>\n`;
+
+      // Estilo do Polígono do Talhão (Linha âmbar e preenchimento suave)
+      kml += `    <Style id="talhaoPolyStyle">\n`;
+      kml += `      <LineStyle>\n`;
+      kml += `        <color>ff00b4ff</color>\n`;
+      kml += `        <width>2.5</width>\n`;
+      kml += `      </LineStyle>\n`;
+      kml += `      <PolyStyle>\n`;
+      kml += `        <color>4000b4ff</color>\n`;
+      kml += `      </PolyStyle>\n`;
+      kml += `    </Style>\n`;
+
+      // Se temos o polígono do talhão (do Shapefile ou KML importado)
+      if (farmObj && farmObj.coords && farmObj.coords.length >= 3) {
+        let coordsList = [...farmObj.coords];
+        const first = coordsList[0];
+        const last = coordsList[coordsList.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          coordsList.push(first);
+        }
+        const coordsStr = coordsList.map(c => `${c[1]},${c[0]},0`).join(' ');
+
+        kml += `    <Placemark>\n`;
+        kml += `      <name>Talhão ${cleanTalhao} - ${cleanFarm || 'Fazenda'}</name>\n`;
+        kml += `      <styleUrl>#talhaoPolyStyle</styleUrl>\n`;
+        kml += `      <ExtendedData>\n`;
+        kml += `        <Data name="Fazenda"><value>${cleanFarm}</value></Data>\n`;
+        kml += `        <Data name="Talhao"><value>${cleanTalhao}</value></Data>\n`;
+        kml += `        <Data name="Zona"><value>${cleanZona}</value></Data>\n`;
+        kml += `        <Data name="Variedade"><value>${cleanVariedade}</value></Data>\n`;
+        kml += `        <Data name="Plantio"><value>${cleanPlantio}</value></Data>\n`;
+        kml += `        <Data name="Area_ha"><value>${cleanArea}</value></Data>\n`;
+        kml += `      </ExtendedData>\n`;
+        kml += `      <Polygon>\n`;
+        kml += `        <outerBoundaryIs>\n`;
+        kml += `          <LinearRing>\n`;
+        kml += `            <coordinates>${coordsStr}</coordinates>\n`;
+        kml += `          </LinearRing>\n`;
+        kml += `        </outerBoundaryIs>\n`;
+        kml += `      </Polygon>\n`;
+        kml += `    </Placemark>\n`;
+      }
+
+      // Se temos rastros de voos correspondentes, adiciona ao KML
+      matchingFlights.forEach((f, idx) => {
+        if (!f.coords || f.coords.length < 2) return;
+        const col = getDroneColor(f.drone);
+        const kmlCol = "ff" + col.slice(5, 7) + col.slice(3, 5) + col.slice(1, 3);
+        const cStr = f.coords.map(c => `${c[1]},${c[0]},${f.height || 0}`).join(' ');
+
+        kml += `    <Style id="routeStyle_${idx}">\n`;
+        kml += `      <LineStyle><color>${kmlCol}</color><width>2.5</width></LineStyle>\n`;
+        kml += `    </Style>\n`;
+        kml += `    <Placemark>\n`;
+        kml += `      <name>Voo: ${f.drone} - ${f.date} (${f.sprayL}L | ${f.area}ha)</name>\n`;
+        kml += `      <styleUrl>#routeStyle_${idx}</styleUrl>\n`;
+        kml += `      <ExtendedData>\n`;
+        kml += `        <Data name="Aeronave"><value>${f.drone}</value></Data>\n`;
+        kml += `        <Data name="Piloto"><value>${f.pilot || ''}</value></Data>\n`;
+        kml += `        <Data name="Calda_L"><value>${f.sprayL}</value></Data>\n`;
+        kml += `        <Data name="Area_ha"><value>${f.area}</value></Data>\n`;
+        kml += `        <Data name="Taxa_L_ha"><value>${f.rate}</value></Data>\n`;
+        kml += `        <Data name="Faixa_m"><value>${f.spacing}</value></Data>\n`;
+        kml += `        <Data name="Velocidade_kmh"><value>${(f.speed * 3.6).toFixed(1)}</value></Data>\n`;
+        kml += `      </ExtendedData>\n`;
+        kml += `      <LineString>\n`;
+        kml += `        <tessellate>1</tessellate>\n`;
+        kml += `        <coordinates>${cStr}</coordinates>\n`;
+        kml += `      </LineString>\n`;
+        kml += `    </Placemark>\n`;
+      });
+
+      kml += `  </Document>\n`;
+      kml += `</kml>`;
+
+      const safeFilename = `Talhao_${cleanFarm ? cleanFarm.replace(/[\s\/\\?%*:|"<>]/g, '_') + '_' : ''}${String(cleanTalhao).replace(/[\s\/\\?%*:|"<>]/g, '_')}.kml`;
+      download(kml, safeFilename, "application/vnd.google-earth.kml+xml");
+      showToast(`KML do Talhão ${cleanTalhao} baixado com sucesso!`);
+    }
+
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;
@@ -2576,9 +2727,15 @@
                   <span>Área: <b style="color:#10b981;">${tArea.toFixed(2)} ha</b></span>
                 </div>
               </div>
-              <button onclick="filterByFarmTalhao('${farm.nomeFaz}', '${farm.talhao}')" style="width:100%; background:#0284c7; color:white; border:none; padding:6px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.75rem;">
-                🔍 Filtrar Voos deste Talhão
-              </button>
+              <div style="display:flex; gap:6px;">
+                <button onclick="filterByFarmTalhao('${escapeHtml(farm.nomeFaz)}', '${escapeHtml(farm.talhao)}')" style="flex:1; background:#0284c7; color:white; border:none; padding:6px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.75rem;">
+                  🔍 Filtrar Voos
+                </button>
+                <button onclick="downloadSpecificTalhao('${escapeHtml(farm.nomeFaz)}', '${escapeHtml(farm.talhao)}')" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:4px;" title="Baixar arquivo KML deste talhão">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Baixar KML</span>
+                </button>
+              </div>
             </div>
           `;
           poly.bindPopup(popupContent).openPopup();
@@ -3157,9 +3314,15 @@
             <td style="padding:6px;">${f.plantio || '-'}</td>
             <td style="padding:6px; color:#f59e0b; font-weight:700;">${f.areaTotal.toFixed(2)} ha</td>
             <td style="padding:6px; text-align:center;">
-              <button onclick="removeSingleFarm(${idx})" title="Remover talhão" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.85rem;">
-                🗑️
-              </button>
+              <div style="display:inline-flex; align-items:center; gap:6px;">
+                <button onclick="downloadSpecificTalhao('${escapeHtml(f.nomeFaz || '')}', '${escapeHtml(f.talhao || '')}')" title="Baixar KML deste talhão" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; border-radius:4px; padding:2px 6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-size:0.7rem;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>KML</span>
+                </button>
+                <button onclick="removeSingleFarm(${idx})" title="Remover talhão" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.85rem;">
+                  🗑️
+                </button>
+              </div>
             </td>
           </tr>
         `;
