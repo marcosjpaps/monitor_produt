@@ -15,6 +15,9 @@
   <!-- Shapefile Parser (shp.js) -->
   <script src="shp.js"></script>
 
+  <!-- Sincronização em Nuvem com Neon PostgreSQL -->
+  <script src="neon_sync.js"></script>
+
   <style>
     :root {
       --bg-dark: #090e17;
@@ -460,6 +463,12 @@
         <i data-lucide="rotate-ccw"></i> Restaurar Rotas
       </button>
 
+      <!-- BADGE DE SINCRONIZAÇÃO NEON -->
+      <button class="btn btn-outline" id="neonSyncBadge" onclick="NeonSync.syncAll(true)" title="Status de conexão com o banco Neon PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
+        <span id="neonSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+        <span id="neonSyncText">Nuvem Neon</span>
+      </button>
+
       <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
         <span style="font-size:0.72rem; color:#94a3b8; display:flex; align-items:center; gap:5px;">
           <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
@@ -780,6 +789,7 @@
         if (userBadge) userBadge.style.display = 'flex';
         showToast("Login realizado com sucesso! Bem-vindo ao AgroDrone.");
         if (window.lucide) lucide.createIcons();
+        if (window.NeonSync) NeonSync.syncAll(true);
       } else {
         if (errorBox) {
           errorBox.style.display = 'block';
@@ -892,12 +902,6 @@
       lucide.createIcons();
       checkAuth();
 
-      // Se todas as rotas foram marcadas como excluídas anteriormente, limpa para não abrir em branco
-      if (window.PRELOADED_FLIGHTS && deletedIds.size >= window.PRELOADED_FLIGHTS.length) {
-        localStorage.removeItem('agrodrone_deleted_ids');
-        deletedIds.clear();
-      }
-
       if (window.PRELOADED_FLIGHTS && Array.isArray(window.PRELOADED_FLIGHTS) && window.PRELOADED_FLIGHTS.length > 0) {
         initFlights(window.PRELOADED_FLIGHTS);
         const activeCount = flights.length;
@@ -910,6 +914,16 @@
       setupDragAndDrop();
       setupFileInputs();
       updateFarmUI();
+
+      // Sincronização inicial com o banco Neon na Nuvem
+      if (window.NeonSync) {
+        NeonSync.syncAll();
+      }
+
+      // Re-sincronizar periodicamente ao retornar para a aba
+      window.addEventListener('focus', () => {
+        if (window.NeonSync) NeonSync.syncAll();
+      });
     });
 
     function initFlights(data) {
@@ -1239,6 +1253,7 @@
       if (!confirm(`Deseja realmente excluir a rota:\n${id}?`)) return;
       deletedIds.add(id);
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds([id]);
 
       if (mapLayers[id]) {
         if (mapLayers[id].line) map.removeLayer(mapLayers[id].line);
@@ -1248,7 +1263,7 @@
 
       flights = flights.filter(f => f.id !== id);
       applyFilters();
-      showToast("Rota excluída com sucesso!");
+      showToast("Rota excluída e sincronizada na nuvem!");
     }
 
     // EXCLUIR ROTAS MARCADAS / SELECIONADAS
@@ -1270,9 +1285,10 @@
       });
 
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(toDelete);
       flights = flights.filter(f => !deletedIds.has(f.id));
       applyFilters();
-      showToast(`${toDelete.length} rotas excluídas!`);
+      showToast(`${toDelete.length} rotas excluídas e sincronizadas na nuvem!`);
     }
 
     // LIMPAR TODAS AS ROTAS DO MAPA
@@ -1280,8 +1296,10 @@
       if (flights.length === 0) return;
       if (!confirm("Deseja realmente limpar/excluir TODAS as rotas do mapa?")) return;
 
-      flights.forEach(f => deletedIds.add(f.id));
+      const allIds = flights.map(f => f.id);
+      allIds.forEach(id => deletedIds.add(id));
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(allIds);
 
       Object.values(mapLayers).forEach(l => {
         if (l.line) map.removeLayer(l.line);
@@ -1294,7 +1312,7 @@
 
       renderTable();
       updateStats();
-      showToast("Todas as rotas foram removidas do mapa.");
+      showToast("Todas as rotas foram removidas do mapa e sincronizadas na nuvem.");
     }
 
     // RESTAURAR ROTAS EXCLUÍDAS
@@ -1305,8 +1323,10 @@
       }
       if (!confirm(`Deseja restaurar as ${deletedIds.size} rotas que foram excluídas?`)) return;
 
+      const restored = Array.from(deletedIds);
       localStorage.removeItem('agrodrone_deleted_ids');
       deletedIds.clear();
+      if (window.NeonSync) NeonSync.restoreDeletedIds(restored);
 
       if (rawLoadedFlights && rawLoadedFlights.length > 0) {
         initFlights(rawLoadedFlights);
@@ -1578,11 +1598,12 @@
       });
 
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(ids);
       flights = flights.filter(f => !deletedIds.has(f.id));
 
       dismissAreaBox();
       applyFilters();
-      showToast(`${ids.length} rotas da área foram excluídas com sucesso!`);
+      showToast(`${ids.length} rotas da área foram excluídas e sincronizadas na nuvem!`);
     }
 
     function executeKeepOnlyAreaFlights() {
@@ -1790,11 +1811,12 @@
 
       if (newFarmsCount > 0) {
         localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
         linkFlightsToFarms();
         populateFarmFilterOptions();
         renderFarmsOnMap();
         updateFarmUI();
-        showToast(`${newFarmsCount} talhões importados e vinculados!`);
+        showToast(`${newFarmsCount} talhões importados e salvos na nuvem!`);
       }
 
       if (newItems.length > 0) {
@@ -1814,7 +1836,9 @@
         renderTable();
         updateStats();
         zoomToAll();
-        showToast(`${newItems.length} voos carregados com sucesso! Total no mapa: ${flights.length}`);
+
+        if (window.NeonSync) NeonSync.saveFlights(newItems);
+        showToast(`${newItems.length} voos carregados e sincronizados na nuvem! Total: ${flights.length}`);
       }
     }
 
@@ -2425,6 +2449,7 @@
         }
       }
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
       linkFlightsToFarms();
       populateFilterOptions();
       populateFarmFilterOptions();
@@ -2449,6 +2474,7 @@
         if (r.areaTotal > 0) savedFarms[i].areaTotal = r.areaTotal;
       }
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
       linkFlightsToFarms();
       populateFilterOptions();
       populateFarmFilterOptions();
@@ -2565,6 +2591,7 @@
       if (newFarms.length > 0) {
         savedFarms = [...newFarms];
         localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
         linkFlightsToFarms();
         populateFilterOptions();
         populateFarmFilterOptions();
@@ -2703,6 +2730,7 @@
     function removeSingleFarm(index) {
       const f = savedFarms[index];
       if (!confirm(`Deseja remover o talhão ${f.nomeFaz} - ${f.talhao}?`)) return;
+      if (window.NeonSync && f && f.id) NeonSync.deleteFarm(f.id);
       savedFarms.splice(index, 1);
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
       linkFlightsToFarms();
@@ -2711,7 +2739,7 @@
       renderTable();
       updateFarmUI();
       openFarmModal();
-      showToast("Talhão removido.");
+      showToast("Talhão removido e sincronizado na nuvem.");
     }
 
     function clearAllFarms() {
@@ -2719,13 +2747,14 @@
       if (!confirm("Deseja realmente remover TODOS os talhões cadastrados?")) return;
       savedFarms = [];
       localStorage.removeItem('agrodrone_saved_farms');
+      if (window.NeonSync) NeonSync.clearAllFarms();
       linkFlightsToFarms();
       populateFarmFilterOptions();
       renderFarmsOnMap();
       renderTable();
       updateFarmUI();
       closeFarmModal();
-      showToast("Todos os talhões foram removidos.");
+      showToast("Todos os talhões foram removidos da nuvem.");
     }
   </script>
 </body>
