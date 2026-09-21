@@ -1,6 +1,14 @@
 // api/voos.js - Gerenciamento e Sincronização de Voos no Neon
 const { query } = require('./db');
 
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -64,11 +72,15 @@ module.exports = async (req, res) => {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
       const action = req.query.action || (body && body.action);
 
-      // Restaurar voos excluídos
+      // Restaurar voos excluídos em lote rápido
       if (action === 'restaurar') {
         const ids = body.ids || (body.id ? [body.id] : []);
-        for (const id of ids) {
-          await query('DELETE FROM voos_deletados WHERE id = $1;', [id]);
+        if (ids.length > 0) {
+          const chunks = chunkArray(ids, 100);
+          for (const chunk of chunks) {
+            const placeholders = chunk.map((_, i) => `$${i + 1}`).join(', ');
+            await query(`DELETE FROM voos_deletados WHERE id IN (${placeholders});`, chunk);
+          }
         }
         return res.status(200).json({ success: true, restored: ids.length });
       }
@@ -154,15 +166,20 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: "Nenhum ID informado para exclusão" });
       }
 
-      for (const id of ids) {
-        // Marca como deletado permanentemente na nuvem
-        await query(`
-          INSERT INTO voos_deletados (id) VALUES ($1)
-          ON CONFLICT (id) DO NOTHING;
-        `, [id]);
+      // Processa em lotes de 100 para máxima velocidade e sem timeouts
+      const chunks = chunkArray(ids, 100);
+      for (const chunk of chunks) {
+        const valuesList = chunk.map((_, i) => `($${i + 1})`).join(', ');
+        const placeholders = chunk.map((_, i) => `$${i + 1}`).join(', ');
 
-        // Remove da tabela de voos se estiver lá
-        await query('DELETE FROM voos WHERE id = $1;', [id]);
+        // 1. Marca como deletado permanentemente na nuvem
+        await query(`
+          INSERT INTO voos_deletados (id) VALUES ${valuesList}
+          ON CONFLICT (id) DO NOTHING;
+        `, chunk);
+
+        // 2. Remove da tabela de voos se estiver lá
+        await query(`DELETE FROM voos WHERE id IN (${placeholders});`, chunk);
       }
 
       return res.status(200).json({ success: true, deletedCount: ids.length });

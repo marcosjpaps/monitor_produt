@@ -40,40 +40,43 @@ module.exports = async (req, res) => {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
       const farms = Array.isArray(body) ? body : (body.farms || [body]);
       let savedCount = 0;
+      // Salva em paralelo em lotes de 10 para máxima velocidade e evitar timeouts
+      for (let i = 0; i < farms.length; i += 10) {
+        const batch = farms.slice(i, i + 10);
+        await Promise.all(batch.map(async (f) => {
+          if (!f) return;
+          const id = f.id || `farm_${f.nomeFaz || 'sem_fazenda'}_${f.talhao || 'sem_talhao'}_${Date.now()}`;
+          const coordsJson = JSON.stringify(f.coords || []);
+          const bboxJson = JSON.stringify(f.bbox || null);
 
-      for (const f of farms) {
-        if (!f) continue;
-        const id = f.id || `farm_${f.nomeFaz || 'sem_fazenda'}_${f.talhao || 'sem_talhao'}_${Date.now()}`;
-        const coordsJson = JSON.stringify(f.coords || []);
-        const bboxJson = JSON.stringify(f.bbox || null);
-
-        await query(`
-          INSERT INTO talhoes (
-            id, nome_faz, talhao, zona, variedade, plantio, area_total, coords, bbox
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb
-          )
-          ON CONFLICT (id) DO UPDATE SET
-            nome_faz = EXCLUDED.nome_faz,
-            talhao = EXCLUDED.talhao,
-            zona = EXCLUDED.zona,
-            variedade = EXCLUDED.variedade,
-            plantio = EXCLUDED.plantio,
-            area_total = EXCLUDED.area_total,
-            coords = EXCLUDED.coords,
-            bbox = EXCLUDED.bbox;
-        `, [
-          id,
-          f.nomeFaz || '',
-          f.talhao || '',
-          f.zona || '',
-          f.variedade || '',
-          f.plantio || '',
-          parseFloat(f.areaTotal) || 0,
-          coordsJson,
-          bboxJson
-        ]);
-        savedCount++;
+          await query(`
+            INSERT INTO talhoes (
+              id, nome_faz, talhao, zona, variedade, plantio, area_total, coords, bbox
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              nome_faz = EXCLUDED.nome_faz,
+              talhao = EXCLUDED.talhao,
+              zona = EXCLUDED.zona,
+              variedade = EXCLUDED.variedade,
+              plantio = EXCLUDED.plantio,
+              area_total = EXCLUDED.area_total,
+              coords = EXCLUDED.coords,
+              bbox = EXCLUDED.bbox;
+          `, [
+            id,
+            f.nomeFaz || '',
+            f.talhao || '',
+            f.zona || '',
+            f.variedade || '',
+            f.plantio || '',
+            parseFloat(f.areaTotal) || 0,
+            coordsJson,
+            bboxJson
+          ]);
+          savedCount++;
+        }));
       }
 
       return res.status(200).json({ success: true, savedCount });

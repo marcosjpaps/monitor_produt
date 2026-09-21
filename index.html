@@ -1079,11 +1079,14 @@
       if (!ids || ids.length === 0) return;
       setNeonBadge('syncing', 'Salvando exclusão...');
       try {
-        await fetch('/api/voos', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids })
-        });
+        for (let i = 0; i < ids.length; i += 100) {
+          const slice = ids.slice(i, i + 100);
+          await fetch('/api/voos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: slice })
+          });
+        }
         setNeonBadge('synced', 'Nuvem Conectada');
       } catch (e) {
         console.error("Erro ao salvar exclusão:", e);
@@ -1095,11 +1098,14 @@
       if (!ids || ids.length === 0) return;
       setNeonBadge('syncing', 'Restaurando...');
       try {
-        await fetch('/api/voos?action=restaurar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids })
-        });
+        for (let i = 0; i < ids.length; i += 100) {
+          const slice = ids.slice(i, i + 100);
+          await fetch('/api/voos?action=restaurar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: slice })
+          });
+        }
         setNeonBadge('synced', 'Nuvem Conectada');
       } catch (e) {
         console.error("Erro ao restaurar voos:", e);
@@ -1111,11 +1117,14 @@
       if (!farmsList || farmsList.length === 0) return;
       setNeonBadge('syncing', 'Salvando talhões...');
       try {
-        await fetch('/api/talhoes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ farms: farmsList })
-        });
+        for (let i = 0; i < farmsList.length; i += 15) {
+          const slice = farmsList.slice(i, i + 15);
+          await fetch('/api/talhoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ farms: slice })
+          });
+        }
         setNeonBadge('synced', 'Nuvem Conectada');
       } catch (e) {
         console.error("Erro ao salvar talhões:", e);
@@ -1136,11 +1145,14 @@
       if (!flightsList || flightsList.length === 0) return;
       setNeonBadge('syncing', 'Salvando voos...');
       try {
-        await fetch('/api/voos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ flights: flightsList })
-        });
+        for (let i = 0; i < flightsList.length; i += 10) {
+          const slice = flightsList.slice(i, i + 10);
+          await fetch('/api/voos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ flights: slice })
+          });
+        }
         setNeonBadge('synced', 'Nuvem Conectada');
       } catch (e) {
         console.error("Erro ao salvar novos voos:", e);
@@ -1162,7 +1174,7 @@
         const localDeleted = Array.from(deletedIds);
         const toUpload = localDeleted.filter(id => !cloudDeletedIds.includes(id));
         if (toUpload.length > 0) {
-          apiDeleteFlights(toUpload);
+          await apiDeleteFlights(toUpload);
         }
 
         // Aplica exclusões da nuvem localmente
@@ -1201,7 +1213,7 @@
           renderTable();
           updateFarmUI();
         } else if (savedFarms.length > 0) {
-          apiSaveFarms(savedFarms);
+          await apiSaveFarms(savedFarms);
         }
 
         setNeonBadge('synced', 'Nuvem Conectada');
