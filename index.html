@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgroDrone - Mapa Unificado de Aplicação & Tabela de Atributos</title>
+  <title>VeredasDrone - Mapa de Aplicação & Atributos</title>
   
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -471,7 +471,7 @@
         <i data-lucide="plane" style="width:30px; height:30px;"></i>
       </div>
       
-      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">AgroDrone</h2>
+      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">VeredasDrone</h2>
       <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:24px;">Painel de Aplicação & Atributos</p>
 
       <form id="loginForm" onsubmit="handleLogin(event)" style="text-align:left;">
@@ -512,7 +512,7 @@
       </form>
       
       <div style="margin-top:22px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.72rem; color:#64748b;">
-        AgroDrone • Acesso Restrito & Seguro
+        VeredasDrone • Acesso Restrito & Seguro
       </div>
     </div>
   </div>
@@ -536,7 +536,7 @@
           <i data-lucide="plane"></i>
         </div>
         <div class="brand-title">
-          <h1>AgroDrone - Mapa de Aplicação & Atributos</h1>
+          <h1>VeredasDrone - Mapa de Aplicação & Atributos</h1>
           <p>Unificação de rastros de pulverização (T100, T70) e consolidação de área e calda</p>
         </div>
       </div>
@@ -932,7 +932,7 @@
         if (overlay) overlay.style.display = 'none';
         const userBadge = document.getElementById('userBadgeContainer');
         if (userBadge) userBadge.style.display = 'flex';
-        showToast("Login realizado com sucesso! Bem-vindo ao AgroDrone.");
+        showToast("Login realizado com sucesso! Bem-vindo ao VeredasDrone.");
         if (window.lucide) lucide.createIcons();
         if (window.NeonSync) NeonSync.syncAll(true);
       } else {
@@ -2125,7 +2125,7 @@
       let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>AgroDrone - Mapa Unificado de Pulverizacao</name>
+    <name>VeredasDrone - Mapa Unificado de Pulverizacao</name>
 `;
       active.forEach((f, idx) => {
         const col = getDroneColor(f.drone);

@@ -1,4 +1,4 @@
-# 🌾 AgroDrone - Mapa de Aplicação & Atributos
+# 🌾 VeredasDrone - Mapa de Aplicação & Atributos
 
 Plataforma web para consolidação, visualização geográfica e análise agronômica de dados de telemetria e rastros de pulverização com drones agrícolas (DJI Agras T100, T70, etc.).
 
