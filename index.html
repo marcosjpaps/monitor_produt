@@ -137,6 +137,55 @@
     .kpi-lbl { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
     .kpi-num { font-size: 0.9rem; font-weight: 700; color: var(--text); }
 
+    /* TOP SECTION COLLAPSIBLE */
+    .top-section {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+      max-height: 180px;
+      overflow: hidden;
+      z-index: 1000;
+    }
+    .top-section.collapsed {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* TOP RESTORE TAB (WHEN TOP IS COLLAPSED) */
+    .top-restore-tab {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 4px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      cursor: pointer;
+      z-index: 1200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .top-restore-tab:hover {
+      background: #0284c7;
+      color: #ffffff;
+      padding-top: 6px;
+    }
+    body.top-collapsed .top-restore-tab {
+      display: inline-flex;
+    }
+
     /* WORKSPACE BODY */
     .workspace {
       display: flex;
@@ -144,6 +193,7 @@
       flex: 1;
       position: relative;
       overflow: hidden;
+      transition: all 0.3s ease;
     }
 
     /* MAP WRAPPER */
@@ -160,16 +210,21 @@
       top: 12px;
       left: 60px;
       z-index: 900;
-      background: rgba(19, 29, 46, 0.94);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 5px 12px;
+      border-radius: 10px;
       display: flex;
-      gap: 14px;
+      gap: 10px;
       align-items: center;
-      font-size: 0.8rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      font-size: 0.78rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: all 0.25s ease;
+    }
+    .floating-bar:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
     }
     .floating-bar label {
       display: flex;
@@ -178,6 +233,73 @@
       cursor: pointer;
       user-select: none;
     }
+
+    /* MAP HUD BAR (LIVE COORDINATES & SCALE) */
+    .map-hud {
+      position: absolute;
+      bottom: 12px;
+      left: 100px;
+      z-index: 800;
+      background: rgba(15, 23, 42, 0.84);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      user-select: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    }
+    .map-hud .hud-sep { color: rgba(255,255,255,0.2); }
+    .map-hud #hudCoords { color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .map-hud #hudZoom { color: #f59e0b; font-weight: 600; }
+    .map-hud #hudVisibleFlights { color: #10b981; font-weight: 600; }
+
+    /* LEAFLET CONTROLS MODERN DARK THEME */
+    .leaflet-bar {
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+    }
+    .leaflet-bar a {
+      background-color: rgba(15, 23, 42, 0.92) !important;
+      color: #38bdf8 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+    }
+    .leaflet-bar a:hover {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+    }
+    .leaflet-control-layers {
+      background: rgba(15, 23, 42, 0.92) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
+      color: #f8fafc !important;
+      border-radius: 8px !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.7) !important;
+      font-size: 0.78rem !important;
+      padding: 6px 10px !important;
+    }
+    .leaflet-control-scale-line {
+      background: rgba(15, 23, 42, 0.85) !important;
+      backdrop-filter: blur(8px) !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      border-top: none !important;
+      color: #38bdf8 !important;
+      font-weight: 700 !important;
+      font-size: 0.65rem !important;
+      padding: 2px 6px !important;
+      border-radius: 0 0 4px 4px !important;
+    }
+
 
     /* ATTRIBUTE TABLE PANEL (BOTTOM DOCK) */
     .attribute-panel {
@@ -405,152 +527,161 @@
     <p>Rastros de voo e mapas de talhões serão lidos e vinculados automaticamente.</p>
   </div>
 
-  <!-- TOP BAR -->
-  <header>
-    <div class="brand">
-      <div class="brand-icon">
-        <i data-lucide="plane"></i>
+  <!-- TOP COLLAPSIBLE CONTAINER (HEADER + KPIS) -->
+  <div id="topSection" class="top-section">
+    <!-- TOP BAR -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="plane"></i>
+        </div>
+        <div class="brand-title">
+          <h1>AgroDrone - Mapa de Aplicação & Atributos</h1>
+          <p>Unificação de rastros de pulverização (T100, T70) e consolidação de área e calda</p>
+        </div>
       </div>
-      <div class="brand-title">
-        <h1>AgroDrone - Mapa de Aplicação & Atributos</h1>
-        <p>Unificação de rastros de pulverização (T100, T70) e consolidação de área e calda</p>
-      </div>
-    </div>
 
-    <div class="nav-actions">
-      <input type="file" id="fileInput" multiple accept=".kml" style="display: none;">
-      <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
-      <input type="file" id="farmFileInput" multiple accept=".zip,.shp,.dbf,.prj,.kml,.csv" style="display: none;">
-      <input type="file" id="dbfOnlyInput" accept=".dbf" style="display: none;">
-      <input type="file" id="csvOnlyInput" accept=".csv,.txt" style="display: none;">
+      <div class="nav-actions">
+        <input type="file" id="fileInput" multiple accept=".kml" style="display: none;">
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+        <input type="file" id="farmFileInput" multiple accept=".zip,.shp,.dbf,.prj,.kml,.csv" style="display: none;">
+        <input type="file" id="dbfOnlyInput" accept=".dbf" style="display: none;">
+        <input type="file" id="csvOnlyInput" accept=".csv,.txt" style="display: none;">
 
-      <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
-        <i data-lucide="file-plus"></i> Abrir KMLs
-      </button>
-
-      <button class="btn btn-outline" onclick="document.getElementById('folderInput').click()">
-        <i data-lucide="folder-open"></i> Carregar Pasta
-      </button>
-
-      <button class="btn btn-outline" style="color:#f59e0b; border-color:rgba(245,158,11,0.5);" onclick="document.getElementById('farmFileInput').click()" title="Importar Shapefile (.zip ou .shp + .dbf) ou KML de Talhões e Fazendas">
-        <i data-lucide="map-pin"></i> Importar Shapefile / KML
-      </button>
-
-      <button class="btn btn-outline" id="btnManageFarms" style="display:none; color:#a855f7; border-color:rgba(168,85,247,0.5);" onclick="openFarmModal()" title="Gerenciar talhões carregados">
-        <i data-lucide="layers"></i> <span id="lblFarmCount">Talhões (0)</span>
-      </button>
-
-      <button class="btn btn-success" onclick="exportMergedKML()">
-        <i data-lucide="download"></i> Exportar KML Unificado
-      </button>
-
-      <button class="btn btn-primary" onclick="exportCSV()">
-        <i data-lucide="sheet"></i> Exportar Planilha CSV
-      </button>
-
-      <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="deleteSelected()" title="Exclui todas as rotas com caixas marcadas">
-        <i data-lucide="trash-2"></i> Excluir Marcadas
-      </button>
-
-      <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="clearAll()" title="Limpa todas as rotas do mapa">
-        <i data-lucide="trash"></i> Limpar Mapa
-      </button>
-
-      <button class="btn btn-outline" style="color:#10b981; border-color:rgba(16,185,129,0.5);" onclick="restoreAll()" title="Restaura rotas excluídas">
-        <i data-lucide="rotate-ccw"></i> Restaurar Rotas
-      </button>
-
-      <!-- BADGE DE SINCRONIZAÇÃO NEON -->
-      <button class="btn btn-outline" id="neonSyncBadge" onclick="NeonSync.syncAll(true)" title="Status de conexão com o banco Neon PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
-        <span id="neonSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
-        <span id="neonSyncText">Nuvem Neon</span>
-      </button>
-
-      <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
-        <span style="font-size:0.72rem; color:#94a3b8; display:flex; align-items:center; gap:5px;">
-          <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
-          <span style="color:#e2e8f0; font-weight:600;">marcos220896antonio@gmail.com</span>
-        </span>
-        <button class="btn btn-outline" style="padding:2px 6px; font-size:0.68rem; color:#f87171; border-color:rgba(239,68,68,0.4);" onclick="logout()" title="Encerrar sessão">
-          <i data-lucide="log-out" style="width:11px; height:11px;"></i> Sair
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+          <i data-lucide="file-plus"></i> Abrir KMLs
         </button>
-      </div>
-    </div>
-  </header>
 
-  <!-- KPI SUMMARY BAR -->
-  <div class="kpi-bar">
-    <div class="kpi-card">
-      <i data-lucide="layers"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Voos Selecionados</span>
-        <span class="kpi-num" id="kpiFlights">0 / 0</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" onclick="document.getElementById('folderInput').click()">
+          <i data-lucide="folder-open"></i> Carregar Pasta
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="maximize-2" style="color: #10b981;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Área Total (ha)</span>
-        <span class="kpi-num" id="kpiArea" style="color: #10b981;">0.00 ha</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" style="color:#f59e0b; border-color:rgba(245,158,11,0.5);" onclick="document.getElementById('farmFileInput').click()" title="Importar Shapefile (.zip ou .shp + .dbf) ou KML de Talhões e Fazendas">
+          <i data-lucide="map-pin"></i> Importar Shapefile / KML
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="droplet" style="color: #38bdf8;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Calda Total (Spray)</span>
-        <span class="kpi-num" id="kpiSpray" style="color: #38bdf8;">0.00 L</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" id="btnManageFarms" style="display:none; color:#a855f7; border-color:rgba(168,85,247,0.5);" onclick="openFarmModal()" title="Gerenciar talhões carregados">
+          <i data-lucide="layers"></i> <span id="lblFarmCount">Talhões (0)</span>
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="gauge" style="color: #f59e0b;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Taxa Média</span>
-        <span class="kpi-num" id="kpiRate">0.0 L/ha</span>
-      </div>
-    </div>
+        <button class="btn btn-success" onclick="exportMergedKML()">
+          <i data-lucide="download"></i> Exportar KML Unificado
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="split" style="color: #06b6d4;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Faixa Média</span>
-        <span class="kpi-num" id="kpiSpacing" style="color: #06b6d4;">0.00 m</span>
-      </div>
-    </div>
+        <button class="btn btn-primary" onclick="exportCSV()">
+          <i data-lucide="sheet"></i> Exportar Planilha CSV
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="arrow-up" style="color: #eab308;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Altura Média</span>
-        <span class="kpi-num" id="kpiHeight" style="color: #eab308;">0.0 m</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="deleteSelected()" title="Exclui todas as rotas com caixas marcadas">
+          <i data-lucide="trash-2"></i> Excluir Marcadas
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="zap" style="color: #f97316;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Velocidade Média</span>
-        <span class="kpi-num" id="kpiSpeed" style="color: #f97316;">0.0 km/h</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="clearAll()" title="Limpa todas as rotas do mapa">
+          <i data-lucide="trash"></i> Limpar Mapa
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="clock" style="color: #a855f7;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Tempo de Voo Total</span>
-        <span class="kpi-num" id="kpiTime">0h 00m</span>
-      </div>
-    </div>
+        <button class="btn btn-outline" style="color:#10b981; border-color:rgba(168,185,129,0.5);" onclick="restoreAll()" title="Restaura rotas excluídas">
+          <i data-lucide="rotate-ccw"></i> Restaurar Rotas
+        </button>
 
-    <div class="kpi-card">
-      <i data-lucide="navigation" style="color: #ec4899;"></i>
-      <div class="kpi-meta">
-        <span class="kpi-lbl">Pontos GPS</span>
-        <span class="kpi-num" id="kpiPoints">0</span>
+        <!-- BADGE DE SINCRONIZAÇÃO NEON -->
+        <button class="btn btn-outline" id="neonSyncBadge" onclick="NeonSync.syncAll(true)" title="Status de conexão com o banco Neon PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
+          <span id="neonSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          <span id="neonSyncText">Nuvem Neon</span>
+        </button>
+
+        <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
+          <span style="font-size:0.72rem; color:#94a3b8; display:flex; align-items:center; gap:5px;">
+            <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
+            <span style="color:#e2e8f0; font-weight:600;">marcos220896antonio@gmail.com</span>
+          </span>
+          <button class="btn btn-outline" style="padding:2px 6px; font-size:0.68rem; color:#f87171; border-color:rgba(239,68,68,0.4);" onclick="logout()" title="Encerrar sessão">
+            <i data-lucide="log-out" style="width:11px; height:11px;"></i> Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI SUMMARY BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-card">
+        <i data-lucide="layers"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Voos Selecionados</span>
+          <span class="kpi-num" id="kpiFlights">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="maximize-2" style="color: #10b981;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Total (ha)</span>
+          <span class="kpi-num" id="kpiArea" style="color: #10b981;">0.00 ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="droplet" style="color: #38bdf8;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Calda Total (Spray)</span>
+          <span class="kpi-num" id="kpiSpray" style="color: #38bdf8;">0.00 L</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="gauge" style="color: #f59e0b;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Taxa Média</span>
+          <span class="kpi-num" id="kpiRate">0.0 L/ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="split" style="color: #06b6d4;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Faixa Média</span>
+          <span class="kpi-num" id="kpiSpacing" style="color: #06b6d4;">0.00 m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="arrow-up" style="color: #eab308;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Altura Média</span>
+          <span class="kpi-num" id="kpiHeight" style="color: #eab308;">0.0 m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="zap" style="color: #f97316;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Velocidade Média</span>
+          <span class="kpi-num" id="kpiSpeed" style="color: #f97316;">0.0 km/h</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="clock" style="color: #a855f7;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Tempo de Voo Total</span>
+          <span class="kpi-num" id="kpiTime">0h 00m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="navigation" style="color: #ec4899;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Pontos GPS</span>
+          <span class="kpi-num" id="kpiPoints">0</span>
+        </div>
       </div>
     </div>
+  </div>
+
+  <!-- TOP RESTORE TAB (WHEN TOP IS HIDDEN) -->
+  <div id="topRestoreTab" class="top-restore-tab" onclick="toggleTopPanel()" title="Clique para expandir o cabeçalho e estatísticas">
+    <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
+    <span>Mostrar Topo</span>
   </div>
 
   <!-- WORKSPACE -->
@@ -560,8 +691,25 @@
     <div class="map-wrapper" id="mapWrapper">
       <div id="map"></div>
 
+      <!-- MAP TELEMETRY HUD -->
+      <div id="mapHud" class="map-hud">
+        <span id="hudCoords"><i data-lucide="crosshair" style="width:11px; height:11px;"></i> -17.75000°, -46.15000°</span>
+        <span class="hud-sep">|</span>
+        <span>Zoom: <span id="hudZoom">12</span></span>
+        <span class="hud-sep">|</span>
+        <span>Voos: <span id="hudVisibleFlights">0</span></span>
+      </div>
+
       <!-- MAP FLOATING CONTROLS -->
       <div class="floating-bar">
+        <button class="btn btn-outline" id="btnToggleTop" onclick="toggleTopPanel()" title="Recolher / Expandir cabeçalho e estatísticas" style="padding: 2px 8px; font-size: 0.72rem; color: #94a3b8; border-color: rgba(148,163,184,0.35);">
+          <i data-lucide="chevrons-up" id="iconToggleTop" style="width:12px; height:12px;"></i> <span id="lblToggleTop">Ocultar Topo</span>
+        </button>
+        <span style="color: var(--border);">|</span>
+        <button class="btn btn-outline" id="btnFullscreen" onclick="toggleFullscreenMap()" title="Alternar visualização em tela cheia do mapa" style="padding: 2px 8px; font-size: 0.72rem; color: #38bdf8; border-color: rgba(56,189,248,0.45);">
+          <i data-lucide="maximize" id="iconFullscreen" style="width:12px; height:12px;"></i> <span id="lblFullscreen">Tela Cheia</span>
+        </button>
+        <span style="color: var(--border);">|</span>
         <button class="btn btn-outline" id="btnAreaSelect" onclick="toggleAreaSelectMode()" title="Clique para ativar a seleção por retângulo no mapa e excluir/marcar rotas da área" style="color:#38bdf8; border-color:rgba(56,189,248,0.5);">
           <i data-lucide="scan"></i> <span id="lblAreaSelect">Selecionar por Área no Mapa</span>
         </button>
@@ -1101,6 +1249,23 @@
       "🛰️ Satélite (Esri World)": esriSat,
       "🗺️ Mapa de Ruas (OSM)": osm
     }, null, { position: 'topright' }).addTo(map);
+
+    // ESCALA GRÁFICA DO MAPA (MÉTRICA)
+    L.control.scale({ imperial: false, metric: true, position: 'bottomleft' }).addTo(map);
+
+    // TELEMETRIA E COORDENADAS AO VIVO NO HUD DO MAPA
+    map.on('mousemove', (e) => {
+      const el = document.getElementById('hudCoords');
+      if (el) {
+        el.innerHTML = `<i data-lucide="crosshair" style="width:11px; height:11px;"></i> ${e.latlng.lat.toFixed(5)}°, ${e.latlng.lng.toFixed(5)}°`;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+
+    map.on('zoomend', () => {
+      const el = document.getElementById('hudZoom');
+      if (el) el.innerText = map.getZoom();
+    });
 
     const canvasRenderer = L.canvas({ padding: 0.5 });
 
@@ -1658,6 +1823,9 @@
       document.getElementById('kpiSpeed').innerText = `${avgSpeed.toFixed(1)} km/h`;
       document.getElementById('kpiTime').innerText = `${h}h ${m.toString().padStart(2, '0')}m`;
       document.getElementById('kpiPoints').innerText = pts.toLocaleString('pt-BR');
+
+      const hudFlights = document.getElementById('hudVisibleFlights');
+      if (hudFlights) hudFlights.innerText = `${count}`;
     }
 
     // SELEÇÃO ESPACIAL POR ÁREA / RETÂNGULO NO MAPA
@@ -1849,6 +2017,82 @@
       lucide.createIcons();
       setTimeout(() => map.invalidateSize(), 300);
     }
+
+    // RECOLHER / EXPANDIR PAINEL SUPERIOR (CABEÇALHO + KPIS)
+    function toggleTopPanel() {
+      const topSection = document.getElementById('topSection');
+      const body = document.body;
+      const lbl = document.getElementById('lblToggleTop');
+      const icon = document.getElementById('iconToggleTop');
+      if (!topSection) return;
+
+      const isCollapsed = topSection.classList.toggle('collapsed');
+      body.classList.toggle('top-collapsed', isCollapsed);
+
+      if (lbl) lbl.innerText = isCollapsed ? 'Mostrar Topo' : 'Ocultar Topo';
+      if (icon) icon.setAttribute('data-lucide', isCollapsed ? 'chevrons-down' : 'chevrons-up');
+      if (window.lucide) lucide.createIcons();
+
+      setTimeout(() => map.invalidateSize(), 320);
+    }
+
+    // MODO TELA CHEIA PARA O MAPA
+    function toggleFullscreenMap() {
+      const doc = document;
+      const el = document.documentElement;
+      const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement);
+
+      if (!isFs) {
+        if (el.requestFullscreen) {
+          el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+          el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          doc.msExitFullscreen();
+        }
+      }
+    }
+
+    function onFullscreenChanged() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      const lbl = document.getElementById('lblFullscreen');
+      const icon = document.getElementById('iconFullscreen');
+      const topSection = document.getElementById('topSection');
+      const attrPanel = document.getElementById('attrPanel');
+
+      if (isFs) {
+        if (lbl) lbl.innerText = 'Sair da Tela Cheia';
+        if (icon) icon.setAttribute('data-lucide', 'minimize');
+        if (topSection && !topSection.classList.contains('collapsed')) {
+          toggleTopPanel();
+        }
+        if (attrPanel && !attrPanel.classList.contains('collapsed')) {
+          togglePanelSize();
+        }
+      } else {
+        if (lbl) lbl.innerText = 'Tela Cheia';
+        if (icon) icon.setAttribute('data-lucide', 'maximize');
+      }
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => map.invalidateSize(), 350);
+    }
+
+    document.addEventListener('fullscreenchange', onFullscreenChanged);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChanged);
+    document.addEventListener('mozfullscreenchange', onFullscreenChanged);
+    document.addEventListener('MSFullscreenChange', onFullscreenChanged);
 
     function exportMergedKML() {
       const active = filteredFlights.filter(f => selectedIds.has(f.id));
