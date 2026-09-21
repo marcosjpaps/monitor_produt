@@ -15,9 +15,6 @@
   <!-- Shapefile Parser (shp.js) -->
   <script src="shp.js"></script>
 
-  <!-- Sincronização em Nuvem com Neon PostgreSQL -->
-  <script src="neon_sync.js"></script>
-
   <style>
     :root {
       --bg-dark: #090e17;
@@ -866,6 +863,285 @@
     let savedFarms = JSON.parse(localStorage.getItem('agrodrone_saved_farms') || '[]');
     let farmLayers = {};
     let showFarms = true;
+
+    // ==============================================================
+    // INTEGRAÇÃO NUVEM COM NEON POSTGRESQL (SINCRONIZAÇÃO GLOBAL)
+    // ==============================================================
+    const NEON_CONFIG = {
+      endpoint: "https://ep-green-mode-act23gk5.sa-east-1.aws.neon.tech/sql",
+      connStr: "postgresql://neondb_owner:npg_bAg5oQPTR3vB@ep-green-mode-act23gk5-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require"
+    };
+
+    function setNeonBadge(status, text) {
+      const badge = document.getElementById('neonSyncBadge');
+      const dot = document.getElementById('neonSyncDot');
+      const label = document.getElementById('neonSyncText');
+      if (!badge || !dot || !label) return;
+
+      if (status === 'syncing') {
+        dot.style.background = '#f59e0b';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        badge.style.color = '#f59e0b';
+        label.innerText = text || 'Sincronizando...';
+      } else if (status === 'synced') {
+        dot.style.background = '#10b981';
+        badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        badge.style.color = '#10b981';
+        label.innerText = text || 'Nuvem Conectada';
+      } else {
+        dot.style.background = '#ef4444';
+        badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        badge.style.color = '#ef4444';
+        label.innerText = text || 'Offline';
+      }
+    }
+
+    async function queryNeon(sql, params = []) {
+      const resp = await fetch(NEON_CONFIG.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Neon-Connection-String': NEON_CONFIG.connStr
+        },
+        body: JSON.stringify({ query: sql, params })
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(txt);
+      }
+      const data = await resp.json();
+      return data.rows || [];
+    }
+
+    let isSyncingNeon = false;
+    async function syncWithNeon(showFeedback = false) {
+      if (isSyncingNeon) return;
+      isSyncingNeon = true;
+      setNeonBadge('syncing', 'Conectando...');
+
+      try {
+        // 1. Sincroniza voos deletados
+        const delRows = await queryNeon("SELECT id FROM voos_deletados ORDER BY deletado_em DESC;");
+        const cloudDeleted = (delRows || []).map(r => r.id);
+
+        // Se o usuário já tinha exclusões locais, envia para a nuvem
+        const localDeleted = Array.from(deletedIds);
+        const toUpload = localDeleted.filter(id => !cloudDeleted.includes(id));
+        for (const id of toUpload) {
+          queryNeon("INSERT INTO voos_deletados (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;", [id]).catch(() => {});
+        }
+
+        // Adiciona as exclusões da nuvem localmente
+        let changed = false;
+        cloudDeleted.forEach(id => {
+          if (!deletedIds.has(id)) {
+            deletedIds.add(id);
+            changed = true;
+          }
+        });
+
+        if (changed || toUpload.length > 0) {
+          localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+          flights = flights.filter(f => !deletedIds.has(f.id));
+          filteredFlights = [...flights];
+          applyFilters();
+        }
+
+        // 2. Sincroniza talhões cadastrados
+        const farmRows = await queryNeon(`
+          SELECT id, nome_faz as "nomeFaz", talhao, zona, variedade, plantio, area_total as "areaTotal", coords, bbox 
+          FROM talhoes ORDER BY nome_faz, talhao;
+        `);
+
+        if (farmRows && farmRows.length > 0) {
+          let farmsUpdated = false;
+          farmRows.forEach(cf => {
+            const idx = savedFarms.findIndex(sf => (sf.id && sf.id === cf.id) || (sf.nomeFaz === cf.nomeFaz && sf.talhao === cf.talhao));
+            if (idx >= 0) {
+              savedFarms[idx] = cf;
+            } else {
+              savedFarms.push(cf);
+              farmsUpdated = true;
+            }
+          });
+          localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+          linkFlightsToFarms();
+          populateFarmFilterOptions();
+          renderFarmsOnMap();
+          renderTable();
+          updateFarmUI();
+        } else if (savedFarms.length > 0) {
+          for (const f of savedFarms) {
+            const id = f.id || `farm_${f.nomeFaz || 'faz'}_${f.talhao || 't'}_${Date.now()}`;
+            queryNeon(`
+              INSERT INTO talhoes (id, nome_faz, talhao, zona, variedade, plantio, area_total, coords, bbox)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
+              ON CONFLICT (id) DO NOTHING;
+            `, [
+              id, f.nomeFaz || '', f.talhao || '', f.zona || '', f.variedade || '', f.plantio || '',
+              parseFloat(f.areaTotal) || 0, JSON.stringify(f.coords || []), JSON.stringify(f.bbox || null)
+            ]).catch(() => {});
+          }
+        }
+
+        setNeonBadge('synced', 'Nuvem Conectada');
+        if (showFeedback && typeof showToast === 'function') {
+          showToast("Nuvem Neon conectada e sincronizada!");
+        }
+      } catch (err) {
+        console.error("Erro na sincronização Neon:", err);
+        setNeonBadge('error', 'Offline');
+        if (showFeedback && typeof showToast === 'function') {
+          showToast("Aviso: Falha ao sincronizar com Neon. Verifique conexão.");
+        }
+      } finally {
+        isSyncingNeon = false;
+      }
+    }
+
+    async function apiDeleteFlights(ids) {
+      if (!ids || ids.length === 0) return;
+      setNeonBadge('syncing', 'Salvando exclusão...');
+      try {
+        for (const id of ids) {
+          await queryNeon("INSERT INTO voos_deletados (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;", [id]);
+          queryNeon("DELETE FROM voos WHERE id = $1;", [id]).catch(() => {});
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar exclusão no Neon:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiRestoreFlights(ids) {
+      if (!ids || ids.length === 0) return;
+      setNeonBadge('syncing', 'Restaurando...');
+      try {
+        for (const id of ids) {
+          await queryNeon("DELETE FROM voos_deletados WHERE id = $1;", [id]);
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao restaurar no Neon:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiSaveFarms(farmsList) {
+      if (!farmsList || farmsList.length === 0) return;
+      setNeonBadge('syncing', 'Salvando talhões...');
+      try {
+        for (const f of farmsList) {
+          const id = f.id || `farm_${f.nomeFaz || 'sem_faz'}_${f.talhao || 'sem_talhao'}`;
+          await queryNeon(`
+            INSERT INTO talhoes (id, nome_faz, talhao, zona, variedade, plantio, area_total, coords, bbox)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
+            ON CONFLICT (id) DO UPDATE SET
+              nome_faz = EXCLUDED.nome_faz,
+              talhao = EXCLUDED.talhao,
+              zona = EXCLUDED.zona,
+              variedade = EXCLUDED.variedade,
+              plantio = EXCLUDED.plantio,
+              area_total = EXCLUDED.area_total,
+              coords = EXCLUDED.coords,
+              bbox = EXCLUDED.bbox;
+          `, [
+            id, f.nomeFaz || '', f.talhao || '', f.zona || '', f.variedade || '', f.plantio || '',
+            parseFloat(f.areaTotal) || 0, JSON.stringify(f.coords || []), JSON.stringify(f.bbox || null)
+          ]);
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar talhões no Neon:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiDeleteFarm(id) {
+      if (!id) return;
+      queryNeon("DELETE FROM talhoes WHERE id = $1;", [id]).catch(() => {});
+    }
+
+    async function apiClearAllFarms() {
+      queryNeon("DELETE FROM talhoes;").catch(() => {});
+    }
+
+    async function apiSaveFlights(flightsList) {
+      if (!flightsList || flightsList.length === 0) return;
+      setNeonBadge('syncing', 'Salvando voos...');
+      try {
+        for (const item of flightsList) {
+          queryNeon("DELETE FROM voos_deletados WHERE id = $1;", [item.id]).catch(() => {});
+          await queryNeon(`
+            INSERT INTO voos (
+              id, nome_arquivo, drone, piloto, data_voo, raw_date,
+              area_ha, calda_l, taxa_l_ha, tempo_voo_s, tempo_voo_fmt,
+              vel_media_kmh, altura_media_m, faixa_media_m, num_pontos,
+              farm, talhao, coords
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6,
+              $7, $8, $9, $10, $11,
+              $12, $13, $14, $15,
+              $16, $17, $18::jsonb
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              nome_arquivo = EXCLUDED.nome_arquivo,
+              drone = EXCLUDED.drone,
+              piloto = EXCLUDED.piloto,
+              data_voo = EXCLUDED.data_voo,
+              raw_date = EXCLUDED.raw_date,
+              area_ha = EXCLUDED.area_ha,
+              calda_l = EXCLUDED.calda_l,
+              taxa_l_ha = EXCLUDED.taxa_l_ha,
+              tempo_voo_s = EXCLUDED.tempo_voo_s,
+              tempo_voo_fmt = EXCLUDED.tempo_voo_fmt,
+              vel_media_kmh = EXCLUDED.vel_media_kmh,
+              altura_media_m = EXCLUDED.altura_media_m,
+              faixa_media_m = EXCLUDED.faixa_media_m,
+              num_pontos = EXCLUDED.num_pontos,
+              farm = EXCLUDED.farm,
+              talhao = EXCLUDED.talhao,
+              coords = EXCLUDED.coords;
+          `, [
+            item.id,
+            item.fileName || item.nome_arquivo || '',
+            item.drone || '',
+            item.pilot || item.piloto || '',
+            item.dateFormatted || item.data_voo || '',
+            item.rawDate || item.raw_date || '',
+            parseFloat(item.area) || 0,
+            parseFloat(item.sprayL) || 0,
+            parseFloat(item.rate) || 0,
+            parseFloat(item.timeSec) || 0,
+            item.time || item.tempo_voo_fmt || '',
+            parseFloat(item.speed) || 0,
+            parseFloat(item.height) || 0,
+            parseFloat(item.spacing) || 0,
+            parseInt(item.points) || 0,
+            item.farm || '',
+            item.talhao || '',
+            JSON.stringify(item.coords || [])
+          ]);
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar voos no Neon:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    // Compatibilidade com chamadas NeonSync
+    window.NeonSync = {
+      syncAll: syncWithNeon,
+      saveDeletedIds: apiDeleteFlights,
+      restoreDeletedIds: apiRestoreFlights,
+      saveFarms: apiSaveFarms,
+      deleteFarm: apiDeleteFarm,
+      clearAllFarms: apiClearAllFarms,
+      saveFlights: apiSaveFlights
+    };
+
 
     // MAPA COM SATÉLITE
     const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
