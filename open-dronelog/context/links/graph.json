@@ -1,0 +1,91 @@
+{
+  "nodes": [
+    {
+      "id": "domain.project",
+      "type": "domain",
+      "file": "context/domains/project.json"
+    },
+    {
+      "id": "domain.architecture",
+      "type": "domain",
+      "file": "context/domains/architecture.json"
+    },
+    {
+      "id": "domain.runtime",
+      "type": "domain",
+      "file": "context/domains/runtime.json"
+    },
+    {
+      "id": "generated.api-routes",
+      "type": "generated",
+      "file": "context/generated/api-routes.json"
+    },
+    {
+      "id": "generated.openapi",
+      "type": "generated",
+      "file": "context/generated/openapi.json"
+    },
+    {
+      "id": "generated.db-schema",
+      "type": "generated",
+      "file": "context/generated/db-schema.json"
+    },
+    {
+      "id": "generated.deps-frontend",
+      "type": "generated",
+      "file": "context/generated/deps-frontend.json"
+    },
+    {
+      "id": "generated.deps-rust",
+      "type": "generated",
+      "file": "context/generated/deps-rust.json"
+    },
+    {
+      "id": "generated.env-vars",
+      "type": "generated",
+      "file": "context/generated/env-vars.json"
+    },
+    {
+      "id": "generated.tauri-commands",
+      "type": "generated",
+      "file": "context/generated/tauri-commands.json"
+    }
+  ],
+  "edges": [
+    {
+      "from": "domain.architecture",
+      "to": "generated.api-routes",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.architecture",
+      "to": "generated.openapi",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.project",
+      "to": "generated.deps-frontend",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.project",
+      "to": "generated.deps-rust",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.runtime",
+      "to": "generated.env-vars",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.architecture",
+      "to": "generated.db-schema",
+      "relation": "verified_by"
+    },
+    {
+      "from": "domain.architecture",
+      "to": "generated.tauri-commands",
+      "relation": "verified_by"
+    }
+  ]
+}

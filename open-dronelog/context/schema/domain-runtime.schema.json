@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opendronelog.dev/context/schema/domain-runtime.schema.json",
+  "allOf": [
+    { "$ref": "./context-doc.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "object",
+          "required": ["node", "rust", "profiles", "env_vars"],
+          "properties": {
+            "node": { "type": "string" },
+            "rust": { "type": "string" },
+            "profiles": { "type": "string" },
+            "env_vars": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  ]
+}

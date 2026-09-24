@@ -1,0 +1,40 @@
+{
+  "id": "domain.runtime",
+  "version": 1,
+  "title": "Runtime and Operations",
+  "status": "active",
+  "owners": ["Arpan Ghosh"],
+  "updated_at": "2026-03-29T00:00:00Z",
+  "verified_from": [
+    { "path": "README.md", "note": "Operational runtime and env vars" },
+    { "path": "docker-compose.yml", "note": "Deployment defaults" },
+    { "path": "docker-compose-build.yml", "note": "Source-build deployment defaults" },
+    { "path": "scripts/mobile/doctor.sh", "note": "Android environment checks" }
+  ],
+  "content": {
+    "node": "18+",
+    "rust": "stable",
+    "profiles": "Per-profile DB/config/session isolation",
+    "android_toolchain": {
+      "java": "17",
+      "rust_targets": [
+        "aarch64-linux-android",
+        "armv7-linux-androideabi",
+        "x86_64-linux-android",
+        "i686-linux-android"
+      ],
+      "status": "bootstrap"
+    },
+    "env_vars": [
+      "DATA_DIR",
+      "RUST_LOG",
+      "DJI_API_KEY",
+      "SYNC_LOGS_PATH",
+      "SYNC_INTERVAL",
+      "KEEP_UPLOADED_FILES",
+      "PROFILE_CREATION_PASS",
+      "DEFAULT_PROFILE_PASSWORD",
+      "SESSION_TTL_HOURS"
+    ]
+  }
+}

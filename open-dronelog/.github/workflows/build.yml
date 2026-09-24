@@ -1,0 +1,314 @@
+name: Desktop Build and Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      sign-windows:
+        description: 'Sign Windows .exe/.msi before release upload'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  resolve-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      release_id: ${{ steps.tag.outputs.release_id }}
+      sign_windows: ${{ steps.sign_windows.outputs.enabled }}
+    steps:
+      - name: Resolve release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
+            echo "Using release event tag: ${{ github.event.release.tag_name }}"
+          else
+            TAG=$(gh release view --repo "${{ github.repository }}" --json tagName -q '.tagName')
+            ID=$(gh release view --repo "${{ github.repository }}" --json databaseId -q '.databaseId')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "release_id=$ID" >> $GITHUB_OUTPUT
+            echo "Resolved latest release: $TAG (id=$ID)"
+          fi
+
+      - name: Resolve Windows signing mode
+        id: sign_windows
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.sign-windows }}" = "false" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Windows signing disabled by manual input"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Windows signing enabled"
+          fi
+
+  build:
+    needs: resolve-tag
+    permissions:
+      id-token: write
+      contents: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || needs.resolve-tag.outputs.tag }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            rpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Tauri app
+        if: runner.os != 'Windows'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: '.'
+          args: '${{ matrix.target && format(''--target {0} --verbose'', matrix.target) || ''--verbose'' }}'
+          tagName: ${{ needs.resolve-tag.outputs.tag }}
+          includeRelease: true
+          uploadPlainBinary: false
+          assetNamePattern: 'open-dronelog_[version]_[platform]_[arch][_setup][ext]'
+
+      - name: Build Windows Tauri app (no release upload)
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          CL: /std:c++17 /EHsc
+        run: |
+          set -euo pipefail
+          # Start from a clean workspace so collected artifacts are from this run only.
+          rm -rf src-tauri/target target unsigned signed release-assets
+          npm run tauri build -- --target "${{ matrix.target }}" --bundles nsis,msi --verbose
+
+      - name: Collect unsigned Windows artifacts
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p unsigned/exe unsigned/msi unsigned/other
+
+          SEARCH_ROOTS=("src-tauri/target" "target")
+          FOUND_ANY_ROOT="false"
+
+          for BASE in "${SEARCH_ROOTS[@]}"; do
+            if [ ! -d "$BASE" ]; then
+              continue
+            fi
+            FOUND_ANY_ROOT="true"
+            echo "Scanning $BASE for Windows artifacts"
+
+            # NSIS installer(s) and related files
+            find "$BASE" -type f -path '*/bundle/nsis/*.exe' -iname '*setup.exe' -exec cp -v {} unsigned/exe/ \;
+            find "$BASE" -type f -path '*/bundle/nsis/*.nsis.zip' -iname '*dronelog*' -exec cp -v {} unsigned/other/ \;
+            find "$BASE" -type f -path '*/bundle/nsis/*.sig' -iname '*dronelog*' -exec cp -v {} unsigned/other/ \;
+
+            # MSI installer(s)
+            find "$BASE" -type f -path '*/bundle/msi/*.msi' -iname '*dronelog*' -exec cp -v {} unsigned/msi/ \;
+          done
+
+          if [ "$FOUND_ANY_ROOT" != "true" ]; then
+            echo "::error::Could not find target directories (src-tauri/target or target)"
+            exit 1
+          fi
+
+          EXE_COUNT=$(find unsigned/exe -type f -name '*.exe' | wc -l)
+          MSI_COUNT=$(find unsigned/msi -type f -name '*.msi' | wc -l)
+          if [ "$EXE_COUNT" -eq 0 ] || [ "$MSI_COUNT" -eq 0 ]; then
+            echo "::error::Missing Windows build outputs (.exe/.msi)"
+            echo "Available target directories:"
+            find src-tauri target -maxdepth 3 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+
+          echo "Collected unsigned Windows assets:"
+          ls -la unsigned/exe
+          ls -la unsigned/msi
+          ls -la unsigned/other || true
+
+          # Capture exact files and hashes that are submitted to SignPath.
+          {
+            echo "# Unsigned EXE inputs"
+            find unsigned/exe -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum
+            echo
+            echo "# Unsigned MSI inputs"
+            find unsigned/msi -type f -name '*.msi' -print0 | sort -z | xargs -0 sha256sum
+          } | tee unsigned/manifest-sha256.txt
+
+      - name: Upload unsigned .exe as workflow artifact
+        if: runner.os == 'Windows' && needs.resolve-tag.outputs.sign_windows == 'true'
+        id: upload-exe
+        uses: actions/upload-artifact@v6
+        with:
+          name: unsigned-exe
+          path: unsigned/exe/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload unsigned .msi as workflow artifact
+        if: runner.os == 'Windows' && needs.resolve-tag.outputs.sign_windows == 'true'
+        id: upload-msi
+        uses: actions/upload-artifact@v6
+        with:
+          name: unsigned-msi
+          path: unsigned/msi/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Submit .exe to SignPath and wait for approval
+        if: runner.os == 'Windows' && needs.resolve-tag.outputs.sign_windows == 'true'
+        id: sign-exe
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: '${{ secrets.SIGNPATH_PROJECT_SLUG }}'
+          signing-policy-slug: '${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}'
+          artifact-configuration-slug: '${{ secrets.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}'
+          github-artifact-id: '${{ steps.upload-exe.outputs.artifact-id }}'
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 18000
+          output-artifact-directory: 'signed/exe'
+
+      - name: Submit .msi to SignPath and wait for approval
+        if: runner.os == 'Windows' && needs.resolve-tag.outputs.sign_windows == 'true'
+        id: sign-msi
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: '${{ secrets.SIGNPATH_PROJECT_SLUG }}'
+          signing-policy-slug: '${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}'
+          artifact-configuration-slug: '${{ secrets.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}'
+          github-artifact-id: '${{ steps.upload-msi.outputs.artifact-id }}'
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 18000
+          output-artifact-directory: 'signed/msi'
+
+      - name: Prepare Windows release assets
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+
+          if [ "${{ needs.resolve-tag.outputs.sign_windows }}" = "true" ]; then
+            find signed/exe -type f -name '*.exe' -exec cp -v {} release-assets/ \;
+            find signed/msi -type f -name '*.msi' -exec cp -v {} release-assets/ \;
+          else
+            find unsigned/exe -type f -name '*.exe' -exec cp -v {} release-assets/ \;
+            find unsigned/msi -type f -name '*.msi' -exec cp -v {} release-assets/ \;
+          fi
+
+          # Upload non-signable Windows release assets as generated.
+          find unsigned/other -type f -exec cp -v {} release-assets/ \; || true
+
+          COUNT=$(find release-assets -type f | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::No Windows release assets prepared"
+            exit 1
+          fi
+
+          echo "Prepared $COUNT Windows release asset(s):"
+          ls -la release-assets
+
+      - name: Upload Windows assets to release
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
+        run: |
+          gh release upload "$TAG" release-assets/* \
+            --repo "${{ github.repository }}" \
+            --clobber
+          echo "Uploaded Windows assets to release $TAG"
+
+  checksums:
+    needs: [resolve-tag, build]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
+        run: |
+          mkdir assets
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --dir assets \
+            --pattern '*.deb' \
+            --pattern '*.rpm' \
+            --pattern '*.AppImage' \
+            --pattern '*.dmg' \
+            --pattern '*.exe' \
+            --pattern '*.msi' \
+            --pattern '*.nsis.zip'
+
+      - name: Generate checksums
+        run: |
+          cd assets
+          sha256sum * | sort -k2 > ../checksums.txt
+          echo "Generated checksums:"
+          cat ../checksums.txt
+
+      - name: Upload checksums to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
+        run: |
+          gh release upload "$TAG" checksums.txt \
+            --repo "${{ github.repository }}" \
+            --clobber

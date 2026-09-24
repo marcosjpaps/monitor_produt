@@ -1,0 +1,383 @@
+{
+  "sourceFingerprint": "de8e548ec9688eb24c6155798f0258dd9c2a02fe2541c361b3b4bfb1c8c20a80",
+  "sourceFile": "src-tauri/src/database.rs",
+  "tables": [
+    {
+      "name": "flights",
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT PRIMARY KEY"
+        },
+        {
+          "name": "file_name",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "display_name",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "file_hash",
+          "type": "VARCHAR UNIQUE"
+        },
+        {
+          "name": "drone_model",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "drone_serial",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "aircraft_name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "battery_serial",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "start_time",
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "name": "end_time",
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "name": "duration_secs",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "total_distance",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "max_altitude",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "max_speed",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "home_lat",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "home_lon",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "point_count",
+          "type": "INTEGER"
+        },
+        {
+          "name": "photo_count",
+          "type": "INTEGER"
+        },
+        {
+          "name": "video_count",
+          "type": "INTEGER"
+        },
+        {
+          "name": "cycle_count",
+          "type": "INTEGER"
+        },
+        {
+          "name": "imported_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "notes",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "color",
+          "type": "VARCHAR DEFAULT '#7dd3fc'"
+        }
+      ]
+    },
+    {
+      "name": "telemetry",
+      "columns": [
+        {
+          "name": "flight_id",
+          "type": "BIGINT NOT NULL"
+        },
+        {
+          "name": "timestamp_ms",
+          "type": "BIGINT NOT NULL"
+        },
+        {
+          "name": "latitude",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "longitude",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "altitude",
+          "type": "FLOAT"
+        },
+        {
+          "name": "height",
+          "type": "FLOAT"
+        },
+        {
+          "name": "vps_height",
+          "type": "FLOAT"
+        },
+        {
+          "name": "altitude_abs",
+          "type": "FLOAT"
+        },
+        {
+          "name": "speed",
+          "type": "FLOAT"
+        },
+        {
+          "name": "velocity_x",
+          "type": "FLOAT"
+        },
+        {
+          "name": "velocity_y",
+          "type": "FLOAT"
+        },
+        {
+          "name": "velocity_z",
+          "type": "FLOAT"
+        },
+        {
+          "name": "pitch",
+          "type": "FLOAT"
+        },
+        {
+          "name": "roll",
+          "type": "FLOAT"
+        },
+        {
+          "name": "yaw",
+          "type": "FLOAT"
+        },
+        {
+          "name": "gimbal_pitch",
+          "type": "FLOAT"
+        },
+        {
+          "name": "gimbal_roll",
+          "type": "FLOAT"
+        },
+        {
+          "name": "gimbal_yaw",
+          "type": "FLOAT"
+        },
+        {
+          "name": "battery_percent",
+          "type": "INTEGER"
+        },
+        {
+          "name": "battery_voltage",
+          "type": "FLOAT"
+        },
+        {
+          "name": "battery_current",
+          "type": "FLOAT"
+        },
+        {
+          "name": "battery_temp",
+          "type": "FLOAT"
+        },
+        {
+          "name": "cell_voltages",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "flight_mode",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "gps_signal",
+          "type": "INTEGER"
+        },
+        {
+          "name": "satellites",
+          "type": "INTEGER"
+        },
+        {
+          "name": "rc_signal",
+          "type": "INTEGER"
+        },
+        {
+          "name": "rc_uplink",
+          "type": "INTEGER"
+        },
+        {
+          "name": "rc_downlink",
+          "type": "INTEGER"
+        },
+        {
+          "name": "rc_aileron",
+          "type": "FLOAT"
+        },
+        {
+          "name": "rc_elevator",
+          "type": "FLOAT"
+        },
+        {
+          "name": "rc_throttle",
+          "type": "FLOAT"
+        },
+        {
+          "name": "rc_rudder",
+          "type": "FLOAT"
+        },
+        {
+          "name": "is_photo",
+          "type": "BOOLEAN"
+        },
+        {
+          "name": "is_video",
+          "type": "BOOLEAN"
+        }
+      ]
+    },
+    {
+      "name": "keychains",
+      "columns": [
+        {
+          "name": "file_hash",
+          "type": "VARCHAR PRIMARY KEY"
+        },
+        {
+          "name": "encryption_key",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "fetched_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    {
+      "name": "flight_tags",
+      "columns": [
+        {
+          "name": "flight_id",
+          "type": "BIGINT NOT NULL"
+        },
+        {
+          "name": "tag",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "tag_type",
+          "type": "VARCHAR NOT NULL DEFAULT 'auto'"
+        }
+      ]
+    },
+    {
+      "name": "settings",
+      "columns": [
+        {
+          "name": "key",
+          "type": "VARCHAR PRIMARY KEY"
+        },
+        {
+          "name": "value",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    {
+      "name": "equipment_names",
+      "columns": [
+        {
+          "name": "serial",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "equipment_type",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "display_name",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    {
+      "name": "flight_messages",
+      "columns": [
+        {
+          "name": "flight_id",
+          "type": "BIGINT NOT NULL"
+        },
+        {
+          "name": "timestamp_ms",
+          "type": "BIGINT NOT NULL"
+        },
+        {
+          "name": "message_type",
+          "type": "VARCHAR NOT NULL"
+        },
+        {
+          "name": "message",
+          "type": "VARCHAR NOT NULL"
+        }
+      ]
+    },
+    {
+      "name": "flight_customizations",
+      "columns": [
+        {
+          "name": "file_hash",
+          "type": "VARCHAR PRIMARY KEY"
+        },
+        {
+          "name": "display_name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "notes",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "color",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "manual_tags",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    {
+      "name": "sync_blacklist",
+      "columns": [
+        {
+          "name": "file_hash",
+          "type": "VARCHAR PRIMARY KEY"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeredasDrone - Mapa de Aplicação & Atributos</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Shapefile Parser (shp.js) -->
+  <script src="shp.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #090e17;
+      --bg-panel: #131d2e;
+      --bg-card: #1c2a3f;
+      --bg-hover: #263852;
+      --border: #2c3f58;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --warning: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* TOP HEADER */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      background: linear-gradient(135deg, #0284c7, #10b981);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .brand-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .brand-title p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .btn-primary { background: var(--primary); color: #090e17; }
+    .btn-primary:hover { background: var(--primary-hover); color: white; }
+    .btn-success { background: var(--accent); color: white; }
+    .btn-success:hover { background: var(--accent-hover); }
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--text-muted);
+    }
+
+    /* KPI BAR */
+    .kpi-bar {
+      background: #0d1522;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 18px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-panel);
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      min-width: 140px;
+    }
+    .kpi-card i { color: var(--primary); }
+    .kpi-meta { display: flex; flex-direction: column; }
+    .kpi-lbl { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .kpi-num { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+
+    /* TOP SECTION COLLAPSIBLE */
+    .top-section {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+      max-height: 180px;
+      overflow: hidden;
+      z-index: 1000;
+    }
+    .top-section.collapsed {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* TOP RESTORE TAB (WHEN TOP IS COLLAPSED) */
+    .top-restore-tab {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 4px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      cursor: pointer;
+      z-index: 1200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .top-restore-tab:hover {
+      background: #0284c7;
+      color: #ffffff;
+      padding-top: 6px;
+    }
+    body.top-collapsed .top-restore-tab {
+      display: inline-flex;
+    }
+
+    /* WORKSPACE BODY */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* MAP WRAPPER */
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      min-height: 200px;
+    }
+    #map { width: 100%; height: 100%; }
+
+    /* FLOATING CONTROLS */
+    .floating-bar {
+      position: absolute;
+      top: 12px;
+      left: 60px;
+      z-index: 900;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 5px 12px;
+      border-radius: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.78rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: all 0.25s ease;
+    }
+    .floating-bar:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .floating-bar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* MAP HUD BAR (LIVE COORDINATES & SCALE) */
+    .map-hud {
+      position: absolute;
+      bottom: 12px;
+      left: 100px;
+      z-index: 800;
+      background: rgba(15, 23, 42, 0.84);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      user-select: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    }
+    .map-hud .hud-sep { color: rgba(255,255,255,0.2); }
+    .map-hud #hudCoords { color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .map-hud #hudZoom { color: #f59e0b; font-weight: 600; }
+    .map-hud #hudVisibleFlights { color: #10b981; font-weight: 600; }
+
+    /* LEAFLET CONTROLS MODERN DARK THEME */
+    .leaflet-bar {
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+    }
+    .leaflet-bar a {
+      background-color: rgba(15, 23, 42, 0.92) !important;
+      color: #38bdf8 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+    }
+    .leaflet-bar a:hover {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+    }
+    .leaflet-control-layers {
+      background: rgba(15, 23, 42, 0.92) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
+      color: #f8fafc !important;
+      border-radius: 8px !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.7) !important;
+      font-size: 0.78rem !important;
+      padding: 6px 10px !important;
+    }
+    .leaflet-control-scale-line {
+      background: rgba(15, 23, 42, 0.85) !important;
+      backdrop-filter: blur(8px) !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      border-top: none !important;
+      color: #38bdf8 !important;
+      font-weight: 700 !important;
+      font-size: 0.65rem !important;
+      padding: 2px 6px !important;
+      border-radius: 0 0 4px 4px !important;
+    }
+
+
+    /* ATTRIBUTE TABLE PANEL (BOTTOM DOCK) */
+    .attribute-panel {
+      height: 280px;
+      background: var(--bg-panel);
+      border-top: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: height 0.25s ease;
+      z-index: 850;
+    }
+    .attribute-panel.collapsed { height: 38px; }
+
+    .panel-header {
+      background: #111a2a;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+    }
+
+    .panel-filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-filters select, .panel-filters input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      outline: none;
+    }
+    .panel-filters select:focus, .panel-filters input:focus {
+      border-color: var(--primary);
+    }
+
+    /* TABLE STYLES */
+    .table-scroll {
+      flex: 1;
+      overflow: auto;
+    }
+    table.attr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.76rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    table.attr-table thead {
+      position: sticky;
+      top: 0;
+      background: #162235;
+      z-index: 10;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    table.attr-table th {
+      padding: 8px 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      letter-spacing: 0.5px;
+    }
+    table.attr-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(44, 63, 88, 0.5);
+    }
+    table.attr-table tr {
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    table.attr-table tr:hover {
+      background: var(--bg-hover);
+    }
+    table.attr-table tr.active {
+      background: #1e3a5f;
+    }
+
+    /* BADGES */
+    .tag-drone {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.7rem;
+    }
+    .val-spray {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .val-area {
+      color: #10b981;
+      font-weight: 700;
+    }
+    .tag-farm {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+    .farm-tooltip {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #f59e0b;
+      color: #f8fafc;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      padding: 5px 8px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 290px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #toast.show { opacity: 1; }
+
+    /* DRAG OVERLAY */
+    #dropZone {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(2, 132, 199, 0.88);
+      z-index: 3000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    #dropZone.active { display: flex; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="loginOverlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:linear-gradient(135deg, #090e17 0%, #0d1522 50%, #06101e 100%); z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#131d2e; border:1px solid rgba(56,189,248,0.25); border-radius:16px; width:100%; max-width:400px; padding:32px 28px; box-shadow:0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(56,189,248,0.1); text-align:center;">
+      <div style="width:60px; height:60px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#38bdf8;">
+        <i data-lucide="plane" style="width:30px; height:30px;"></i>
+      </div>
+      
+      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">VeredasDrone</h2>
+      <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:24px;">Painel de Aplicação & Atributos</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" style="text-align:left;">
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; text-transform:uppercase;">E-mail de Acesso</label>
+          <div style="position:relative;">
+            <i data-lucide="mail" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#64748b;"></i>
+            <input type="email" id="txtEmail" required placeholder="marcos220896antonio@gmail.com" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 12px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; text-transform:uppercase;">Senha</label>
+          <div style="position:relative;">
+            <i data-lucide="lock" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#64748b;"></i>
+            <input type="password" id="txtPassword" required placeholder="••••••••" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 36px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
+            <button type="button" onclick="togglePasswordVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:#64748b; cursor:pointer; padding:4px; display:flex; align-items:center;">
+              <i id="eyeIcon" data-lucide="eye" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginError" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:8px 12px; border-radius:8px; font-size:0.78rem; margin-bottom:16px; text-align:center;">
+          E-mail ou senha incorretos.
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:0.75rem; color:#94a3b8;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkRemember" checked style="accent-color:#0284c7;">
+            <span>Lembrar meu acesso</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnLoginSubmit" style="width:100%; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:white; border:none; padding:11px; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 15px rgba(2,132,199,0.35);">
+          <i data-lucide="log-in" style="width:18px; height:18px;"></i>
+          <span>Entrar no Sistema</span>
+        </button>
+      </form>
+      
+      <div style="margin-top:22px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.72rem; color:#64748b;">
+        VeredasDrone • Acesso Restrito & Seguro
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast">Notificação</div>
+
+  <!-- DRAG & DROP OVERLAY -->
+  <div id="dropZone">
+    <i data-lucide="upload-cloud" style="width: 56px; height: 56px;"></i>
+    <h2 style="margin-top: 10px;">Solte arquivos KML ou Shapefile (.zip) aqui</h2>
+    <p>Rastros de voo e mapas de talhões serão lidos e vinculados automaticamente.</p>
+  </div>
+
+  <!-- TOP COLLAPSIBLE CONTAINER (HEADER + KPIS) -->
+  <div id="topSection" class="top-section">
+    <!-- TOP BAR -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="plane"></i>
+        </div>
+        <div class="brand-title">
+          <h1>VeredasDrone - Mapa de Aplicação & Atributos</h1>
+          <p>Unificação de rastros de pulverização (T100, T70) e consolidação de área e calda</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <input type="file" id="fileInput" multiple accept=".kml" style="display: none;">
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+        <input type="file" id="farmFileInput" multiple accept=".zip,.shp,.dbf,.prj,.kml,.csv" style="display: none;">
+        <input type="file" id="dbfOnlyInput" accept=".dbf" style="display: none;">
+        <input type="file" id="csvOnlyInput" accept=".csv,.txt" style="display: none;">
+
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+          <i data-lucide="file-plus"></i> Abrir KMLs
+        </button>
+
+        <button class="btn btn-outline" onclick="document.getElementById('folderInput').click()">
+          <i data-lucide="folder-open"></i> Carregar Pasta
+        </button>
+
+        <button class="btn btn-outline" style="color:#f59e0b; border-color:rgba(245,158,11,0.5);" onclick="document.getElementById('farmFileInput').click()" title="Importar Shapefile (.zip ou .shp + .dbf) ou KML de Talhões e Fazendas">
+          <i data-lucide="map-pin"></i> Importar Shapefile / KML
+        </button>
+
+        <button class="btn btn-outline" id="btnManageFarms" style="display:none; color:#a855f7; border-color:rgba(168,85,247,0.5);" onclick="openFarmModal()" title="Gerenciar talhões carregados">
+          <i data-lucide="layers"></i> <span id="lblFarmCount">Talhões (0)</span>
+        </button>
+
+        <button class="btn btn-success" onclick="exportMergedKML()">
+          <i data-lucide="download"></i> Exportar KML Unificado
+        </button>
+
+        <button class="btn btn-primary" onclick="exportCSV()">
+          <i data-lucide="sheet"></i> Exportar Planilha CSV
+        </button>
+
+        <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="deleteSelected()" title="Exclui todas as rotas com caixas marcadas">
+          <i data-lucide="trash-2"></i> Excluir Marcadas
+        </button>
+
+        <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="clearAll()" title="Limpa todas as rotas do mapa">
+          <i data-lucide="trash"></i> Limpar Mapa
+        </button>
+
+        <button class="btn btn-outline" style="color:#10b981; border-color:rgba(168,185,129,0.5);" onclick="restoreAll()" title="Restaura rotas excluídas">
+          <i data-lucide="rotate-ccw"></i> Restaurar Rotas
+        </button>
+
+        <!-- BADGE DE SINCRONIZAÇÃO NEON -->
+        <button class="btn btn-outline" id="neonSyncBadge" onclick="NeonSync.syncAll(true)" title="Status de conexão com o banco Neon PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
+          <span id="neonSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          <span id="neonSyncText">Nuvem Neon</span>
+        </button>
+
+        <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
+          <span style="font-size:0.72rem; color:#94a3b8; display:flex; align-items:center; gap:5px;">
+            <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
+            <span style="color:#e2e8f0; font-weight:600;">marcos220896antonio@gmail.com</span>
+          </span>
+          <button class="btn btn-outline" style="padding:2px 6px; font-size:0.68rem; color:#f87171; border-color:rgba(239,68,68,0.4);" onclick="logout()" title="Encerrar sessão">
+            <i data-lucide="log-out" style="width:11px; height:11px;"></i> Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI SUMMARY BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-card">
+        <i data-lucide="layers"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Voos Selecionados</span>
+          <span class="kpi-num" id="kpiFlights">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="maximize-2" style="color: #10b981;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Total (ha)</span>
+          <span class="kpi-num" id="kpiArea" style="color: #10b981;">0.00 ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="droplet" style="color: #38bdf8;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Calda Total (Spray)</span>
+          <span class="kpi-num" id="kpiSpray" style="color: #38bdf8;">0.00 L</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="gauge" style="color: #f59e0b;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Taxa Média</span>
+          <span class="kpi-num" id="kpiRate">0.0 L/ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="split" style="color: #06b6d4;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Faixa Média</span>
+          <span class="kpi-num" id="kpiSpacing" style="color: #06b6d4;">0.00 m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="arrow-up" style="color: #eab308;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Altura Média</span>
+          <span class="kpi-num" id="kpiHeight" style="color: #eab308;">0.0 m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="zap" style="color: #f97316;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Velocidade Média</span>
+          <span class="kpi-num" id="kpiSpeed" style="color: #f97316;">0.0 km/h</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="clock" style="color: #a855f7;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Tempo de Voo Total</span>
+          <span class="kpi-num" id="kpiTime">0h 00m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="navigation" style="color: #ec4899;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Pontos GPS</span>
+          <span class="kpi-num" id="kpiPoints">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP RESTORE TAB (WHEN TOP IS HIDDEN) -->
+  <div id="topRestoreTab" class="top-restore-tab" onclick="toggleTopPanel()" title="Clique para expandir o cabeçalho e estatísticas">
+    <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
+    <span>Mostrar Topo</span>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+    
+    <!-- MAP WRAPPER -->
+    <div class="map-wrapper" id="mapWrapper">
+      <div id="map"></div>
+
+      <!-- MAP TELEMETRY HUD -->
+      <div id="mapHud" class="map-hud">
+        <span id="hudCoords"><i data-lucide="crosshair" style="width:11px; height:11px;"></i> -17.75000°, -46.15000°</span>
+        <span class="hud-sep">|</span>
+        <span>Zoom: <span id="hudZoom">12</span></span>
+        <span class="hud-sep">|</span>
+        <span>Voos: <span id="hudVisibleFlights">0</span></span>
+      </div>
+
+      <!-- MAP FLOATING CONTROLS -->
+      <div class="floating-bar">
+        <button class="btn btn-outline" id="btnToggleTop" onclick="toggleTopPanel()" title="Recolher / Expandir cabeçalho e estatísticas" style="padding: 2px 8px; font-size: 0.72rem; color: #94a3b8; border-color: rgba(148,163,184,0.35);">
+          <i data-lucide="chevrons-up" id="iconToggleTop" style="width:12px; height:12px;"></i> <span id="lblToggleTop">Ocultar Topo</span>
+        </button>
+        <span style="color: var(--border);">|</span>
+        <button class="btn btn-outline" id="btnFullscreen" onclick="toggleFullscreenMap()" title="Alternar visualização em tela cheia do mapa" style="padding: 2px 8px; font-size: 0.72rem; color: #38bdf8; border-color: rgba(56,189,248,0.45);">
+          <i data-lucide="maximize" id="iconFullscreen" style="width:12px; height:12px;"></i> <span id="lblFullscreen">Tela Cheia</span>
+        </button>
+        <span style="color: var(--border);">|</span>
+        <button class="btn btn-outline" id="btnAreaSelect" onclick="toggleAreaSelectMode()" title="Clique para ativar a seleção por retângulo no mapa e excluir/marcar rotas da área" style="color:#38bdf8; border-color:rgba(56,189,248,0.5);">
+          <i data-lucide="scan"></i> <span id="lblAreaSelect">Selecionar por Área no Mapa</span>
+        </button>
+        <span style="color: var(--border);">|</span>
+        <label id="lblToggleFarms" style="display:none; cursor:pointer;">
+          <input type="checkbox" id="chkShowFarms" checked onchange="toggleFarmsVisibility()">
+          <span style="color:#f59e0b;"><b>Talhões</b></span>
+        </label>
+        <button class="btn btn-outline" id="btnZoomFarms" style="display:none; padding: 2px 8px; font-size: 0.72rem; color: #f59e0b; border-color: rgba(245,158,11,0.5);" onclick="zoomToFarms()" title="Enquadrar o mapa nos talhões">
+          <i data-lucide="map-pin"></i> Zoom Talhões
+        </button>
+        <span id="sepFarms" style="color: var(--border); display:none;">|</span>
+        <label>
+          <input type="checkbox" id="chkSwath" onchange="toggleSwath()">
+          <span><b>Faixa Real (Buffer)</b></span>
+        </label>
+        <span style="color: var(--border);">|</span>
+        <label>
+          <input type="checkbox" id="chkAll" checked onchange="toggleSelectAll(this.checked)">
+          <span>Selecionar Todos</span>
+        </label>
+        <span style="color: var(--border);">|</span>
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem;" onclick="zoomToAll()">
+          <i data-lucide="locate"></i> Enquadrar
+        </button>
+      </div>
+    </div>
+
+    <!-- ATTRIBUTE TABLE DOCK (BOTTOM) -->
+    <div class="attribute-panel" id="attrPanel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <i data-lucide="table"></i>
+          <span>TABELA DE ATRIBUTOS DOS RASTROS</span>
+          <span id="lblCount" style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(0 voos)</span>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="panel-filters">
+          <select id="selDrone" onchange="applyFilters()">
+            <option value="">Todos os Drones</option>
+          </select>
+
+          <!-- MULTI-DATE SELECTOR -->
+          <div class="date-dropdown-wrapper" style="position: relative;">
+            <button class="btn btn-outline" id="btnDateFilter" onclick="toggleDateDropdown(event)" style="padding: 4px 10px; font-size: 0.75rem; color: #f8fafc; border-color: var(--border);">
+              <i data-lucide="calendar"></i> <span id="lblDateFilter">Todas as Datas</span> ▾
+            </button>
+            <div id="datePopover" class="date-popover" style="display:none; position:absolute; bottom:36px; left:0; width:280px; max-height:360px; background:#131d2e; border:1px solid var(--border); border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,0.8); z-index:2500; padding:10px; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; padding-bottom:6px; border-bottom:1px solid var(--border);">
+                <span style="font-weight:700; color:var(--primary);">Filtrar por Datas</span>
+                <div style="display:flex; gap:8px;">
+                  <a href="#" style="color:var(--primary); text-decoration:none;" onclick="selectAllDates(true); return false;">Todas</a>
+                  <span style="color:#64748b;">|</span>
+                  <a href="#" style="color:var(--text-muted); text-decoration:none;" onclick="selectAllDates(false); return false;">Nenhuma</a>
+                </div>
+              </div>
+              <input type="text" id="txtSearchDates" placeholder="Buscar data..." oninput="filterDateCheckboxList()" style="background:var(--bg-dark); border:1px solid var(--border); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem; width:100%;">
+              <div id="dateCheckboxList" style="flex:1; overflow-y:auto; max-height:220px; display:flex; flex-direction:column; gap:4px; font-size:0.78rem;">
+                <!-- Preenchido dinamicamente com checkboxes -->
+              </div>
+            </div>
+          </div>
+
+          <select id="selFarm" onchange="onFarmSelectChange()" style="max-width: 150px;">
+            <option value="">Todas as Fazendas</option>
+          </select>
+
+          <select id="selTalhao" onchange="applyFilters()" style="max-width: 130px;">
+            <option value="">Todos os Talhões</option>
+          </select>
+
+          <select id="selPilot" onchange="applyFilters()">
+            <option value="">Todos os Pilotos</option>
+          </select>
+
+          <input type="text" id="txtSearch" placeholder="Buscar arquivo..." oninput="applyFilters()" style="width: 140px;">
+
+          <button class="btn btn-outline" style="padding: 2px 6px;" onclick="togglePanelSize()" title="Minimizar / Expandir Tabela">
+            <i data-lucide="chevron-up" id="btnToggleIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLE BODY -->
+      <div class="table-scroll">
+        <table class="attr-table">
+          <thead>
+            <tr>
+              <th style="width: 36px; text-align: center;">
+                <input type="checkbox" id="headerChkAll" checked onchange="toggleSelectAll(this.checked)">
+              </th>
+              <th style="width: 44px; text-align: center; color: #ef4444;">Excluir</th>
+              <th>Data / Hora</th>
+              <th style="color:#f59e0b;">Fazenda</th>
+              <th style="color:#f59e0b;">Talhão</th>
+              <th style="color:#a3e635;">Variedade</th>
+              <th>Drone (Aeronave)</th>
+              <th>Piloto</th>
+              <th style="color:#38bdf8;">Calda (Spray Amount)</th>
+              <th style="color:#10b981;">Área Tarefa</th>
+              <th>Taxa Real</th>
+              <th>Faixa (Route Spacing)</th>
+              <th>Altura (Height)</th>
+              <th>Velocidade</th>
+              <th>Tempo de Voo</th>
+              <th>Modo</th>
+              <th>ID Controladora</th>
+              <th>Arquivo</th>
+            </tr>
+          </thead>
+          <tbody id="attrTableBody">
+            <!-- Linhas geradas via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL DE GERENCIAMENTO DE TALHÕES -->
+  <div id="farmModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:4000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:#131d2e; border:1px solid var(--border); border-radius:12px; width:92%; max-width:720px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 50px rgba(0,0,0,0.8); overflow:hidden;">
+      <div style="padding:12px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#0d1522;">
+        <div style="display:flex; align-items:center; gap:8px; color:#f59e0b; font-weight:700; font-size:0.95rem;">
+          <i data-lucide="map-pin"></i> <span>Fazendas e Talhões Importados (Shapefile / KML)</span>
+        </div>
+        <button onclick="closeFarmModal()" style="background:transparent; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <div style="padding:10px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; background:rgba(255,255,255,0.02);">
+        <div id="farmModalSummary" style="font-size:0.8rem; color:#e2e8f0;">
+          0 talhões cadastrados
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#f59e0b; border-color:rgba(245,158,11,0.5);" onclick="document.getElementById('farmFileInput').click()" title="Importar Shapefile (.zip ou .shp + .dbf) ou KML">
+            <i data-lucide="plus"></i> Importar SHP / KML
+          </button>
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#38bdf8; border-color:rgba(56,189,248,0.5);" onclick="document.getElementById('dbfOnlyInput').click()" title="Vincular arquivo .dbf de atributos aos talhões">
+            <i data-lucide="database"></i> Vincular .DBF
+          </button>
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#10b981; border-color:rgba(16,185,129,0.5);" onclick="document.getElementById('csvOnlyInput').click()" title="Vincular planilha CSV com atributos">
+            <i data-lucide="sheet"></i> Vincular CSV
+          </button>
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="clearAllFarms()">
+            <i data-lucide="trash-2"></i> Limpar
+          </button>
+        </div>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding:10px 18px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.76rem;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border); color:#94a3b8; text-align:left;">
+              <th style="padding:6px;">Fazenda</th>
+              <th style="padding:6px;">Talhão</th>
+              <th style="padding:6px;">Zona</th>
+              <th style="padding:6px;">Variedade</th>
+              <th style="padding:6px;">Plantio</th>
+              <th style="padding:6px;">Área (ha)</th>
+              <th style="padding:6px; text-align:center;">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="farmModalTableBody">
+            <!-- Linhas de talhões -->
+          </tbody>
+        </table>
+      </div>
+
+      <div style="padding:10px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; background:#0d1522;">
+        <button class="btn btn-outline" onclick="closeFarmModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT DE DADOS PRÉ-CARREGADOS -->
+  <script src="dados_voos.js"></script>
+
+  <script>
+    // AUTENTICAÇÃO E CONTROLE DE ACESSO
+    const AUTH_CONFIG = {
+      email: "marcos220896antonio@gmail.com",
+      pass: "Veredas*202026"
+    };
+
+    function checkAuth() {
+      const isAuth = localStorage.getItem('agrodrone_auth') || sessionStorage.getItem('agrodrone_auth');
+      const overlay = document.getElementById('loginOverlay');
+      const userBadge = document.getElementById('userBadgeContainer');
+      if (isAuth === 'true') {
+        if (overlay) overlay.style.display = 'none';
+        if (userBadge) userBadge.style.display = 'flex';
+      } else {
+        if (overlay) overlay.style.display = 'flex';
+        if (userBadge) userBadge.style.display = 'none';
+        setTimeout(() => {
+          const el = document.getElementById('txtEmail');
+          if (el) el.focus();
+        }, 150);
+      }
+    }
+
+    function handleLogin(e) {
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('txtEmail').value.trim().toLowerCase();
+      const passInput = document.getElementById('txtPassword').value.trim();
+      const remember = document.getElementById('chkRemember').checked;
+      const errorBox = document.getElementById('loginError');
+
+      if (emailInput === AUTH_CONFIG.email.toLowerCase() && passInput === AUTH_CONFIG.pass) {
+        if (errorBox) errorBox.style.display = 'none';
+        if (remember) {
+          localStorage.setItem('agrodrone_auth', 'true');
+          localStorage.setItem('agrodrone_user', emailInput);
+        } else {
+          sessionStorage.setItem('agrodrone_auth', 'true');
+          sessionStorage.setItem('agrodrone_user', emailInput);
+        }
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) overlay.style.display = 'none';
+        const userBadge = document.getElementById('userBadgeContainer');
+        if (userBadge) userBadge.style.display = 'flex';
+        showToast("Login realizado com sucesso! Bem-vindo ao VeredasDrone.");
+        if (window.lucide) lucide.createIcons();
+        if (window.NeonSync) NeonSync.syncAll(true);
+      } else {
+        if (errorBox) {
+          errorBox.style.display = 'block';
+          errorBox.innerText = "E-mail ou senha incorretos. Verifique suas credenciais.";
+        }
+      }
+    }
+
+    function logout() {
+      if (!confirm("Deseja realmente sair do sistema?")) return;
+      localStorage.removeItem('agrodrone_auth');
+      localStorage.removeItem('agrodrone_user');
+      sessionStorage.removeItem('agrodrone_auth');
+      sessionStorage.removeItem('agrodrone_user');
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.style.display = 'flex';
+      const userBadge = document.getElementById('userBadgeContainer');
+      if (userBadge) userBadge.style.display = 'none';
+      const pass = document.getElementById('txtPassword');
+      if (pass) pass.value = '';
+      showToast("Sessão encerrada.");
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('txtPassword');
+      const eye = document.getElementById('eyeIcon');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (eye) eye.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        if (eye) eye.setAttribute('data-lucide', 'eye');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // CORES DOS DRONES
+    const DRONE_COLORS = {
+      'DAGRO T100': '#38bdf8',
+      't70brabo': '#f97316',
+      'T100 Daniel 2': '#10b981',
+      'T100 daniel': '#a855f7',
+      'DEFAULT': '#eab308'
+    };
+
+    function getDroneColor(name) {
+      if (!name) return DRONE_COLORS['DEFAULT'];
+      for (const [k, v] of Object.entries(DRONE_COLORS)) {
+        if (name.toLowerCase().includes(k.toLowerCase())) return v;
+      }
+      return DRONE_COLORS['DEFAULT'];
+    }
+
+    // ESTADO E PERSISTÊNCIA DE EXCLUSÃO
+    let rawLoadedFlights = [];
+    let flights = [];
+    let filteredFlights = [];
+    let selectedIds = new Set();
+    let mapLayers = {};
+    let showSwathBuffer = false;
+    let deletedIds = new Set(JSON.parse(localStorage.getItem('agrodrone_deleted_ids') || '[]'));
+
+    // FILTRO DE MULTI-DATAS
+    let allDatesList = [];
+    let selectedDates = new Set();
+
+    // SELEÇÃO POR ÁREA NO MAPA
+    let isAreaSelectActive = false;
+    let activeAreaRect = null;
+    let areaStartLatLng = null;
+
+    // FAZENDAS E TALHÕES
+    let savedFarms = JSON.parse(localStorage.getItem('agrodrone_saved_farms') || '[]');
+    let farmLayers = {};
+    let showFarms = true;
+
+    // ==============================================================
+    // INTEGRAÇÃO NUVEM COM NEON POSTGRESQL (VIA VERCEL API /api/...)
+    // ==============================================================
+    function setNeonBadge(status, text) {
+      const badge = document.getElementById('neonSyncBadge');
+      const dot = document.getElementById('neonSyncDot');
+      const label = document.getElementById('neonSyncText');
+      if (!badge || !dot || !label) return;
+
+      if (status === 'syncing') {
+        dot.style.background = '#f59e0b';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        badge.style.color = '#f59e0b';
+        label.innerText = text || 'Sincronizando...';
+      } else if (status === 'synced') {
+        dot.style.background = '#10b981';
+        badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        badge.style.color = '#10b981';
+        label.innerText = text || 'Nuvem Conectada';
+      } else {
+        dot.style.background = '#ef4444';
+        badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        badge.style.color = '#ef4444';
+        label.innerText = text || 'Offline';
+      }
+    }
+
+    async function apiFetchDeletedIds() {
+      try {
+        const resp = await fetch('/api/voos?type=deletados');
+        if (resp.ok) {
+          const data = await resp.json();
+          return data.deletedIds || [];
+        }
+      } catch (e) {
+        console.warn("API /api/voos inacessível:", e);
+      }
+      return [];
+    }
+
+    async function apiFetchFarms() {
+      try {
+        const resp = await fetch('/api/talhoes');
+        if (resp.ok) {
+          const data = await resp.json();
+          return data.farms || [];
+        }
+      } catch (e) {
+        console.warn("API /api/talhoes inacessível:", e);
+      }
+      return [];
+    }
+
+    async function apiDeleteFlights(ids) {
+      if (!ids || ids.length === 0) return;
+      setNeonBadge('syncing', 'Salvando exclusão...');
+      try {
+        for (let i = 0; i < ids.length; i += 100) {
+          const slice = ids.slice(i, i + 100);
+          await fetch('/api/voos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: slice })
+          });
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar exclusão:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiRestoreFlights(ids) {
+      if (!ids || ids.length === 0) return;
+      setNeonBadge('syncing', 'Restaurando...');
+      try {
+        for (let i = 0; i < ids.length; i += 100) {
+          const slice = ids.slice(i, i + 100);
+          await fetch('/api/voos?action=restaurar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: slice })
+          });
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao restaurar voos:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiSaveFarms(farmsList) {
+      if (!farmsList || farmsList.length === 0) return;
+      setNeonBadge('syncing', 'Salvando talhões...');
+      try {
+        for (let i = 0; i < farmsList.length; i += 15) {
+          const slice = farmsList.slice(i, i + 15);
+          await fetch('/api/talhoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ farms: slice })
+          });
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar talhões:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    async function apiDeleteFarm(id) {
+      if (!id) return;
+      fetch(`/api/talhoes?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+    }
+
+    async function apiClearAllFarms() {
+      fetch('/api/talhoes?action=clear_all', { method: 'DELETE' }).catch(() => {});
+    }
+
+    async function apiSaveFlights(flightsList) {
+      if (!flightsList || flightsList.length === 0) return;
+      setNeonBadge('syncing', 'Salvando voos...');
+      try {
+        for (let i = 0; i < flightsList.length; i += 10) {
+          const slice = flightsList.slice(i, i + 10);
+          await fetch('/api/voos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ flights: slice })
+          });
+        }
+        setNeonBadge('synced', 'Nuvem Conectada');
+      } catch (e) {
+        console.error("Erro ao salvar novos voos:", e);
+        setNeonBadge('error', 'Erro Sync');
+      }
+    }
+
+    let isSyncingNeon = false;
+    async function syncWithNeon(showFeedback = false) {
+      if (isSyncingNeon) return;
+      isSyncingNeon = true;
+      setNeonBadge('syncing', 'Conectando...');
+
+      try {
+        // 1. Sincroniza voos excluídos da nuvem
+        const cloudDeletedIds = await apiFetchDeletedIds();
+
+        // Se haviam exclusões locais que a nuvem ainda não tem, envia
+        const localDeleted = Array.from(deletedIds);
+        const toUpload = localDeleted.filter(id => !cloudDeletedIds.includes(id));
+        if (toUpload.length > 0) {
+          await apiDeleteFlights(toUpload);
+        }
+
+        // Aplica exclusões da nuvem localmente
+        let changed = false;
+        cloudDeletedIds.forEach(id => {
+          if (!deletedIds.has(id)) {
+            deletedIds.add(id);
+            changed = true;
+          }
+        });
+
+        if (changed || toUpload.length > 0) {
+          localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+          flights = flights.filter(f => !deletedIds.has(f.id));
+          filteredFlights = [...flights];
+          applyFilters();
+        }
+
+        // 2. Sincroniza talhões cadastrados na nuvem
+        const farmRows = await apiFetchFarms();
+        if (farmRows && farmRows.length > 0) {
+          let farmsUpdated = false;
+          farmRows.forEach(cf => {
+            const idx = savedFarms.findIndex(sf => (sf.id && sf.id === cf.id) || (sf.nomeFaz === cf.nomeFaz && sf.talhao === cf.talhao));
+            if (idx >= 0) {
+              savedFarms[idx] = cf;
+            } else {
+              savedFarms.push(cf);
+              farmsUpdated = true;
+            }
+          });
+          localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+          linkFlightsToFarms();
+          populateFarmFilterOptions();
+          renderFarmsOnMap();
+          renderTable();
+          updateFarmUI();
+        } else if (savedFarms.length > 0) {
+          await apiSaveFarms(savedFarms);
+        }
+
+        setNeonBadge('synced', 'Nuvem Conectada');
+        if (showFeedback && typeof showToast === 'function') {
+          showToast("Nuvem Neon conectada e sincronizada!");
+        }
+      } catch (err) {
+        console.error("Erro na sincronização Neon:", err);
+        setNeonBadge('error', 'Offline');
+        if (showFeedback && typeof showToast === 'function') {
+          showToast("Aviso: Falha ao sincronizar com Neon. Verifique conexão.");
+        }
+      } finally {
+        isSyncingNeon = false;
+      }
+    }
+
+    // Compatibilidade com chamadas NeonSync
+    window.NeonSync = {
+      syncAll: syncWithNeon,
+      saveDeletedIds: apiDeleteFlights,
+      restoreDeletedIds: apiRestoreFlights,
+      saveFarms: apiSaveFarms,
+      deleteFarm: apiDeleteFarm,
+      clearAllFarms: apiClearAllFarms,
+      saveFlights: apiSaveFlights
+    };
+
+
+
+    // MAPA COM SATÉLITE
+    const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 22, attribution: '&copy; Google'
+    });
+    const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 22, attribution: '&copy; Google'
+    });
+    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: '&copy; Esri'
+    });
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    });
+
+    const map = L.map('map', {
+      center: [-17.75, -46.15],
+      zoom: 12,
+      layers: [googleHybrid],
+      preferCanvas: true
+    });
+
+    L.control.layers({
+      "🛰️ Satélite Híbrido (Google)": googleHybrid,
+      "🛰️ Satélite Puro (Google)": googleSat,
+      "🛰️ Satélite (Esri World)": esriSat,
+      "🗺️ Mapa de Ruas (OSM)": osm
+    }, null, { position: 'topright' }).addTo(map);
+
+    // ESCALA GRÁFICA DO MAPA (MÉTRICA)
+    L.control.scale({ imperial: false, metric: true, position: 'bottomleft' }).addTo(map);
+
+    // TELEMETRIA E COORDENADAS AO VIVO NO HUD DO MAPA
+    map.on('mousemove', (e) => {
+      const el = document.getElementById('hudCoords');
+      if (el) {
+        el.innerHTML = `<i data-lucide="crosshair" style="width:11px; height:11px;"></i> ${e.latlng.lat.toFixed(5)}°, ${e.latlng.lng.toFixed(5)}°`;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+
+    map.on('zoomend', () => {
+      const el = document.getElementById('hudZoom');
+      if (el) el.innerText = map.getZoom();
+    });
+
+    const canvasRenderer = L.canvas({ padding: 0.5 });
+
+    // CARREGAMENTO
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkAuth();
+
+      if (window.PRELOADED_FLIGHTS && Array.isArray(window.PRELOADED_FLIGHTS) && window.PRELOADED_FLIGHTS.length > 0) {
+        initFlights(window.PRELOADED_FLIGHTS);
+        const activeCount = flights.length;
+        const delCount = deletedIds.size;
+        showToast(`${activeCount} voos carregados no mapa!` + (delCount > 0 ? ` (${delCount} excluídos ocultados)` : ''));
+      } else {
+        showToast("Selecione seus arquivos KML para carregar.");
+      }
+
+      setupDragAndDrop();
+      setupFileInputs();
+      updateFarmUI();
+
+      // Sincronização inicial com o banco Neon na Nuvem
+      if (window.NeonSync) {
+        NeonSync.syncAll();
+      }
+
+      // Re-sincronizar periodicamente ao retornar para a aba
+      window.addEventListener('focus', () => {
+        if (window.NeonSync) NeonSync.syncAll();
+      });
+    });
+
+    function initFlights(data) {
+      rawLoadedFlights = data;
+      flights = data.filter(f => !deletedIds.has(f.id));
+      filteredFlights = [...flights];
+      selectedIds = new Set(flights.map(f => f.id));
+
+      linkFlightsToFarms();
+      populateFilterOptions();
+      populateFarmFilterOptions();
+      renderFarmsOnMap();
+      renderMap();
+      renderTable();
+      updateStats();
+      updateFarmUI();
+      zoomToAll();
+    }
+
+    function populateFilterOptions() {
+      const droneSet = new Set();
+      const dateCounts = {};
+      const pilotSet = new Set();
+
+      flights.forEach(f => {
+        if (f.drone) droneSet.add(f.drone);
+        if (f.rawDate) {
+          dateCounts[f.rawDate] = (dateCounts[f.rawDate] || 0) + 1;
+        }
+        if (f.pilot) pilotSet.add(f.pilot);
+      });
+
+      const selDrone = document.getElementById('selDrone');
+      if (selDrone) {
+        selDrone.innerHTML = '<option value="">Todos os Drones</option>';
+        Array.from(droneSet).sort().forEach(d => {
+          selDrone.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+      }
+
+      const selPilot = document.getElementById('selPilot');
+      if (selPilot) {
+        selPilot.innerHTML = '<option value="">Todos os Pilotos</option>';
+        Array.from(pilotSet).sort().forEach(p => {
+          selPilot.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+      }
+
+      // Preenchimento da lista de Multi-Datas
+      allDatesList = Object.keys(dateCounts).sort().reverse().map(d => {
+        const p = d.split('-');
+        return {
+          rawDate: d,
+          displayDate: `${p[2]}/${p[1]}/${p[0]}`,
+          count: dateCounts[d]
+        };
+      });
+
+      const listContainer = document.getElementById('dateCheckboxList');
+      if (listContainer) {
+        listContainer.innerHTML = allDatesList.map(item => `
+          <label style="display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:4px; cursor:pointer; user-select:none;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+            <input type="checkbox" value="${item.rawDate}" ${isDateSelected(item.rawDate) ? 'checked' : ''} onchange="onDateCheckboxChanged('${item.rawDate}', this.checked)">
+            <span>${item.displayDate}</span>
+            <span style="margin-left:auto; color:var(--text-muted); font-size:0.7rem;">(${item.count})</span>
+          </label>
+        `).join('');
+      }
+
+      updateDateCheckboxesUI();
+    }
+
+    // MULTI-DATE CONTROLS
+    function toggleDateDropdown(event) {
+      if (event) event.stopPropagation();
+      const popover = document.getElementById('datePopover');
+      const isHidden = popover.style.display === 'none' || !popover.style.display;
+      popover.style.display = isHidden ? 'flex' : 'none';
+    }
+
+    function isDateSelected(d) {
+      if (selectedDates.size === 0) return true; // Nenhuma selecionada especificamente = todas selecionadas
+      if (selectedDates.has('__NONE__')) return false; // Nenhuma marcada explicitamente
+      return selectedDates.has(d);
+    }
+
+    function onDateCheckboxChanged(dateStr, isChecked) {
+      if (selectedDates.size === 0) {
+        // Estava no modo "todas"; inicializa com todas as datas disponíveis
+        allDatesList.forEach(item => selectedDates.add(item.rawDate));
+      } else if (selectedDates.has('__NONE__')) {
+        selectedDates.delete('__NONE__');
+      }
+
+      if (isChecked) {
+        selectedDates.add(dateStr);
+        if (selectedDates.size === allDatesList.length) {
+          selectedDates.clear(); // Se todas ficaram marcadas, volta ao estado vazio = todas
+        }
+      } else {
+        selectedDates.delete(dateStr);
+        if (selectedDates.size === 0) {
+          selectedDates.add('__NONE__');
+        }
+      }
+
+      updateDateCheckboxesUI();
+      applyFilters();
+    }
+
+    function selectAllDates(selectAll) {
+      if (selectAll) {
+        selectedDates.clear();
+      } else {
+        selectedDates.clear();
+        selectedDates.add('__NONE__');
+      }
+      updateDateCheckboxesUI();
+      applyFilters();
+    }
+
+    function updateDateCheckboxesUI() {
+      const checkboxes = document.querySelectorAll('#dateCheckboxList input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = isDateSelected(cb.value);
+      });
+
+      const lbl = document.getElementById('lblDateFilter');
+      if (selectedDates.size === 0) {
+        lbl.innerText = "Todas as Datas";
+      } else if (selectedDates.has('__NONE__')) {
+        lbl.innerText = "Nenhuma Data";
+      } else if (selectedDates.size === 1) {
+        const single = Array.from(selectedDates)[0];
+        const p = single.split('-');
+        lbl.innerText = `${p[2]}/${p[1]}/${p[0]}`;
+      } else {
+        lbl.innerText = `${selectedDates.size} Datas`;
+      }
+    }
+
+    function filterDateCheckboxList() {
+      const q = (document.getElementById('txtSearchDates').value || '').toLowerCase();
+      const rows = document.querySelectorAll('#dateCheckboxList label');
+      rows.forEach(r => {
+        const txt = r.textContent.toLowerCase();
+        r.style.display = txt.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    // Fecha o popover de datas ao clicar fora
+    document.addEventListener('click', (e) => {
+      const popover = document.getElementById('datePopover');
+      const btn = document.getElementById('btnDateFilter');
+      if (popover && popover.style.display === 'flex') {
+        if (!popover.contains(e.target) && !btn.contains(e.target)) {
+          popover.style.display = 'none';
+        }
+      }
+    });
+
+    function applyFilters() {
+      const selDrone = document.getElementById('selDrone');
+      const droneVal = selDrone ? selDrone.value.toLowerCase() : '';
+      const selPilot = document.getElementById('selPilot');
+      const pilotVal = selPilot ? selPilot.value.toLowerCase() : '';
+      const selFarm = document.getElementById('selFarm');
+      const farmVal = selFarm ? selFarm.value.toLowerCase() : '';
+      const selTalhao = document.getElementById('selTalhao');
+      const talhaoVal = selTalhao ? selTalhao.value.toLowerCase() : '';
+      const txtSearch = document.getElementById('txtSearch');
+      const searchVal = txtSearch ? txtSearch.value.toLowerCase().trim() : '';
+
+      filteredFlights = flights.filter(f => {
+        if (droneVal && (!f.drone || !f.drone.toLowerCase().includes(droneVal))) return false;
+        if (!isDateSelected(f.rawDate)) return false;
+        if (pilotVal && (!f.pilot || !f.pilot.toLowerCase().includes(pilotVal))) return false;
+        if (farmVal && (!f.farm || f.farm.toLowerCase() !== farmVal)) return false;
+        if (talhaoVal && (!f.talhao || f.talhao.toLowerCase() !== talhaoVal)) return false;
+        if (searchVal) {
+          const mId = f.id && f.id.toLowerCase().includes(searchVal);
+          const mDrone = f.drone && f.drone.toLowerCase().includes(searchVal);
+          const mPilot = f.pilot && f.pilot.toLowerCase().includes(searchVal);
+          const mFarm = f.farm && f.farm.toLowerCase().includes(searchVal);
+          const mTalhao = f.talhao && f.talhao.toLowerCase().includes(searchVal);
+          const mVar = f.variedade && f.variedade.toLowerCase().includes(searchVal);
+          if (!mId && !mDrone && !mPilot && !mFarm && !mTalhao && !mVar) return false;
+        }
+        return true;
+      });
+
+      selectedIds = new Set(filteredFlights.map(f => f.id));
+
+      renderMap();
+      renderTable();
+      updateStats();
+    }
+
+    function renderMap() {
+      Object.values(mapLayers).forEach(l => {
+        if (l.line) map.removeLayer(l.line);
+        if (l.swath) map.removeLayer(l.swath);
+      });
+      mapLayers = {};
+
+      filteredFlights.forEach(f => {
+        if (!selectedIds.has(f.id) || !f.coords || f.coords.length < 2) return;
+
+        const color = getDroneColor(f.drone);
+
+        const line = L.polyline(f.coords, {
+          color: color,
+          weight: 2.5,
+          opacity: 0.95,
+          renderer: canvasRenderer
+        });
+
+        const popupHtml = `
+          <div style="font-size:0.8rem; min-width:220px;">
+            <div style="font-weight:700; border-bottom:1px solid #334155; padding-bottom:4px; margin-bottom:6px; color:${color};">
+              ✈️ ${f.drone} - ${f.date}
+            </div>
+            ${f.farm ? `
+            <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3); border-radius:5px; padding:4px 8px; margin-bottom:6px; font-size:0.75rem;">
+              🌾 <b>${f.farm}</b> - Talhão <b>${f.talhao || '-'}</b> ${f.variedade ? `(${f.variedade})` : ''}
+            </div>` : ''}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <div><span style="color:#94a3b8; font-size:0.68rem;">CALDA:</span><br><b style="color:#38bdf8;">${f.sprayL} L</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">ÁREA:</span><br><b style="color:#10b981;">${f.area} ha</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">TAXA:</span><br><b>${f.rate} L/ha</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">FAIXA:</span><br><b>${f.spacing} m</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">ALTURA:</span><br><b>${f.height} m</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">VELOCIDADE:</span><br><b>${(f.speed * 3.6).toFixed(1)} km/h</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">PILOTO:</span><br><b>${f.pilot || 'N/A'}</b></div>
+              <div><span style="color:#94a3b8; font-size:0.68rem;">TEMPO:</span><br><b>${Math.floor(f.timeSec/60)}m ${Math.floor(f.timeSec%60)}s</b></div>
+            </div>
+            <div style="margin-top:6px; font-size:0.65rem; color:#94a3b8;">${f.id}</div>
+            <button onclick="deleteFlight('${f.id}')" style="margin-top:8px; width:100%; background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); padding:5px 8px; border-radius:5px; font-weight:600; cursor:pointer; font-size:0.75rem;">
+              🗑️ Excluir esta rota
+            </button>
+          </div>
+        `;
+        line.bindPopup(popupHtml);
+
+        let swath = null;
+        if (showSwathBuffer && f.spacing > 0) {
+          swath = L.polyline(f.coords, {
+            color: color,
+            weight: Math.max(6, Math.min(22, f.spacing * 1.5)),
+            opacity: 0.22,
+            renderer: canvasRenderer
+          });
+          swath.addTo(map);
+        }
+
+        line.addTo(map);
+        mapLayers[f.id] = { line, swath };
+      });
+    }
+
+    function toggleSwath() {
+      showSwathBuffer = document.getElementById('chkSwath').checked;
+      renderMap();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('attrTableBody');
+      const maxRows = 250;
+      const subset = filteredFlights.slice(0, maxRows);
+
+      document.getElementById('lblCount').innerText = `(${filteredFlights.length} voos)`;
+
+      let html = "";
+      subset.forEach(f => {
+        const isChecked = selectedIds.has(f.id);
+        const color = getDroneColor(f.drone);
+        const flMin = Math.floor(f.timeSec / 60);
+        const flSec = Math.floor(f.timeSec % 60);
+
+        html += `
+          <tr id="row-${f.id}" onclick="zoomToFlight('${f.id}')">
+            <td style="text-align:center;" onclick="event.stopPropagation();">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSingle('${f.id}', this.checked)">
+            </td>
+            <td style="text-align:center;" onclick="event.stopPropagation();">
+              <button onclick="deleteFlight('${f.id}')" title="Excluir rota" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:2px 4px;">
+                🗑️
+              </button>
+            </td>
+            <td>${f.date}</td>
+            <td>
+              ${f.farm ? `<span class="tag-farm">${f.farm}</span>` : '<span style="color:#64748b;">-</span>'}
+            </td>
+            <td>
+              <div style="display:inline-flex; align-items:center; gap:6px;">
+                ${f.talhao ? `<b style="color:#f8fafc;">${escapeHtml(f.talhao)}</b>` : '<span style="color:#64748b;">-</span>'}
+                ${f.talhao ? `
+                  <button onclick="event.stopPropagation(); downloadSpecificTalhao('${escapeHtml(f.farm || '')}', '${escapeHtml(f.talhao)}', '${f.id}')" 
+                          title="Baixar arquivo KML deste talhão (${escapeHtml(f.talhao)})" 
+                          style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; padding:2px 5px; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:all 0.15s ease;"
+                          onmouseover="this.style.background='#0284c7'; this.style.color='#fff';"
+                          onmouseout="this.style.background='rgba(56,189,248,0.12)'; this.style.color='#38bdf8';">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+            <td style="color:#a3e635; font-size:0.72rem;">${escapeHtml(f.variedade || '-')}</td>
+            <td>
+              <span class="tag-drone" style="background:${color}22; color:${color}; border:1px solid ${color}44;">
+                ${f.drone}
+              </span>
+            </td>
+            <td>${f.pilot || '-'}</td>
+            <td class="val-spray">${f.sprayL.toFixed(2)} L</td>
+            <td class="val-area">${f.area.toFixed(2)} ha</td>
+            <td><b>${f.rate.toFixed(1)} L/ha</b></td>
+            <td>${f.spacing} m</td>
+            <td>${f.height} m</td>
+            <td>${(f.speed * 3.6).toFixed(1)} km/h</td>
+            <td>${flMin}m ${flSec}s</td>
+            <td>${f.mode}</td>
+            <td style="color:#94a3b8; font-family:monospace; font-size:0.7rem;">${f.fcId || '-'}</td>
+            <td style="color:#94a3b8; font-size:0.7rem;" title="${f.id}">${f.id.substring(0, 30)}...</td>
+          </tr>
+        `;
+      });
+
+      if (filteredFlights.length > maxRows) {
+        html += `<tr><td colspan="18" style="text-align:center; padding:10px; color:#94a3b8;">Exibindo os primeiros ${maxRows} de ${filteredFlights.length} voos na tabela. (Todos os ${filteredFlights.length} estão no mapa). Use os filtros para refinar.</td></tr>`;
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    // EXCLUIR ROTA INDIVIDUAL
+    function deleteFlight(id) {
+      if (!confirm(`Deseja realmente excluir a rota:\n${id}?`)) return;
+      deletedIds.add(id);
+      localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds([id]);
+
+      if (mapLayers[id]) {
+        if (mapLayers[id].line) map.removeLayer(mapLayers[id].line);
+        if (mapLayers[id].swath) map.removeLayer(mapLayers[id].swath);
+        delete mapLayers[id];
+      }
+
+      flights = flights.filter(f => f.id !== id);
+      applyFilters();
+      showToast("Rota excluída e sincronizada na nuvem!");
+    }
+
+    // EXCLUIR ROTAS MARCADAS / SELECIONADAS
+    function deleteSelected() {
+      const toDelete = Array.from(selectedIds);
+      if (toDelete.length === 0) {
+        alert("Nenhuma rota selecionada para excluir.");
+        return;
+      }
+      if (!confirm(`Deseja excluir as ${toDelete.length} rotas selecionadas do mapa?`)) return;
+
+      toDelete.forEach(id => {
+        deletedIds.add(id);
+        if (mapLayers[id]) {
+          if (mapLayers[id].line) map.removeLayer(mapLayers[id].line);
+          if (mapLayers[id].swath) map.removeLayer(mapLayers[id].swath);
+          delete mapLayers[id];
+        }
+      });
+
+      localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(toDelete);
+      flights = flights.filter(f => !deletedIds.has(f.id));
+      applyFilters();
+      showToast(`${toDelete.length} rotas excluídas e sincronizadas na nuvem!`);
+    }
+
+    // LIMPAR TODAS AS ROTAS DO MAPA
+    function clearAll() {
+      if (flights.length === 0) return;
+      if (!confirm("Deseja realmente limpar/excluir TODAS as rotas do mapa?")) return;
+
+      const allIds = flights.map(f => f.id);
+      allIds.forEach(id => deletedIds.add(id));
+      localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(allIds);
+
+      Object.values(mapLayers).forEach(l => {
+        if (l.line) map.removeLayer(l.line);
+        if (l.swath) map.removeLayer(l.swath);
+      });
+      mapLayers = {};
+      flights = [];
+      filteredFlights = [];
+      selectedIds.clear();
+
+      renderTable();
+      updateStats();
+      showToast("Todas as rotas foram removidas do mapa e sincronizadas na nuvem.");
+    }
+
+    // RESTAURAR ROTAS EXCLUÍDAS
+    function restoreAll() {
+      if (deletedIds.size === 0) {
+        showToast("Nenhuma rota foi excluída.");
+        return;
+      }
+      if (!confirm(`Deseja restaurar as ${deletedIds.size} rotas que foram excluídas?`)) return;
+
+      const restored = Array.from(deletedIds);
+      localStorage.removeItem('agrodrone_deleted_ids');
+      deletedIds.clear();
+      if (window.NeonSync) NeonSync.restoreDeletedIds(restored);
+
+      if (rawLoadedFlights && rawLoadedFlights.length > 0) {
+        initFlights(rawLoadedFlights);
+      } else if (window.PRELOADED_FLIGHTS) {
+        initFlights(window.PRELOADED_FLIGHTS);
+      }
+      showToast("Todas as rotas foram restauradas com sucesso!");
+    }
+
+    function toggleSingle(id, isChecked) {
+      if (isChecked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      renderMap();
+      updateStats();
+    }
+
+    function toggleSelectAll(checked) {
+      document.getElementById('chkAll').checked = checked;
+      document.getElementById('headerChkAll').checked = checked;
+      if (checked) {
+        filteredFlights.forEach(f => selectedIds.add(f.id));
+      } else {
+        selectedIds.clear();
+      }
+      renderMap();
+      renderTable();
+      updateStats();
+    }
+
+    function zoomToFlight(id) {
+      const f = flights.find(x => x.id === id);
+      if (!f || !f.coords || f.coords.length === 0) return;
+
+      const bounds = L.latLngBounds(f.coords);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
+
+      if (mapLayers[id] && mapLayers[id].line) {
+        mapLayers[id].line.openPopup();
+      }
+
+      document.querySelectorAll('table.attr-table tr').forEach(r => r.classList.remove('active'));
+      const row = document.getElementById(`row-${id}`);
+      if (row) {
+        row.classList.add('active');
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function zoomToFarms() {
+      if (!savedFarms || savedFarms.length === 0) {
+        showToast("Nenhum talhão cadastrado.");
+        return;
+      }
+      const allCoords = [];
+      savedFarms.forEach(f => {
+        if (f.coords && f.coords.length > 0) {
+          f.coords.forEach(pt => allCoords.push(pt));
+        }
+      });
+      if (allCoords.length > 0) {
+        map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40] });
+      }
+    }
+
+    function zoomToAll() {
+      const coords = [];
+      filteredFlights.forEach(f => {
+        if (selectedIds.has(f.id) && f.coords) coords.push(...f.coords);
+      });
+      if (coords.length === 0 && savedFarms && savedFarms.length > 0) {
+        zoomToFarms();
+        return;
+      }
+      if (coords.length > 0) {
+        map.fitBounds(L.latLngBounds(coords), { padding: [30, 30] });
+      }
+    }
+
+    function updateStats() {
+      let area = 0.0, spray = 0.0, time = 0.0, pts = 0, count = 0;
+      let totalSpacing = 0.0, spacingCount = 0;
+      let totalHeight = 0.0, heightCount = 0;
+      let totalSpeed = 0.0, speedCount = 0;
+
+      filteredFlights.forEach(f => {
+        if (selectedIds.has(f.id)) {
+          area += f.area || 0;
+          spray += f.sprayL || 0;
+          time += f.timeSec || 0;
+          pts += f.points || 0;
+          count++;
+
+          if (f.spacing && f.spacing > 0) {
+            totalSpacing += f.spacing;
+            spacingCount++;
+          }
+          if (f.height && f.height > 0) {
+            totalHeight += f.height;
+            heightCount++;
+          }
+          if (f.speed && f.speed > 0) {
+            totalSpeed += (f.speed * 3.6); // conversão de m/s para km/h
+            speedCount++;
+          }
+        }
+      });
+
+      const rate = area > 0.01 ? (spray / area) : 0;
+      const avgSpacing = spacingCount > 0 ? (totalSpacing / spacingCount) : 0;
+      const avgHeight = heightCount > 0 ? (totalHeight / heightCount) : 0;
+      const avgSpeed = speedCount > 0 ? (totalSpeed / speedCount) : 0;
+
+      const h = Math.floor(time / 3600);
+      const m = Math.floor((time % 3600) / 60);
+
+      document.getElementById('kpiFlights').innerText = `${count} / ${flights.length}`;
+      document.getElementById('kpiArea').innerText = `${area.toFixed(2)} ha`;
+      document.getElementById('kpiSpray').innerText = `${spray.toFixed(2)} L`;
+      document.getElementById('kpiRate').innerText = `${rate.toFixed(1)} L/ha`;
+      document.getElementById('kpiSpacing').innerText = `${avgSpacing.toFixed(2)} m`;
+      document.getElementById('kpiHeight').innerText = `${avgHeight.toFixed(1)} m`;
+      document.getElementById('kpiSpeed').innerText = `${avgSpeed.toFixed(1)} km/h`;
+      document.getElementById('kpiTime').innerText = `${h}h ${m.toString().padStart(2, '0')}m`;
+      document.getElementById('kpiPoints').innerText = pts.toLocaleString('pt-BR');
+
+      const hudFlights = document.getElementById('hudVisibleFlights');
+      if (hudFlights) hudFlights.innerText = `${count}`;
+    }
+
+    // SELEÇÃO ESPACIAL POR ÁREA / RETÂNGULO NO MAPA
+    function toggleAreaSelectMode() {
+      isAreaSelectActive = !isAreaSelectActive;
+      const btn = document.getElementById('btnAreaSelect');
+      const lbl = document.getElementById('lblAreaSelect');
+
+      if (isAreaSelectActive) {
+        if (btn) {
+          btn.style.background = '#0284c7';
+          btn.style.color = '#ffffff';
+          btn.style.borderColor = '#38bdf8';
+        }
+        if (lbl) lbl.innerText = 'Clique e arraste no mapa (cancelar)';
+        map.getContainer().style.cursor = 'crosshair';
+        map.dragging.disable();
+
+        map.on('mousedown', onAreaMouseDown);
+        map.on('mousemove', onAreaMouseMove);
+        map.on('mouseup', onAreaMouseUp);
+
+        showToast('Demarque uma área no mapa clicando e arrastando.');
+      } else {
+        exitAreaSelectMode();
+      }
+    }
+
+    function exitAreaSelectMode() {
+      isAreaSelectActive = false;
+      const btn = document.getElementById('btnAreaSelect');
+      const lbl = document.getElementById('lblAreaSelect');
+      if (btn) {
+        btn.style.background = '';
+        btn.style.color = '#38bdf8';
+        btn.style.borderColor = 'rgba(56,189,248,0.5)';
+      }
+      if (lbl) lbl.innerText = 'Selecionar por Área no Mapa';
+
+      map.getContainer().style.cursor = '';
+      map.dragging.enable();
+
+      map.off('mousedown', onAreaMouseDown);
+      map.off('mousemove', onAreaMouseMove);
+      map.off('mouseup', onAreaMouseUp);
+      areaStartLatLng = null;
+    }
+
+    function onAreaMouseDown(e) {
+      if (!isAreaSelectActive) return;
+      if (e.originalEvent && e.originalEvent.button !== 0) return;
+
+      dismissAreaBox();
+
+      areaStartLatLng = e.latlng;
+      activeAreaRect = L.rectangle([areaStartLatLng, areaStartLatLng], {
+        color: '#38bdf8',
+        weight: 2,
+        dashArray: '6, 6',
+        fillColor: '#0284c7',
+        fillOpacity: 0.2
+      }).addTo(map);
+    }
+
+    function onAreaMouseMove(e) {
+      if (!isAreaSelectActive || !areaStartLatLng || !activeAreaRect) return;
+      activeAreaRect.setBounds(L.latLngBounds(areaStartLatLng, e.latlng));
+    }
+
+    function onAreaMouseUp(e) {
+      if (!isAreaSelectActive || !areaStartLatLng || !activeAreaRect) return;
+
+      const endLatLng = e.latlng;
+      let bounds = L.latLngBounds(areaStartLatLng, endLatLng);
+
+      // Se for apenas um clique simples sem arrasto, cria um buffer ao redor (~150m)
+      const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
+      const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
+      if (latSpan < 0.0003 && lngSpan < 0.0003) {
+        const pad = 0.0015;
+        bounds = L.latLngBounds(
+          [areaStartLatLng.lat - pad, areaStartLatLng.lng - pad],
+          [areaStartLatLng.lat + pad, areaStartLatLng.lng + pad]
+        );
+        activeAreaRect.setBounds(bounds);
+      }
+
+      exitAreaSelectMode();
+
+      // Identifica rotas que cruzam ou estão contidas no retângulo
+      const matchedFlights = filteredFlights.filter(f => {
+        if (!f.coords || f.coords.length === 0) return false;
+        return f.coords.some(pt => bounds.contains(pt));
+      });
+
+      if (matchedFlights.length === 0) {
+        dismissAreaBox();
+        showToast('Nenhuma rota encontrada dentro da área demarcada.');
+        return;
+      }
+
+      window._currentAreaFlightIds = matchedFlights.map(f => f.id);
+      const center = bounds.getCenter();
+
+      const popupHtml = `
+        <div style="font-size:0.82rem; min-width:260px; padding:4px;">
+          <div style="display:flex; align-items:center; gap:6px; font-weight:700; color:#38bdf8; margin-bottom:8px; font-size:0.92rem; border-bottom:1px solid #334155; padding-bottom:6px;">
+            🎯 Área Demarcada no Mapa
+          </div>
+          <div style="color:#f1f5f9; margin-bottom:10px; line-height:1.4;">
+            Foram encontradas <b style="color:#38bdf8; font-size:1rem;">${matchedFlights.length}</b> rotas nesta área delimitada.
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button onclick="executeDeleteAreaFlights()" style="background:#ef4444; color:white; border:none; padding:7px 10px; border-radius:5px; font-weight:700; cursor:pointer; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+              🗑️ Excluir estas ${matchedFlights.length} rotas
+            </button>
+            <button onclick="executeKeepOnlyAreaFlights()" style="background:#0284c7; color:white; border:none; padding:7px 10px; border-radius:5px; font-weight:700; cursor:pointer; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+              ✓ Manter apenas estas ${matchedFlights.length} rotas
+            </button>
+            <button onclick="dismissAreaBox()" style="background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid #475569; padding:5px; border-radius:5px; cursor:pointer; font-size:0.75rem;">
+              Cancelar Demarcação
+            </button>
+          </div>
+        </div>
+      `;
+
+      window._currentAreaPopup = L.popup({ closeOnClick: false, autoClose: false })
+        .setLatLng(center)
+        .setContent(popupHtml)
+        .openOn(map);
+    }
+
+    function executeDeleteAreaFlights() {
+      const ids = window._currentAreaFlightIds || [];
+      if (ids.length === 0) return;
+      if (!confirm(`Confirma a exclusão de ${ids.length} rotas que estão dentro desta área?`)) return;
+
+      ids.forEach(id => {
+        deletedIds.add(id);
+        if (mapLayers[id]) {
+          if (mapLayers[id].line) map.removeLayer(mapLayers[id].line);
+          if (mapLayers[id].swath) map.removeLayer(mapLayers[id].swath);
+          delete mapLayers[id];
+        }
+      });
+
+      localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+      if (window.NeonSync) NeonSync.saveDeletedIds(ids);
+      flights = flights.filter(f => !deletedIds.has(f.id));
+
+      dismissAreaBox();
+      applyFilters();
+      showToast(`${ids.length} rotas da área foram excluídas e sincronizadas na nuvem!`);
+    }
+
+    function executeKeepOnlyAreaFlights() {
+      const ids = window._currentAreaFlightIds || [];
+      if (ids.length === 0) return;
+
+      selectedIds = new Set(ids);
+      dismissAreaBox();
+      renderMap();
+      renderTable();
+      updateStats();
+      showToast(`Exibindo apenas as ${ids.length} rotas selecionadas.`);
+    }
+
+    function dismissAreaBox() {
+      if (activeAreaRect) {
+        map.removeLayer(activeAreaRect);
+        activeAreaRect = null;
+      }
+      if (window._currentAreaPopup) {
+        map.closePopup(window._currentAreaPopup);
+        window._currentAreaPopup = null;
+      }
+      window._currentAreaFlightIds = [];
+    }
+
+    function togglePanelSize() {
+      const panel = document.getElementById('attrPanel');
+      const icon = document.getElementById('btnToggleIcon');
+      panel.classList.toggle('collapsed');
+      if (panel.classList.contains('collapsed')) {
+        icon.setAttribute('data-lucide', 'chevron-down');
+      } else {
+        icon.setAttribute('data-lucide', 'chevron-up');
+      }
+      lucide.createIcons();
+      setTimeout(() => map.invalidateSize(), 300);
+    }
+
+    // RECOLHER / EXPANDIR PAINEL SUPERIOR (CABEÇALHO + KPIS)
+    function toggleTopPanel() {
+      const topSection = document.getElementById('topSection');
+      const body = document.body;
+      const lbl = document.getElementById('lblToggleTop');
+      const icon = document.getElementById('iconToggleTop');
+      if (!topSection) return;
+
+      const isCollapsed = topSection.classList.toggle('collapsed');
+      body.classList.toggle('top-collapsed', isCollapsed);
+
+      if (lbl) lbl.innerText = isCollapsed ? 'Mostrar Topo' : 'Ocultar Topo';
+      if (icon) icon.setAttribute('data-lucide', isCollapsed ? 'chevrons-down' : 'chevrons-up');
+      if (window.lucide) lucide.createIcons();
+
+      setTimeout(() => map.invalidateSize(), 320);
+    }
+
+    // MODO TELA CHEIA PARA O MAPA
+    function toggleFullscreenMap() {
+      const doc = document;
+      const el = document.documentElement;
+      const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement);
+
+      if (!isFs) {
+        if (el.requestFullscreen) {
+          el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+          el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          doc.msExitFullscreen();
+        }
+      }
+    }
+
+    function onFullscreenChanged() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      const lbl = document.getElementById('lblFullscreen');
+      const icon = document.getElementById('iconFullscreen');
+      const topSection = document.getElementById('topSection');
+      const attrPanel = document.getElementById('attrPanel');
+
+      if (isFs) {
+        if (lbl) lbl.innerText = 'Sair da Tela Cheia';
+        if (icon) icon.setAttribute('data-lucide', 'minimize');
+        if (topSection && !topSection.classList.contains('collapsed')) {
+          toggleTopPanel();
+        }
+        if (attrPanel && !attrPanel.classList.contains('collapsed')) {
+          togglePanelSize();
+        }
+      } else {
+        if (lbl) lbl.innerText = 'Tela Cheia';
+        if (icon) icon.setAttribute('data-lucide', 'maximize');
+      }
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => map.invalidateSize(), 350);
+    }
+
+    document.addEventListener('fullscreenchange', onFullscreenChanged);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChanged);
+    document.addEventListener('mozfullscreenchange', onFullscreenChanged);
+    document.addEventListener('MSFullscreenChange', onFullscreenChanged);
+
+    function exportMergedKML() {
+      const active = filteredFlights.filter(f => selectedIds.has(f.id));
+      if (active.length === 0) {
+        alert("Nenhum voo selecionado.");
+        return;
+      }
+
+      let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>VeredasDrone - Mapa Unificado de Pulverizacao</name>
+`;
+      active.forEach((f, idx) => {
+        const col = getDroneColor(f.drone);
+        const kmlCol = "ff" + col.slice(5, 7) + col.slice(3, 5) + col.slice(1, 3);
+        const cStr = f.coords.map(c => `${c[1]},${c[0]},${f.height || 0}`).join(' ');
+
+        kml += `
+    <Style id="s_${idx}">
+      <LineStyle><color>${kmlCol}</color><width>3</width></LineStyle>
+    </Style>
+    <Placemark>
+      <name>${f.drone} - ${f.date} (${f.sprayL}L | ${f.area}ha)</name>
+      <styleUrl>#s_${idx}</styleUrl>
+      <ExtendedData>
+        <Data name="Fazenda"><value>${f.farm || ''}</value></Data>
+        <Data name="Talhao"><value>${f.talhao || ''}</value></Data>
+        <Data name="Zona"><value>${f.zona || ''}</value></Data>
+        <Data name="Variedade"><value>${f.variedade || ''}</value></Data>
+        <Data name="Plantio"><value>${f.plantio || ''}</value></Data>
+        <Data name="Aircraft Name"><value>${f.drone}</value></Data>
+        <Data name="Pilot Name"><value>${f.pilot}</value></Data>
+        <Data name="Flight Controller ID"><value>${f.fcId}</value></Data>
+        <Data name="Spray amount"><value>${f.sprayL * 1000}</value></Data>
+        <Data name="Task Area"><value>${f.area}</value></Data>
+        <Data name="Rate L_per_ha"><value>${f.rate}</value></Data>
+        <Data name="Route Spacing"><value>${f.spacing}</value></Data>
+        <Data name="Height"><value>${f.height}</value></Data>
+        <Data name="Task Flight Speed"><value>${f.speed}</value></Data>
+        <Data name="Flight Time ms"><value>${f.timeSec * 1000}</value></Data>
+      </ExtendedData>
+      <LineString>
+        <tessellate>1</tessellate>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <coordinates>${cStr}</coordinates>
+      </LineString>
+    </Placemark>
+`;
+      });
+      kml += `  </Document>\n</kml>`;
+
+      download(kml, "Mapa_Aplicacao_Unificado.kml", "application/vnd.google-earth.kml+xml");
+      showToast(`KML Unificado com ${active.length} voos exportado!`);
+    }
+
+    function exportCSV() {
+      const active = filteredFlights.filter(f => selectedIds.has(f.id));
+      if (active.length === 0) { alert("Nenhum voo selecionado."); return; }
+
+      let csv = "\uFEFFArquivo;Data;Fazenda;Talhao;Zona;Variedade;Plantio;Drone;Piloto;Calda_Litros;Area_Hectares;Taxa_L_ha;Altura_Metros;Faixa_Metros;Velocidade_kmh;Tempo_Segundos;Controladora_ID\n";
+      active.forEach(f => {
+        csv += `"${f.id}";"${f.date}";"${f.farm || ''}";"${f.talhao || ''}";"${f.zona || ''}";"${f.variedade || ''}";"${f.plantio || ''}";"${f.drone}";"${f.pilot}";"${f.sprayL.toString().replace('.', ',')}";"${f.area.toString().replace('.', ',')}";"${f.rate.toString().replace('.', ',')}";"${f.height.toString().replace('.', ',')}";"${f.spacing.toString().replace('.', ',')}";"${(f.speed * 3.6).toFixed(1).replace('.', ',')}";"${f.timeSec}";"${f.fcId}"\n`;
+      });
+
+      download(csv, "Tabela_Atributos_Pulverizacao.csv", "text/csv;charset=utf-8;");
+      showToast("Planilha CSV exportada!");
+    }
+
+    function download(content, fileName, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // BAIXAR KML EXCLUSIVO DO TALHÃO (SOMENTE O POLÍGONO / CONTORNO DO TALHÃO, SEM O VOO)
+    function downloadSpecificTalhao(farmName, talhaoName, flightId) {
+      if (!talhaoName && !flightId) {
+        showToast("Nenhum talhão especificado para download.");
+        return;
+      }
+
+      // 1. Localizar o talhão correspondente em savedFarms
+      let farmObj = null;
+      if (savedFarms && savedFarms.length > 0) {
+        farmObj = savedFarms.find(sf => {
+          const matchTalhao = sf.talhao && String(sf.talhao).trim().toLowerCase() === String(talhaoName).trim().toLowerCase();
+          if (farmName && sf.nomeFaz) {
+            return matchTalhao && String(sf.nomeFaz).trim().toLowerCase() === String(farmName).trim().toLowerCase();
+          }
+          return matchTalhao;
+        });
+      }
+
+      // 2. Se não encontrou pelo nome direto, procura pelo voo correspondente
+      let flightRef = null;
+      if (flightId) {
+        flightRef = flights.find(f => f.id === flightId);
+      }
+      if (!farmObj && flightRef) {
+        farmObj = savedFarms.find(sf => {
+          const matchT = sf.talhao && flightRef.talhao && String(sf.talhao).trim().toLowerCase() === String(flightRef.talhao).trim().toLowerCase();
+          const matchF = !flightRef.farm || !sf.nomeFaz || String(sf.nomeFaz).trim().toLowerCase() === String(flightRef.farm).trim().toLowerCase();
+          return matchT && matchF;
+        });
+      }
+
+      const cleanFarm = farmName || (farmObj && farmObj.nomeFaz) || (flightRef && flightRef.farm) || '';
+      const cleanTalhao = talhaoName || (farmObj && farmObj.talhao) || (flightRef && flightRef.talhao) || 'talhao';
+      const cleanVariedade = (farmObj && farmObj.variedade) || (flightRef && flightRef.variedade) || '';
+      const cleanZona = (farmObj && farmObj.zona) || (flightRef && flightRef.zona) || '';
+      const cleanPlantio = (farmObj && farmObj.plantio) || (flightRef && flightRef.plantio) || '';
+      const cleanArea = (farmObj && farmObj.areaTotal) ? farmObj.areaTotal.toFixed(2) : (flightRef && flightRef.area ? flightRef.area.toFixed(2) : '0.00');
+
+      let coordsList = null;
+      if (farmObj && farmObj.coords && farmObj.coords.length >= 3) {
+        coordsList = [...farmObj.coords];
+      } else if (flightRef && flightRef.coords && flightRef.coords.length >= 3) {
+        // Se ainda não houver shapefile importado para o talhão, cria polígono envolvente do voo
+        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+        flightRef.coords.forEach(c => {
+          if (c[0] < minLat) minLat = c[0];
+          if (c[0] > maxLat) maxLat = c[0];
+          if (c[1] < minLng) minLng = c[1];
+          if (c[1] > maxLng) maxLng = c[1];
+        });
+        const pad = 0.0003;
+        coordsList = [
+          [minLat - pad, minLng - pad],
+          [maxLat + pad, minLng - pad],
+          [maxLat + pad, maxLng + pad],
+          [minLat - pad, maxLng + pad],
+          [minLat - pad, minLng - pad]
+        ];
+      }
+
+      if (!coordsList || coordsList.length < 3) {
+        showToast(`Geometria do Talhão "${cleanTalhao}" não encontrada. Importe o Shapefile/KML de talhões.`);
+        return;
+      }
+
+      // Garante fechamento do anel linear do polígono
+      const first = coordsList[0];
+      const last = coordsList[coordsList.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        coordsList.push(first);
+      }
+      const coordsStr = coordsList.map(c => `${c[1]},${c[0]},0`).join(' ');
+
+      let kml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      kml += `<kml xmlns="http://www.opengis.net/kml/2.2">\n`;
+      kml += `  <Document>\n`;
+      kml += `    <name>Talhao ${cleanTalhao}${cleanFarm ? ' - ' + cleanFarm : ''}</name>\n`;
+      kml += `    <description>Polígono do Talhão ${cleanTalhao} (${cleanArea} ha)</description>\n`;
+
+      // Estilo do Talhão: Borda âmbar nítida e preenchimento suave
+      kml += `    <Style id="talhaoPolyStyle">\n`;
+      kml += `      <LineStyle>\n`;
+      kml += `        <color>ff00b4ff</color>\n`; // Cor âmbar #f59e0b
+      kml += `        <width>3.0</width>\n`;
+      kml += `      </LineStyle>\n`;
+      kml += `      <PolyStyle>\n`;
+      kml += `        <color>4d00b4ff</color>\n`; // 30% opacidade
+      kml += `      </PolyStyle>\n`;
+      kml += `    </Style>\n`;
+
+      kml += `    <Placemark>\n`;
+      kml += `      <name>Talhão ${cleanTalhao}${cleanFarm ? ' - ' + cleanFarm : ''}</name>\n`;
+      kml += `      <styleUrl>#talhaoPolyStyle</styleUrl>\n`;
+      kml += `      <ExtendedData>\n`;
+      kml += `        <Data name="Fazenda"><value>${cleanFarm}</value></Data>\n`;
+      kml += `        <Data name="Talhao"><value>${cleanTalhao}</value></Data>\n`;
+      kml += `        <Data name="Zona"><value>${cleanZona}</value></Data>\n`;
+      kml += `        <Data name="Variedade"><value>${cleanVariedade}</value></Data>\n`;
+      kml += `        <Data name="Plantio"><value>${cleanPlantio}</value></Data>\n`;
+      kml += `        <Data name="Area_ha"><value>${cleanArea}</value></Data>\n`;
+      kml += `      </ExtendedData>\n`;
+      kml += `      <Polygon>\n`;
+      kml += `        <extrude>1</extrude>\n`;
+      kml += `        <altitudeMode>clampToGround</altitudeMode>\n`;
+      kml += `        <outerBoundaryIs>\n`;
+      kml += `          <LinearRing>\n`;
+      kml += `            <coordinates>${coordsStr}</coordinates>\n`;
+      kml += `          </LinearRing>\n`;
+      kml += `        </outerBoundaryIs>\n`;
+      kml += `      </Polygon>\n`;
+      kml += `    </Placemark>\n`;
+
+      kml += `  </Document>\n`;
+      kml += `</kml>`;
+
+      const safeFilename = `Talhao_${cleanFarm ? cleanFarm.replace(/[\s\/\\?%*:|"<>]/g, '_') + '_' : ''}${String(cleanTalhao).replace(/[\s\/\\?%*:|"<>]/g, '_')}.kml`;
+      download(kml, safeFilename, "application/vnd.google-earth.kml+xml");
+      showToast(`KML do Talhão ${cleanTalhao} baixado com sucesso!`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('dropZone');
+      window.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('active'); });
+      dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('active'); });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('active');
+        handleFiles(e.dataTransfer.files);
+      });
+    }
+
+    function setupFileInputs() {
+      const bindInput = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', (e) => {
+            handler(e.target.files);
+            e.target.value = '';
+          });
+        }
+      };
+
+      bindInput('fileInput', handleFiles);
+      bindInput('folderInput', handleFiles);
+      bindInput('farmFileInput', handleFarmFiles);
+      bindInput('dbfOnlyInput', handleFarmFiles);
+      bindInput('csvOnlyInput', handleFarmFiles);
+    }
+
+    async function handleFiles(fileList) {
+      const files = Array.from(fileList);
+      if (files.length === 0) return;
+
+      // Se soltou arquivos Shapefile (.zip ou .shp, .dbf, .csv), processa como talhões
+      const hasShape = files.some(f => f.name.toLowerCase().endsWith('.zip') || f.name.toLowerCase().endsWith('.shp') || f.name.toLowerCase().endsWith('.dbf') || f.name.toLowerCase().endsWith('.csv'));
+      if (hasShape) {
+        await handleFarmFiles(files);
+        return;
+      }
+
+      const kmls = files.filter(f => f.name.toLowerCase().endsWith('.kml'));
+      if (kmls.length === 0) { showToast("Nenhum arquivo KML ou Shapefile encontrado."); return; }
+
+      showToast(`Processando ${kmls.length} arquivos...`);
+      const newItems = [];
+      let newFarmsCount = 0;
+
+      for (const file of kmls) {
+        try {
+          const text = await file.text();
+
+          // Verifica se o arquivo é um KML de Fazendas/Talhões (possui Polygon)
+          const dom = new DOMParser().parseFromString(text, "text/xml");
+          const hasPolygon = dom.querySelector("Polygon");
+          const hasLineString = dom.querySelector("LineString");
+
+          if (hasPolygon && !hasLineString) {
+            const farms = parseFarmKml(text, file.name);
+            if (farms.length > 0) {
+              farms.forEach(ef => {
+                const idx = savedFarms.findIndex(sf => sf.nomeFaz === ef.nomeFaz && sf.talhao === ef.talhao && sf.zona === ef.zona);
+                if (idx >= 0) savedFarms[idx] = ef;
+                else savedFarms.push(ef);
+              });
+              newFarmsCount += farms.length;
+            }
+            continue;
+          }
+
+          const item = parseSingleKml(text, file.name);
+          if (item) {
+            deletedIds.delete(item.id);
+            newItems.push(item);
+          }
+        } catch (e) {
+          console.error("Erro ao ler KML:", file.name, e);
+        }
+      }
+
+      localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+
+      if (newFarmsCount > 0) {
+        localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+        linkFlightsToFarms();
+        populateFarmFilterOptions();
+        renderFarmsOnMap();
+        updateFarmUI();
+        showToast(`${newFarmsCount} talhões importados e salvos na nuvem!`);
+      }
+
+      if (newItems.length > 0) {
+        const mapById = new Map();
+        flights.forEach(f => mapById.set(f.id, f));
+        newItems.forEach(f => mapById.set(f.id, f));
+
+        flights = Array.from(mapById.values());
+        linkFlightsToFarms();
+        filteredFlights = [...flights];
+        selectedIds = new Set(flights.map(f => f.id));
+
+        populateFilterOptions();
+        populateFarmFilterOptions();
+        renderFarmsOnMap();
+        renderMap();
+        renderTable();
+        updateStats();
+        zoomToAll();
+
+        if (window.NeonSync) NeonSync.saveFlights(newItems);
+        showToast(`${newItems.length} voos carregados e sincronizados na nuvem! Total: ${flights.length}`);
+      }
+    }
+
+    function parseSingleKml(text, fileName) {
+      const dom = new DOMParser().parseFromString(text, "text/xml");
+      const p = dom.querySelector("Placemark");
+      if (!p) return null;
+
+      const d = {};
+      p.querySelectorAll("ExtendedData Data").forEach(el => {
+        const n = el.getAttribute("name");
+        const val = el.querySelector("value") ? el.querySelector("value").textContent.trim() : "";
+        d[n] = val;
+      });
+
+      const coordsEl = p.querySelector("LineString coordinates");
+      if (!coordsEl) return null;
+
+      const coords = [];
+      coordsEl.textContent.trim().split(/\s+/).forEach(tok => {
+        const parts = tok.split(",");
+        if (parts.length >= 2) {
+          const lon = parseFloat(parts[0]);
+          const lat = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+        }
+      });
+      if (coords.length === 0) return null;
+
+      const timeMs = parseFloat(d["Flight Time"]) || 0;
+      const area = parseFloat(d["Task Area"]) || 0;
+      const sprayMl = parseFloat(d["Spray amount"]) || 0;
+      const sprayL = Math.round(sprayMl / 10) / 100;
+      const rate = area > 0.001 ? Math.round((sprayL / area) * 10) / 10 : 0;
+
+      let dateStr = "", rawDate = "";
+      const m = fileName.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+      if (m) {
+        rawDate = `${m[1]}-${m[2]}-${m[3]}`;
+        dateStr = `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+      }
+
+      return {
+        id: fileName,
+        drone: d["Aircraft Name"] || "Drone",
+        pilot: d["Pilot Name"] || "",
+        fcId: d["Flight Controller ID"] || "",
+        date: dateStr,
+        rawDate,
+        mode: d["Mode Selection"] || "Auto",
+        timeSec: Math.round(timeMs / 100) / 10,
+        height: parseFloat(d["Height"]) || 0,
+        spacing: parseFloat(d["Route Spacing"]) || 0,
+        speed: parseFloat(d["Task Flight Speed"]) || 0,
+        area,
+        sprayL,
+        rate,
+        points: coords.length,
+        coords
+      };
+    }
+
+    // ==========================================
+    // MÓDULO DE FAZENDAS E TALHÕES (KML POLYGONS)
+    // ==========================================
+
+    // Cálculo Geodésico de Área de Polígono em Hectares
+    function computePolygonAreaHa(coords) {
+      if (!coords || coords.length < 3) return 0;
+      const midLat = coords.reduce((acc, c) => acc + c[0], 0) / coords.length;
+      const latFactor = 111320;
+      const lngFactor = 111320 * Math.cos(midLat * Math.PI / 180);
+
+      let areaM2 = 0;
+      for (let i = 0; i < coords.length; i++) {
+        const j = (i + 1) % coords.length;
+        const xi = coords[i][1] * lngFactor;
+        const yi = coords[i][0] * latFactor;
+        const xj = coords[j][1] * lngFactor;
+        const yj = coords[j][0] * latFactor;
+        areaM2 += (xi * yj) - (xj * yi);
+      }
+      return Math.abs(areaM2) / 2 / 10000;
+    }
+
+    // Point in Polygon (Ray-Casting Algorithm)
+    function isPointInPolygon(pt, vs) {
+      const x = pt[0], y = pt[1];
+      let inside = false;
+      for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        const xi = vs[i][0], yi = vs[i][1];
+        const xj = vs[j][0], yj = vs[j][1];
+        const intersect = ((yi > y) !== (yj > y)) &&
+          (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    // Parser de KML de Talhões / Fazendas (suporta SimpleData, ExtendedData, Name)
+    function parseFarmKml(xmlText, fileName) {
+      const dom = new DOMParser().parseFromString(xmlText, "text/xml");
+      const placemarks = dom.querySelectorAll("Placemark");
+      const extractedFarms = [];
+
+      placemarks.forEach((p, pIdx) => {
+        const polyEl = p.querySelector("Polygon");
+        if (!polyEl) return;
+
+        const coordsEl = polyEl.querySelector("outerBoundaryIs coordinates") || polyEl.querySelector("coordinates");
+        if (!coordsEl) return;
+
+        const coords = [];
+        coordsEl.textContent.trim().split(/\s+/).forEach(tok => {
+          const parts = tok.split(",");
+          if (parts.length >= 2) {
+            const lon = parseFloat(parts[0]);
+            const lat = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+          }
+        });
+
+        if (coords.length < 3) return;
+
+        const attrs = {};
+        p.querySelectorAll("SimpleData").forEach(el => {
+          const n = el.getAttribute("name");
+          if (n) attrs[n.toUpperCase().trim()] = el.textContent.trim();
+        });
+        p.querySelectorAll("ExtendedData Data").forEach(el => {
+          const n = el.getAttribute("name");
+          const v = el.querySelector("value") ? el.querySelector("value").textContent.trim() : "";
+          if (n) attrs[n.toUpperCase().trim()] = v;
+        });
+
+        const nameEl = p.querySelector("name");
+        const pName = nameEl ? nameEl.textContent.trim() : "";
+        if (pName && !attrs['NOME_FAZ']) {
+          attrs['NAME'] = pName;
+        }
+
+        // Atributos padrão: NOME_FAZ, ZONA, TALHAO, DESC_TALHA, PLANTIO, ID, VARIEDADE, FAZENDA, AREA_TOTAL
+        let nomeFaz = attrs['NOME_FAZ'] || attrs['FAZENDA'] || attrs['NOME'] || attrs['NAME'] || fileName.replace(/\.kml$/i, '');
+        let talhao = attrs['TALHAO'] || attrs['DESC_TALHA'] || '';
+        let zona = attrs['ZONA'] || '';
+        let variedade = attrs['VARIEDADE'] || attrs['CULTURA'] || '';
+        let plantio = attrs['PLANTIO'] || attrs['ANO'] || '';
+        let areaTotal = parseFloat(attrs['AREA_TOTAL']) || parseFloat(attrs['AREA']) || 0;
+
+        if (!areaTotal || isNaN(areaTotal)) {
+          areaTotal = computePolygonAreaHa(coords);
+        }
+
+        let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+        coords.forEach(pt => {
+          if (pt[0] < minLat) minLat = pt[0];
+          if (pt[0] > maxLat) maxLat = pt[0];
+          if (pt[1] < minLng) minLng = pt[1];
+          if (pt[1] > maxLng) maxLng = pt[1];
+        });
+
+        extractedFarms.push({
+          id: `${nomeFaz}_${zona}_${talhao}_${pIdx}_${Math.random().toString(36).substr(2, 6)}`,
+          nomeFaz: String(nomeFaz).trim(),
+          talhao: String(talhao).trim(),
+          zona: String(zona).trim(),
+          variedade: String(variedade).trim(),
+          plantio: String(plantio).trim(),
+          areaTotal: Math.round(areaTotal * 100) / 100,
+          coords,
+          bbox: [minLat, maxLat, minLng, maxLng]
+        });
+      });
+
+      return extractedFarms;
+    }
+
+    // Vinculação Espacial: Rota ↔ Fazenda/Talhão
+    function linkFlightsToFarms() {
+      if (!savedFarms || savedFarms.length === 0) {
+        flights.forEach(f => {
+          f.farm = '';
+          f.talhao = '';
+          f.variedade = '';
+          f.zona = '';
+          f.plantio = '';
+          f.talhaoArea = 0;
+        });
+        return;
+      }
+
+      flights.forEach(f => {
+        if (!f.coords || f.coords.length === 0) return;
+
+        let fMinLat = 90, fMaxLat = -90, fMinLng = 180, fMaxLng = -180;
+        for (let i = 0; i < f.coords.length; i++) {
+          const p = f.coords[i];
+          if (p[0] < fMinLat) fMinLat = p[0];
+          if (p[0] > fMaxLat) fMaxLat = p[0];
+          if (p[1] < fMinLng) fMinLng = p[1];
+          if (p[1] > fMaxLng) fMaxLng = p[1];
+        }
+
+        let matchedFarm = null;
+        for (const farm of savedFarms) {
+          if (farm.bbox[0] > fMaxLat || farm.bbox[1] < fMinLat || farm.bbox[2] > fMaxLng || farm.bbox[3] < fMinLng) {
+            continue;
+          }
+
+          const step = Math.max(1, Math.floor(f.coords.length / 20));
+          for (let i = 0; i < f.coords.length; i += step) {
+            if (isPointInPolygon(f.coords[i], farm.coords)) {
+              matchedFarm = farm;
+              break;
+            }
+          }
+          if (matchedFarm) break;
+        }
+
+        if (matchedFarm) {
+          f.farm = matchedFarm.nomeFaz || '-';
+          f.talhao = matchedFarm.talhao || '-';
+          f.variedade = matchedFarm.variedade || '-';
+          f.zona = matchedFarm.zona || '-';
+          f.plantio = matchedFarm.plantio || '-';
+          f.talhaoArea = matchedFarm.areaTotal || 0;
+        } else {
+          f.farm = '';
+          f.talhao = '';
+          f.variedade = '';
+          f.zona = '';
+          f.plantio = '';
+          f.talhaoArea = 0;
+        }
+      });
+    }
+
+    // Desenha os polígonos de talhões no mapa com tooltips e popups interativos
+    function renderFarmsOnMap() {
+      Object.values(farmLayers).forEach(layer => map.removeLayer(layer));
+      farmLayers = {};
+
+      if (!showFarms || !savedFarms || savedFarms.length === 0) return;
+
+      savedFarms.forEach(farm => {
+        if (!farm.coords || farm.coords.length < 3) return;
+
+        const poly = L.polygon(farm.coords, {
+          color: '#f59e0b',
+          weight: 2,
+          dashArray: '5, 5',
+          fillColor: '#f59e0b',
+          fillOpacity: 0.12,
+          renderer: canvasRenderer
+        });
+
+        const tooltipText = `<b>${farm.nomeFaz}</b>${farm.talhao ? ' - T.' + farm.talhao : ''}<br><span style="font-size:0.7rem; color:#fde68a;">${farm.variedade || ''} (${farm.areaTotal.toFixed(1)} ha)</span>`;
+        poly.bindTooltip(tooltipText, { sticky: true, className: 'farm-tooltip' });
+
+        poly.on('click', () => {
+          const matching = flights.filter(f => f.farm === farm.nomeFaz && f.talhao === farm.talhao);
+          let tSpray = 0, tArea = 0;
+          matching.forEach(f => {
+            tSpray += f.sprayL || 0;
+            tArea += f.area || 0;
+          });
+
+          const popupContent = `
+            <div style="font-size:0.82rem; min-width:240px; padding:4px;">
+              <div style="font-weight:700; color:#f59e0b; border-bottom:1px solid #334155; padding-bottom:4px; margin-bottom:6px; font-size:0.95rem;">
+                🌾 ${farm.nomeFaz} ${farm.talhao ? '- Talhão ' + farm.talhao : ''}
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div><span style="color:#94a3b8; font-size:0.68rem;">ZONA:</span><br><b>${farm.zona || '-'}</b></div>
+                <div><span style="color:#94a3b8; font-size:0.68rem;">VARIEDADE:</span><br><b style="color:#a3e635;">${farm.variedade || '-'}</b></div>
+                <div><span style="color:#94a3b8; font-size:0.68rem;">PLANTIO:</span><br><b>${farm.plantio || '-'}</b></div>
+                <div><span style="color:#94a3b8; font-size:0.68rem;">ÁREA TALHÃO:</span><br><b style="color:#f59e0b;">${farm.areaTotal.toFixed(2)} ha</b></div>
+              </div>
+              <div style="background:rgba(2,132,199,0.15); border:1px solid rgba(2,132,199,0.3); padding:6px; border-radius:5px; margin-bottom:8px;">
+                <div style="font-size:0.68rem; color:#94a3b8; font-weight:600;">APLICAÇÕES DETECTADAS:</div>
+                <div style="display:flex; justify-content:space-between; margin-top:2px; font-size:0.75rem;">
+                  <span>Voos: <b style="color:#fff;">${matching.length}</b></span>
+                  <span>Calda: <b style="color:#38bdf8;">${tSpray.toFixed(1)} L</b></span>
+                  <span>Área: <b style="color:#10b981;">${tArea.toFixed(2)} ha</b></span>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button onclick="filterByFarmTalhao('${escapeHtml(farm.nomeFaz)}', '${escapeHtml(farm.talhao)}')" style="flex:1; background:#0284c7; color:white; border:none; padding:6px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.75rem;">
+                  🔍 Filtrar Voos
+                </button>
+                <button onclick="downloadSpecificTalhao('${escapeHtml(farm.nomeFaz)}', '${escapeHtml(farm.talhao)}')" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:4px;" title="Baixar arquivo KML deste talhão">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Baixar KML</span>
+                </button>
+              </div>
+            </div>
+          `;
+          poly.bindPopup(popupContent).openPopup();
+        });
+
+        poly.addTo(map);
+        farmLayers[farm.id] = poly;
+      });
+    }
+
+    function toggleFarmsVisibility() {
+      showFarms = document.getElementById('chkShowFarms').checked;
+      renderFarmsOnMap();
+    }
+
+    // Conversor geodésico de precisão: UTM (WGS84 / SIRGAS 2000) -> Lat/Lon Decimal
+    function utmToLatLon(x, y, zone = 23, south = true) {
+      const a = 6378137.0;
+      const f = 1 / 298.257223563;
+      const k0 = 0.9996;
+      const e = Math.sqrt(2 * f - f * f);
+      const e2 = (e * e) / (1 - e * e);
+      const x1 = x - 500000.0;
+      const y1 = south ? (y - 10000000.0) : y;
+      const m = y1 / k0;
+      const mu = m / (a * (1 - (e * e) / 4 - (3 * Math.pow(e, 4)) / 64 - (5 * Math.pow(e, 6)) / 256));
+      const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+      const j1 = (3 * e1) / 2 - (27 * Math.pow(e1, 3)) / 32;
+      const j2 = (21 * Math.pow(e1, 2)) / 16 - (55 * Math.pow(e1, 4)) / 32;
+      const j3 = (151 * Math.pow(e1, 3)) / 96;
+      const j4 = (1097 * Math.pow(e1, 4)) / 512;
+      const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+      const c1 = e2 * Math.pow(Math.cos(fp), 2);
+      const t1 = Math.pow(Math.tan(fp), 2);
+      const r1 = (a * (1 - e * e)) / Math.pow(1 - e * e * Math.pow(Math.sin(fp), 2), 1.5);
+      const n1 = a / Math.sqrt(1 - e * e * Math.pow(Math.sin(fp), 2));
+      const d = x1 / (n1 * k0);
+      const q1 = (n1 * Math.tan(fp)) / r1;
+      const q2 = (d * d) / 2;
+      const q3 = ((5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e2) * Math.pow(d, 4)) / 24;
+      const q4 = ((61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e2 - 3 * c1 * c1) * Math.pow(d, 6)) / 720;
+      const lat = fp - q1 * (q2 - q3 + q4);
+      const q5 = d;
+      const q6 = ((1 + 2 * t1 + c1) * Math.pow(d, 3)) / 6;
+      const q7 = ((5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e2 + 24 * t1 * t1) * Math.pow(d, 5)) / 120;
+      const lon0 = ((zone - 1) * 6 - 180 + 3) * (Math.PI / 180);
+      const lon = lon0 + (q5 - q6 + q7) / Math.cos(fp);
+      return {
+        lat: (lat * 180) / Math.PI,
+        lon: (lon * 180) / Math.PI
+      };
+    }
+
+    // Conversão de Web Mercator (EPSG:3857) para Lat/Lon
+    function mercatorToLatLon(x, y) {
+      const lon = (x / 20037508.34) * 180;
+      let lat = (y / 20037508.34) * 180;
+      lat = 180 / Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180)) - Math.PI / 2);
+      return { lat, lon };
+    }
+
+    // Detecta o fuso UTM preferido baseado no PRJ ou nos voos do usuário
+    function detectPreferredUtmZone(prjText) {
+      if (prjText && typeof prjText === 'string') {
+        const m = prjText.match(/zone\s*(\d{2})/i) || prjText.match(/fuso\s*(\d{2})/i) || prjText.match(/utm_zone_(\d{2})/i) || prjText.match(/3198(\d)/) || prjText.match(/327(\d\d)/);
+        if (m) {
+          if (m[1].length === 2) return parseInt(m[1], 10);
+          if (m[1] === '1') return 21;
+          if (m[1] === '2') return 22;
+          if (m[1] === '3') return 23;
+          if (m[1] === '4') return 24;
+          if (m[0].startsWith('327')) return parseInt(m[0].substr(3), 10);
+        }
+      }
+      if (typeof flights !== 'undefined' && flights.length > 0) {
+        let sumLon = 0, count = 0;
+        for (let i = 0; i < Math.min(flights.length, 50); i++) {
+          if (flights[i].homeLon) {
+            sumLon += flights[i].homeLon;
+            count++;
+          }
+        }
+        if (count > 0) {
+          const avgLon = sumLon / count;
+          const calcZone = Math.floor((avgLon + 180) / 6) + 1;
+          if (calcZone >= 18 && calcZone <= 25) return calcZone;
+        }
+      }
+      return 23; // Padrão Brasil Centro / MG / SP / GO
+    }
+
+    // Normaliza qualquer ponto [X, Y] para [lat, lon] válidos no Brasil
+    function normalizePointToLatLng(pt0, pt1, preferredZone = 23) {
+      let x = parseFloat(pt0);
+      let y = parseFloat(pt1);
+      if (isNaN(x) || isNaN(y)) return null;
+
+      // 1. Já está em graus decimais
+      if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+        let lat = y, lon = x;
+        if (Math.abs(x) < Math.abs(y) && x < 0 && y < -30) {
+          lat = x; lon = y;
+        }
+        if (lat > 0 && lat <= 35 && lon < 0) {
+          lat = -lat;
+        }
+        return [lat, lon];
+      }
+
+      // 2. Coordenadas métricas em UTM (Easting ~ 100k a 900k, Northing ~ 6M a 10M)
+      let easting = x, northing = y;
+      if (x > y && x > 1000000) {
+        northing = x; easting = y;
+      }
+
+      if (northing > 1000000 && northing < 10000000 && easting > 50000 && easting < 950000) {
+        const zonesToTry = [preferredZone, 23, 22, 21, 24];
+        for (const z of zonesToTry) {
+          const res = utmToLatLon(easting, northing, z, true);
+          if (res.lat >= -35 && res.lat <= 6 && res.lon >= -75 && res.lon <= -32) {
+            return [res.lat, res.lon];
+          }
+        }
+        const defRes = utmToLatLon(easting, northing, preferredZone, true);
+        return [defRes.lat, defRes.lon];
+      }
+
+      // 3. Web Mercator EPSG:3857
+      if (Math.abs(x) > 1000000 || Math.abs(y) > 1000000) {
+        const mRes = mercatorToLatLon(x, y);
+        if (mRes.lat >= -90 && mRes.lat <= 90 && mRes.lon >= -180 && mRes.lon <= 180) {
+          return [mRes.lat, mRes.lon];
+        }
+      }
+
+      return null;
+    }
+
+    // Parser de Planilhas CSV com atributos de talhões
+    function parseFarmCsv(csvText) {
+      const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length < 2) return [];
+
+      const header = parseCsvLine(lines[0]).map(h => h.toUpperCase().trim());
+      const idxNomeFaz = header.findIndex(h => h.includes('FAZ') || h === 'NOME' || h === 'NAME');
+      const idxTalhao = header.findIndex(h => h.includes('TALHA') || h === 'PARCELA' || h === 'ID');
+      const idxZona = header.findIndex(h => h === 'ZONA' || h.includes('SETOR'));
+      const idxVariedade = header.findIndex(h => h.includes('VAR') || h.includes('CULT'));
+      const idxPlantio = header.findIndex(h => h.includes('PLANT') || h === 'ANO');
+      const idxArea = header.findIndex(h => h.includes('AREA'));
+
+      const records = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        if (cols.length === 0) continue;
+        records.push({
+          nomeFaz: idxNomeFaz >= 0 && cols[idxNomeFaz] ? cols[idxNomeFaz].trim() : '',
+          talhao: idxTalhao >= 0 && cols[idxTalhao] ? cols[idxTalhao].trim() : String(i),
+          zona: idxZona >= 0 && cols[idxZona] ? cols[idxZona].trim() : '1',
+          variedade: idxVariedade >= 0 && cols[idxVariedade] ? cols[idxVariedade].trim() : '',
+          plantio: idxPlantio >= 0 && cols[idxPlantio] ? cols[idxPlantio].trim() : '',
+          areaTotal: idxArea >= 0 && cols[idxArea] ? (parseFloat(cols[idxArea].replace(',', '.')) || 0) : 0
+        });
+      }
+      return records;
+    }
+
+    function parseCsvLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (c === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += c;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // Parser de GeoJSON gerado pelo Shapefile (.shp / .zip)
+    function parseGeoJsonFeatures(features, sourceName, preferredZone = 23) {
+      if (!features || !Array.isArray(features)) return [];
+      const extractedFarms = [];
+      const cleanBaseName = sourceName.replace(/\.(zip|shp|dbf|kml)$/i, '').trim();
+
+      features.forEach((feat, idx) => {
+        if (!feat || !feat.geometry) return;
+
+        let polygonRings = [];
+        if (feat.geometry.type === 'Polygon') {
+          if (feat.geometry.coordinates && feat.geometry.coordinates[0]) {
+            polygonRings.push(feat.geometry.coordinates[0]);
+          }
+        } else if (feat.geometry.type === 'MultiPolygon') {
+          if (feat.geometry.coordinates) {
+            feat.geometry.coordinates.forEach(poly => {
+              if (poly && poly[0]) polygonRings.push(poly[0]);
+            });
+          }
+        } else {
+          return;
+        }
+
+        const props = feat.properties || {};
+        const normProps = {};
+        for (const [k, v] of Object.entries(props)) {
+          if (k) normProps[k.toUpperCase().trim()] = (v !== null && v !== undefined) ? String(v).trim() : '';
+        }
+
+        // Mapeia atributos com base na tabela do usuário:
+        // NOME_FAZ, ZONA, TALHAO, DESC_TALHA, PLANTIO, ID, VARIEDADE, FAZENDA, AREA_TOTAL
+        let nomeFaz = normProps['NOME_FAZ'] || normProps['FAZENDA'] || normProps['NOME'] || normProps['NAME'] || cleanBaseName;
+        let talhao = normProps['TALHAO'] || normProps['DESC_TALHA'] || normProps['NUM_TALHAO'] || normProps['PARCELA'] || String(idx + 1);
+        let zona = normProps['ZONA'] || normProps['SETOR'] || '1';
+        let variedade = normProps['VARIEDADE'] || normProps['CULTURA'] || normProps['CULT'] || '';
+        let plantio = normProps['PLANTIO'] || normProps['ANO'] || '';
+        let areaTotal = parseFloat(normProps['AREA_TOTAL']) || parseFloat(normProps['AREA']) || 0;
+
+        polygonRings.forEach((ring, rIdx) => {
+          const coords = [];
+          ring.forEach(pt => {
+            const normPt = normalizePointToLatLng(pt[0], pt[1], preferredZone);
+            if (normPt) {
+              coords.push(normPt);
+            }
+          });
+
+          if (coords.length < 3) return;
+
+          let subArea = areaTotal;
+          if (!subArea || isNaN(subArea) || polygonRings.length > 1) {
+            subArea = computePolygonAreaHa(coords);
+          }
+
+          let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+          coords.forEach(pt => {
+            if (pt[0] < minLat) minLat = pt[0];
+            if (pt[0] > maxLat) maxLat = pt[0];
+            if (pt[1] < minLng) minLng = pt[1];
+            if (pt[1] > maxLng) maxLng = pt[1];
+          });
+
+          extractedFarms.push({
+            id: `farm_${idx}_${rIdx}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            nomeFaz: String(nomeFaz).trim(),
+            talhao: String(talhao).trim(),
+            zona: String(zona).trim(),
+            variedade: String(variedade).trim(),
+            plantio: String(plantio).trim(),
+            areaTotal: Math.round(subArea * 100) / 100,
+            coords,
+            bbox: [minLat, maxLat, minLng, maxLng]
+          });
+        });
+      });
+
+      return extractedFarms;
+    }
+
+    // Modal de aviso quando o usuário importa apenas .SHP sem o .DBF
+    function showFarmNoticeModal(count) {
+      const existing = document.getElementById('farmNoticeModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'farmNoticeModal';
+      modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:5000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
+      modal.innerHTML = `
+        <div style="background:#131d2e; border:1px solid #f59e0b; border-radius:12px; width:90%; max-width:520px; padding:22px; box-shadow:0 20px 50px rgba(0,0,0,0.8); text-align:center;">
+          <div style="font-size:2.4rem; margin-bottom:10px;">🌾</div>
+          <h3 style="color:#f59e0b; margin-bottom:10px; font-size:1.15rem;">${count} Talhões Carregados com Sucesso!</h3>
+          <p style="font-size:0.84rem; color:#cbd5e1; line-height:1.55; margin-bottom:16px;">
+            Os contornos dos seus talhões foram convertidos (UTM → GPS) e desenhados no mapa!<br><br>
+            <span style="color:#38bdf8;">💡 <b>Aviso de Atributos:</b></span> Você selecionou apenas o arquivo <b>.shp</b>. Para preencher os nomes das <b>Fazendas, Talhões e Variedades</b>, selecione o arquivo <b>.dbf</b> (ou compacte em um <b>.zip</b>).
+          </p>
+          <div style="display:flex; justify-content:center; gap:10px;">
+            <button class="btn btn-outline" style="color:#38bdf8; border-color:rgba(56,189,248,0.5);" onclick="document.getElementById('farmNoticeModal').remove(); document.getElementById('farmFileInput').click();">
+              <i data-lucide="file-plus"></i> Selecionar .DBF / .ZIP
+            </button>
+            <button class="btn btn-primary" onclick="document.getElementById('farmNoticeModal').remove();">
+              Ver no Mapa
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Aplica registros DBF sobre talhões já carregados
+    function applyDbfRecordsToFarms(records) {
+      if (!savedFarms || savedFarms.length === 0 || !records || records.length === 0) return;
+      for (let i = 0; i < Math.min(savedFarms.length, records.length); i++) {
+        const r = records[i];
+        const norm = {};
+        for (const [k, v] of Object.entries(r)) {
+          if (k) norm[k.toUpperCase().trim()] = (v !== null && v !== undefined) ? String(v).trim() : '';
+        }
+        if (norm['NOME_FAZ'] || norm['FAZENDA']) savedFarms[i].nomeFaz = norm['NOME_FAZ'] || norm['FAZENDA'];
+        if (norm['TALHAO'] || norm['DESC_TALHA']) savedFarms[i].talhao = norm['TALHAO'] || norm['DESC_TALHA'];
+        if (norm['ZONA']) savedFarms[i].zona = norm['ZONA'];
+        if (norm['VARIEDADE']) savedFarms[i].variedade = norm['VARIEDADE'];
+        if (norm['PLANTIO']) savedFarms[i].plantio = norm['PLANTIO'];
+        if (norm['AREA_TOTAL'] || norm['AREA']) {
+          const a = parseFloat(norm['AREA_TOTAL']) || parseFloat(norm['AREA']);
+          if (a > 0) savedFarms[i].areaTotal = a;
+        }
+      }
+      localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+      linkFlightsToFarms();
+      populateFilterOptions();
+      populateFarmFilterOptions();
+      renderFarmsOnMap();
+      renderMap();
+      renderTable();
+      updateStats();
+      updateFarmUI();
+      zoomToFarms();
+    }
+
+    // Aplica registros CSV sobre talhões já carregados
+    function applyCsvRecordsToFarms(records) {
+      if (!savedFarms || savedFarms.length === 0 || !records || records.length === 0) return;
+      for (let i = 0; i < Math.min(savedFarms.length, records.length); i++) {
+        const r = records[i];
+        if (r.nomeFaz) savedFarms[i].nomeFaz = r.nomeFaz;
+        if (r.talhao) savedFarms[i].talhao = r.talhao;
+        if (r.zona) savedFarms[i].zona = r.zona;
+        if (r.variedade) savedFarms[i].variedade = r.variedade;
+        if (r.plantio) savedFarms[i].plantio = r.plantio;
+        if (r.areaTotal > 0) savedFarms[i].areaTotal = r.areaTotal;
+      }
+      localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+      linkFlightsToFarms();
+      populateFilterOptions();
+      populateFarmFilterOptions();
+      renderFarmsOnMap();
+      renderMap();
+      renderTable();
+      updateStats();
+      updateFarmUI();
+      zoomToFarms();
+    }
+
+    // Leitura e salvamento de arquivos Shapefile (.zip, .shp + .dbf), KML e CSV de talhões
+    async function handleFarmFiles(fileList) {
+      const files = Array.from(fileList);
+      if (files.length === 0) { showToast("Nenhum arquivo selecionado."); return; }
+
+      showToast(`Processando arquivos de talhões...`);
+      const newFarms = [];
+      let missingDbfWarn = false;
+      let preferredZone = detectPreferredUtmZone();
+
+      // 1. Arquivos .ZIP de Shapefile
+      const zipFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+      for (const zf of zipFiles) {
+        try {
+          if (typeof shp === 'undefined') throw new Error("Biblioteca shp.js não carregada.");
+          const buf = await zf.arrayBuffer();
+          const res = await shp(buf);
+          const collections = Array.isArray(res) ? res : [res];
+          collections.forEach(col => {
+            if (col && col.features) {
+              const extracted = parseGeoJsonFeatures(col.features, col.fileName || zf.name, preferredZone);
+              newFarms.push(...extracted);
+            }
+          });
+        } catch (err) {
+          console.error("Erro ao processar Shapefile ZIP:", zf.name, err);
+          showToast(`Erro no ZIP ${zf.name}: ${err.message || err}`);
+        }
+      }
+
+      // 2. Arquivos Shapefile avulsos (.SHP)
+      const shpFiles = files.filter(f => f.name.toLowerCase().endsWith('.shp'));
+      for (const shpFile of shpFiles) {
+        try {
+          if (typeof shp === 'undefined') throw new Error("Biblioteca shp.js não carregada.");
+          const baseName = shpFile.name.replace(/\.shp$/i, '').toLowerCase();
+          const dbfFile = files.find(f => f.name.toLowerCase() === `${baseName}.dbf` || f.name.toLowerCase().endsWith('.dbf'));
+          const prjFile = files.find(f => f.name.toLowerCase() === `${baseName}.prj` || f.name.toLowerCase().endsWith('.prj'));
+
+          const shpBuf = await shpFile.arrayBuffer();
+          const dbfBuf = dbfFile ? await dbfFile.arrayBuffer() : null;
+          const prjStr = prjFile ? await prjFile.text() : null;
+
+          if (prjStr) preferredZone = detectPreferredUtmZone(prjStr);
+
+          if (!dbfFile) {
+            missingDbfWarn = true;
+          }
+
+          const geometries = shp.parseShp(shpBuf, prjStr);
+          const properties = dbfBuf ? shp.parseDbf(dbfBuf) : [];
+          const combined = shp.combine([geometries, properties]);
+          const extracted = parseGeoJsonFeatures(combined.features, shpFile.name, preferredZone);
+          newFarms.push(...extracted);
+        } catch (err) {
+          console.error("Erro ao processar SHP:", shpFile.name, err);
+          showToast(`Erro no arquivo SHP ${shpFile.name}: ${err.message || err}`);
+        }
+      }
+
+      // 3. Arquivo .DBF avulso para enriquecer talhões existentes
+      const dbfOnlyFiles = files.filter(f => f.name.toLowerCase().endsWith('.dbf') && shpFiles.length === 0 && zipFiles.length === 0);
+      for (const dbfFile of dbfOnlyFiles) {
+        try {
+          const dbfBuf = await dbfFile.arrayBuffer();
+          const records = shp.parseDbf(dbfBuf);
+          if (records && records.length > 0) {
+            applyDbfRecordsToFarms(records);
+            showToast(`Atributos do ${dbfFile.name} aplicados com sucesso!`);
+          }
+        } catch (err) {
+          console.error("Erro ao ler DBF:", dbfFile.name, err);
+        }
+      }
+
+      // 4. Arquivos .CSV de atributos (ex: tabela de talhões)
+      const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv') && shpFiles.length === 0 && zipFiles.length === 0);
+      for (const cf of csvFiles) {
+        try {
+          const text = await cf.text();
+          const records = parseFarmCsv(text);
+          if (records && records.length > 0) {
+            applyCsvRecordsToFarms(records);
+            showToast(`Planilha CSV com ${records.length} linhas vinculada com sucesso!`);
+          }
+        } catch (err) {
+          console.error("Erro ao ler CSV de talhões:", cf.name, err);
+        }
+      }
+
+      // 5. Arquivos KML de talhões
+      const kmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.kml'));
+      for (const file of kmlFiles) {
+        try {
+          const text = await file.text();
+          const extracted = parseFarmKml(text, file.name);
+          newFarms.push(...extracted);
+        } catch (e) {
+          console.error("Erro ao ler KML de talhões:", file.name, e);
+        }
+      }
+
+      if (newFarms.length > 0) {
+        savedFarms = [...newFarms];
+        localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+        linkFlightsToFarms();
+        populateFilterOptions();
+        populateFarmFilterOptions();
+        renderFarmsOnMap();
+        renderMap();
+        renderTable();
+        updateStats();
+        updateFarmUI();
+        zoomToFarms();
+
+        if (missingDbfWarn) {
+          showFarmNoticeModal(savedFarms.length);
+        } else {
+          showToast(`🌾 ${savedFarms.length} talhões importados e vinculados com sucesso!`);
+        }
+      } else if (dbfOnlyFiles.length === 0 && csvFiles.length === 0) {
+        showToast("Nenhum polígono de talhão encontrado nos arquivos selecionados.");
+      }
+    }
+
+    function populateFarmFilterOptions() {
+      const selFarm = document.getElementById('selFarm');
+      const selTalhao = document.getElementById('selTalhao');
+      if (!selFarm) return;
+
+      const farmSet = new Set();
+      flights.forEach(f => { if (f.farm) farmSet.add(f.farm); });
+      savedFarms.forEach(f => { if (f.nomeFaz) farmSet.add(f.nomeFaz); });
+
+      selFarm.innerHTML = '<option value="">Todas as Fazendas</option>';
+      Array.from(farmSet).sort().forEach(fm => {
+        selFarm.innerHTML += `<option value="${fm}">${fm}</option>`;
+      });
+
+      if (selTalhao) {
+        selTalhao.innerHTML = '<option value="">Todos os Talhões</option>';
+      }
+    }
+
+    function onFarmSelectChange() {
+      const selFarm = document.getElementById('selFarm');
+      const selTalhao = document.getElementById('selTalhao');
+      const farmVal = selFarm ? selFarm.value : '';
+
+      if (selTalhao) {
+        selTalhao.innerHTML = '<option value="">Todos os Talhões</option>';
+        if (farmVal) {
+          const talhoes = new Set();
+          flights.forEach(f => { if (f.farm === farmVal && f.talhao) talhoes.add(f.talhao); });
+          savedFarms.forEach(f => { if (f.nomeFaz === farmVal && f.talhao) talhoes.add(f.talhao); });
+
+          Array.from(talhoes).sort((a,b) => (parseFloat(a)||0) - (parseFloat(b)||0)).forEach(t => {
+            selTalhao.innerHTML += `<option value="${t}">Talhão ${t}</option>`;
+          });
+        }
+      }
+
+      applyFilters();
+    }
+
+    function filterByFarmTalhao(farmName, talhaoNum) {
+      const selFarm = document.getElementById('selFarm');
+      if (selFarm) {
+        selFarm.value = farmName;
+        onFarmSelectChange();
+        const selTalhao = document.getElementById('selTalhao');
+        if (selTalhao) selTalhao.value = talhaoNum;
+        applyFilters();
+        showToast(`Filtrado: ${farmName} - Talhão ${talhaoNum}`);
+      }
+    }
+
+    function updateFarmUI() {
+      const btn = document.getElementById('btnManageFarms');
+      const lbl = document.getElementById('lblFarmCount');
+      const lblToggle = document.getElementById('lblToggleFarms');
+      const sepFarms = document.getElementById('sepFarms');
+      const btnZoom = document.getElementById('btnZoomFarms');
+
+      if (savedFarms.length > 0) {
+        if (btn) btn.style.display = 'inline-flex';
+        if (lbl) lbl.innerText = `Talhões (${savedFarms.length})`;
+        if (lblToggle) lblToggle.style.display = 'flex';
+        if (sepFarms) sepFarms.style.display = 'inline';
+        if (btnZoom) btnZoom.style.display = 'inline-flex';
+      } else {
+        if (btn) btn.style.display = 'none';
+        if (lblToggle) lblToggle.style.display = 'none';
+        if (sepFarms) sepFarms.style.display = 'none';
+        if (btnZoom) btnZoom.style.display = 'none';
+      }
+    }
+
+    function openFarmModal() {
+      const modal = document.getElementById('farmModal');
+      const tbody = document.getElementById('farmModalTableBody');
+      const summary = document.getElementById('farmModalSummary');
+
+      let totalHa = 0;
+      savedFarms.forEach(f => totalHa += (f.areaTotal || 0));
+
+      summary.innerHTML = `Total: <b>${savedFarms.length}</b> talhões cadastrados | Área mapeada: <b style="color:#f59e0b;">${totalHa.toFixed(1)} ha</b>`;
+
+      let html = '';
+      savedFarms.forEach((f, idx) => {
+        html += `
+          <tr style="border-bottom:1px solid rgba(44, 63, 88, 0.4);">
+            <td style="padding:6px;"><span class="tag-farm">${f.nomeFaz}</span></td>
+            <td style="padding:6px;"><b>${f.talhao || '-'}</b></td>
+            <td style="padding:6px;">${f.zona || '-'}</td>
+            <td style="padding:6px; color:#a3e635;">${f.variedade || '-'}</td>
+            <td style="padding:6px;">${f.plantio || '-'}</td>
+            <td style="padding:6px; color:#f59e0b; font-weight:700;">${f.areaTotal.toFixed(2)} ha</td>
+            <td style="padding:6px; text-align:center;">
+              <div style="display:inline-flex; align-items:center; gap:6px;">
+                <button onclick="downloadSpecificTalhao('${escapeHtml(f.nomeFaz || '')}', '${escapeHtml(f.talhao || '')}')" title="Baixar KML deste talhão" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; border-radius:4px; padding:2px 6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-size:0.7rem;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>KML</span>
+                </button>
+                <button onclick="removeSingleFarm(${idx})" title="Remover talhão" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.85rem;">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      if (savedFarms.length === 0) {
+        html = `<tr><td colspan="7" style="text-align:center; padding:16px; color:#94a3b8;">Nenhum talhão cadastrado ainda. Clique em "+ Adicionar KML" acima para carregar.</td></tr>`;
+      }
+
+      tbody.innerHTML = html;
+      modal.style.display = 'flex';
+      lucide.createIcons();
+    }
+
+    function closeFarmModal() {
+      document.getElementById('farmModal').style.display = 'none';
+    }
+
+    function removeSingleFarm(index) {
+      const f = savedFarms[index];
+      if (!confirm(`Deseja remover o talhão ${f.nomeFaz} - ${f.talhao}?`)) return;
+      if (window.NeonSync && f && f.id) NeonSync.deleteFarm(f.id);
+      savedFarms.splice(index, 1);
+      localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
+      linkFlightsToFarms();
+      populateFarmFilterOptions();
+      renderFarmsOnMap();
+      renderTable();
+      updateFarmUI();
+      openFarmModal();
+      showToast("Talhão removido e sincronizado na nuvem.");
+    }
+
+    function clearAllFarms() {
+      if (savedFarms.length === 0) return;
+      if (!confirm("Deseja realmente remover TODOS os talhões cadastrados?")) return;
+      savedFarms = [];
+      localStorage.removeItem('agrodrone_saved_farms');
+      if (window.NeonSync) NeonSync.clearAllFarms();
+      linkFlightsToFarms();
+      populateFarmFilterOptions();
+      renderFarmsOnMap();
+      renderTable();
+      updateFarmUI();
+      closeFarmModal();
+      showToast("Todos os talhões foram removidos da nuvem.");
+    }
+  </script>
+</body>
+</html>

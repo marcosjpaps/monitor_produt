@@ -1,0 +1,9 @@
+# Optional Python dependencies used by custom parser scripts in Docker/web mode.
+#
+# Add your parser libraries below (one package per line), then rebuild the image:
+# docker compose -f docker-compose-build.yml build --no-cache open-dronelog
+# docker compose -f docker-compose-build.yml up -d
+#
+# Examples:
+# pyulog==1.2.2
+# scipy==1.17.1

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opendronelog.dev/context/schema/domain-architecture.schema.json",
+  "allOf": [
+    { "$ref": "./context-doc.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "object",
+          "required": ["deployment_modes", "entry_points", "bridge", "core_modules"],
+          "properties": {
+            "deployment_modes": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+            "entry_points": { "type": "object" },
+            "bridge": { "type": "string" },
+            "core_modules": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  ]
+}

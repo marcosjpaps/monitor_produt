@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opendronelog.dev/context/schema/domain-project.schema.json",
+  "allOf": [
+    { "$ref": "./context-doc.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "object",
+          "required": ["name", "version", "license", "frontend", "backend"],
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "license": { "type": "string" },
+            "frontend": { "type": "object" },
+            "backend": { "type": "object" }
+          }
+        }
+      }
+    }
+  ]
+}

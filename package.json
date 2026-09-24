@@ -1,0 +1,9 @@
+{
+  "name": "agrodrone-map",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Voos e Talhões com Drone",
+  "main": "index.html",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.5"
+  }
+}

@@ -1,0 +1,577 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Open DroneLog Generated API Surface",
+    "version": "generated",
+    "description": "Generated from src-tauri/src/server.rs router declarations.",
+    "x-source-fingerprint": "d5e6ea92258779cee4515a28b63e28be7257d175abbf434f0a41634e77bbfedd"
+  },
+  "paths": {
+    "/api/import": {
+      "post": {
+        "operationId": "import_log",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/manual_flight": {
+      "post": {
+        "operationId": "create_manual_flight",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights": {
+      "get": {
+        "operationId": "get_flights",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flight_data": {
+      "get": {
+        "operationId": "get_flight_data",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "operationId": "get_overview_stats",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/battery_capacity_history": {
+      "get": {
+        "operationId": "get_battery_full_capacity_history",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/delete": {
+      "delete": {
+        "operationId": "delete_flight",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/delete_all": {
+      "delete": {
+        "operationId": "delete_all_flights",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/deduplicate": {
+      "post": {
+        "operationId": "deduplicate_flights",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/name": {
+      "put": {
+        "operationId": "update_flight_name",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/notes": {
+      "put": {
+        "operationId": "update_flight_notes",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/color": {
+      "put": {
+        "operationId": "update_flight_color",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/tags/add": {
+      "post": {
+        "operationId": "add_flight_tag",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/flights/tags/remove": {
+      "post": {
+        "operationId": "remove_flight_tag",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "operationId": "get_all_tags",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/tags/remove_auto": {
+      "post": {
+        "operationId": "remove_all_auto_tags",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/settings/smart_tags": {
+      "get": {
+        "operationId": "get_smart_tags_enabled",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "set_smart_tags_enabled",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/settings/enabled_tag_types": {
+      "get": {
+        "operationId": "get_enabled_tag_types",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "set_enabled_tag_types",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/settings/value": {
+      "get": {
+        "operationId": "get_setting_value",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "set_setting_value",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/regenerate_smart_tags": {
+      "post": {
+        "operationId": "regenerate_smart_tags",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/regenerate_flight_smart_tags/:id": {
+      "post": {
+        "operationId": "regenerate_flight_smart_tags",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/has_api_key": {
+      "get": {
+        "operationId": "has_api_key",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/api_key_type": {
+      "get": {
+        "operationId": "get_api_key_type",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/set_api_key": {
+      "post": {
+        "operationId": "set_api_key",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/remove_api_key": {
+      "delete": {
+        "operationId": "remove_api_key",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/app_data_dir": {
+      "get": {
+        "operationId": "get_app_data_dir",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/battery_pairs": {
+      "get": {
+        "operationId": "get_battery_pairs",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/app_log_dir": {
+      "get": {
+        "operationId": "get_app_log_dir",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/allowed_log_extensions": {
+      "get": {
+        "operationId": "get_allowed_log_extensions",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/backup": {
+      "get": {
+        "operationId": "export_backup",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/backup/restore": {
+      "post": {
+        "operationId": "import_backup",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/config": {
+      "get": {
+        "operationId": "get_sync_config",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/blacklist": {
+      "get": {
+        "operationId": "get_sync_blacklist",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "add_sync_blacklist",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "remove_sync_blacklist",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/blacklist/details": {
+      "get": {
+        "operationId": "get_sync_blacklist_details",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/blacklist/all": {
+      "delete": {
+        "operationId": "clear_sync_blacklist",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/log_event": {
+      "post": {
+        "operationId": "sync_log_event",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/files": {
+      "get": {
+        "operationId": "get_sync_files",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync/file": {
+      "post": {
+        "operationId": "sync_single_file",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sync": {
+      "post": {
+        "operationId": "sync_from_folder",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/equipment_names": {
+      "get": {
+        "operationId": "get_equipment_names",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "set_equipment_name",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles": {
+      "get": {
+        "operationId": "list_profiles",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/active": {
+      "get": {
+        "operationId": "get_active_profile",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/switch": {
+      "post": {
+        "operationId": "switch_profile",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/delete": {
+      "post": {
+        "operationId": "delete_profile_endpoint",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/set_password": {
+      "post": {
+        "operationId": "set_profile_password",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/remove_password": {
+      "post": {
+        "operationId": "remove_profile_password",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/profiles/has_master_password": {
+      "get": {
+        "operationId": "has_master_password",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/supporter/verify": {
+      "post": {
+        "operationId": "verify_supporter_code",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/supporter/status": {
+      "get": {
+        "operationId": "get_supporter_status",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/supporter/remove": {
+      "post": {
+        "operationId": "remove_supporter_badge",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/supporter/donation": {
+      "get": {
+        "operationId": "get_donation_acknowledged",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "set_donation_acknowledged",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}

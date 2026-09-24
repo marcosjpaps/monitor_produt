@@ -1,0 +1,25 @@
+:root {
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
+}
+
+.mobile-safe-container {
+  padding-top: var(--mobile-safe-top);
+  padding-right: var(--mobile-safe-right);
+  padding-bottom: var(--mobile-safe-bottom);
+  padding-left: var(--mobile-safe-left);
+}
+
+.mobile-safe-fixed-top {
+  top: calc(1rem + var(--mobile-safe-top));
+}
+
+.mobile-safe-fixed-bottom {
+  bottom: calc(1.5rem + var(--mobile-safe-bottom));
+}
+
+.modal-mobile-max {
+  max-height: min(85vh, calc(100dvh - var(--mobile-safe-top) - var(--mobile-safe-bottom) - 1.5rem));
+}

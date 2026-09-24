@@ -1,0 +1,23 @@
+{
+  "sourceFingerprints": {
+    "readmeEnvVars": "0af4b86231dd66eadf0a5938a45d5a892377bc2a5f139ed9aee1aa4215371a64",
+    "composeEnvVars": "0af4b86231dd66eadf0a5938a45d5a892377bc2a5f139ed9aee1aa4215371a64",
+    "composeBuildEnvVars": "0af4b86231dd66eadf0a5938a45d5a892377bc2a5f139ed9aee1aa4215371a64"
+  },
+  "sources": [
+    "README.md",
+    "docker-compose.yml",
+    "docker-compose-build.yml"
+  ],
+  "variables": [
+    "DATA_DIR",
+    "DEFAULT_PROFILE_PASSWORD",
+    "DJI_API_KEY",
+    "KEEP_UPLOADED_FILES",
+    "PROFILE_CREATION_PASS",
+    "RUST_LOG",
+    "SESSION_TTL_HOURS",
+    "SYNC_INTERVAL",
+    "SYNC_LOGS_PATH"
+  ]
+}
