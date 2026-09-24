@@ -1,0 +1,123 @@
+# =============================================================
+# AgroTelemetry Monitor - .gitignore
+# Gerado por auditoria de segurança - Senior DevOps/Cybersecurity
+# =============================================================
+
+# --- SEGREDOS E VARIÁVEIS DE AMBIENTE (NUNCA VERSIONAR) ---
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+secrets.yaml
+
+# --- BASES DE DADOS LOCAIS (dados sensíveis do cliente) ---
+*.db
+*.sqlite
+*.sqlite3
+telemetria.db
+trimble_data.db
+
+# --- FICHEIROS DE UPLOAD / DADOS AGRÍCOLAS TEMPORÁRIOS ---
+*.zip
+*.rar
+*.t0x
+*.agf
+*.rnx
+*.obs
+*.jdl
+*.JDL
+*.shp
+*.dbf
+*.shx
+*.prj
+*.qpj
+uploads/
+tmp/
+temp/
+AgGPS_Data/
+scratch/
+
+# --- PYTHON ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+venv/
+.venv/
+env/
+.env/
+ENV/
+pip-wheel-metadata/
+poetry.lock
+
+# --- NODE.JS ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+dist/
+
+# --- LOGS E ANÁLISE ---
+*.log
+*.json.bak
+jdl_telemetry_analysis.json
+logs/
+
+# --- IDEs E EDITORES ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- QGIS / GIS ---
+*.qgs~
+*.qgz~
+
+# --- CONFIGURAÇÕES LOCAIS DA APP (caminhos de máquina específicos) ---
+backend/aggps_settings.json
+
+# --- AMOSTRAS E SCRIPTS DE ANÁLISE TEMPORÁRIOS ---
+jdl_analyzer.py
+test_backend.py

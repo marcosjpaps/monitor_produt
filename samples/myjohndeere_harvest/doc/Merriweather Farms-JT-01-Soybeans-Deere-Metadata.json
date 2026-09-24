@@ -1,0 +1,70 @@
+{
+  "Version": "1.0",
+  "OrgId": 223031,
+  "ClientId": "46234f43-0000-1000-4014-e1e1e11124e0",
+  "ClientName": "Merriweather Farms",
+  "FarmId": "4641d448-0000-1000-4033-e1e1e11124e0",
+  "FarmName": "JT",
+  "FieldId": "e61b83f4-3a12-431e-8010-596f2466dc27",
+  "FieldName": "01",
+  "Operation": "Harvest",
+  "CropSeason": 2016,
+  "CropToken": "SOYBEANS",
+  "FileCreatedTimeStamp": "2018-04-25T21:08:48.9432Z",
+  "DataAttributes": [
+    {
+      "Name": "DISTANCE",
+      "Unit": "ft",
+      "Description": "Distance Travelled From Previous Point"
+    },
+    {
+      "Name": "SWATHWIDTH",
+      "Unit": "ft",
+      "Description": "Width Of Element"
+    },
+    {
+      "Name": "VRYIELDVOL",
+      "Unit": "bu1ac-1",
+      "Description": "Yield as Volume"
+    },
+    {
+      "Name": "SECTIONID",
+      "Description": "Element Id"
+    },
+    {
+      "Name": "Crop",
+      "Description": "CropId"
+    },
+    {
+      "Name": "Moisture",
+      "Unit": "prcnt",
+      "Description": "Moisture"
+    },
+    {
+      "Name": "WetMass",
+      "Unit": "lb1ac-1",
+      "Description": "Wet Mass"
+    },
+    {
+      "Name": "Time",
+      "Description": "Timestamp"
+    },
+    {
+      "Name": "Heading",
+      "Description": "Machine Heading"
+    },
+    {
+      "Name": "VARIETY",
+      "Description": "Variety Name"
+    },
+    {
+      "Name": "Elevation",
+      "Unit": "ft",
+      "Description": "Elevation"
+    },
+    {
+      "Name": "IsoTime",
+      "Description": "Precise Timestamp"
+    }
+  ]
+}

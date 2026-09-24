@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Massey Ferguson 7318 • Trimble TMX-2050 - Mapa de Operações & Atributos</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Shapefile Parser (shp.js) -->
+  <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Massey Ferguson Red Brand Accents */
+    .brand-icon-mf {
+      background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4) !important;
+    }
+    .badge-brand-mf {
+      background: rgba(220, 38, 38, 0.15);
+      border: 1px solid rgba(220, 38, 38, 0.4);
+      color: #f87171;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .btn-nav-switch {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-nav-switch:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .btn-jd {
+      color: #4ade80 !important;
+      border-color: rgba(74, 222, 128, 0.3) !important;
+    }
+    .btn-jd:hover {
+      background: rgba(74, 222, 128, 0.15) !important;
+    }
+    .btn-jacto {
+      color: #fb923c !important;
+      border-color: rgba(251, 146, 60, 0.3) !important;
+    }
+    .btn-jacto:hover {
+      background: rgba(251, 146, 60, 0.15) !important;
+    }
+    .btn-drone {
+      color: #38bdf8 !important;
+      border-color: rgba(56, 189, 248, 0.3) !important;
+    }
+    .btn-drone:hover {
+      background: rgba(56, 189, 248, 0.15) !important;
+    }
+    .btn-portal {
+      color: #a855f7 !important;
+      border-color: rgba(168, 85, 247, 0.3) !important;
+    }
+    .btn-portal:hover {
+      background: rgba(168, 85, 247, 0.15) !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast">Notificação</div>
+
+  <!-- DRAG & DROP OVERLAY -->
+  <div id="dropZone">
+    <i data-lucide="upload-cloud" style="width: 56px; height: 56px;"></i>
+    <h2 style="margin-top: 10px;">Solte arquivos Trimble (.agf, .zip, .rar) ou Shapefile (.zip) aqui</h2>
+    <p>As tarefas do monitor TMX-2050 e os talhões serão lidos e mapeados automaticamente.</p>
+  </div>
+
+  <!-- TOP COLLAPSIBLE CONTAINER (HEADER + KPIS) -->
+  <div id="topSection" class="top-section">
+    <!-- TOP BAR -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon brand-icon-mf">
+          <i data-lucide="tractor" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div class="brand-title">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h1 style="font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.3px;">Massey Ferguson 7318 • Trimble TMX-2050</h1>
+            <span class="badge-brand-mf">MF Autopilot</span>
+          </div>
+          <p>Usina G5 • Piloto NAV-900 (S/N: 6250440300) • Monitor TMX (S/N: 6251225841) • Contêineres .AGF & manifest.xml</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Switcher Buttons para outros Cockpits -->
+        <a href="/johndeere" class="btn-nav-switch btn-jd" title="Alternar para John Deere G5 (.JDL)">
+          <i data-lucide="tractor" style="width: 14px; height: 14px;"></i> John Deere G5
+        </a>
+
+        <a href="/jacto" class="btn-nav-switch btn-jacto" title="Alternar para Jacto / Trimble AgGPS">
+          <i data-lucide="spray-can" style="width: 14px; height: 14px;"></i> Jacto Uniport
+        </a>
+
+        <a href="/drone" class="btn-nav-switch btn-drone" title="Alternar para Drones Agrícolas">
+          <i data-lucide="plane" style="width: 14px; height: 14px;"></i> Drones
+        </a>
+
+        <a href="/studio" class="btn-nav-switch" style="color: #cbd5e1;" title="Precision Ag Studio">
+          <i data-lucide="terminal" style="width: 14px; height: 14px;"></i> Studio
+        </a>
+
+        <a href="/" class="btn-nav-switch btn-portal" title="Portal Hub Principal">
+          <i data-lucide="home" style="width: 14px; height: 14px;"></i> Portal
+        </a>
+
+        <!-- Inputs Ocultos de Arquivo -->
+        <input type="file" id="fileInput" multiple accept=".agf,.zip,.rar" style="display: none;">
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+        <input type="file" id="shpFileInput" multiple accept=".zip,.shp,.dbf,.kml,.geojson" style="display: none;">
+
+        <button class="btn btn-primary" id="btnImportTractor" style="background:linear-gradient(135deg, #dc2626, #b91c1c); color:white; font-weight:700; border: 1px solid rgba(220,38,38,0.5);" title="Carregar diretamente a pasta do Trator Massey Ferguson 7318 (Usina G5)">
+          <i data-lucide="tractor"></i> Sincronizar Trator Massey
+        </button>
+
+        <button class="btn btn-outline" id="btnFolderOpen" onclick="document.getElementById('folderInput').click()" title="Selecionar a pasta raiz do Pen Drive ou Log do monitor">
+          <i data-lucide="folder-open"></i> Abrir Pasta
+        </button>
+
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()" title="Carregar pacotes .agf, .zip ou .db exportados">
+          <i data-lucide="file-plus"></i> Importar .AGF/.ZIP
+        </button>
+
+        <button class="btn btn-success" onclick="exportMergedGeoJSON()" title="Exportar todas as camadas mapeadas para GeoJSON / KML">
+          <i data-lucide="download"></i> GeoJSON
+        </button>
+
+        <button class="btn btn-outline" onclick="exportCSV()" title="Exportar tabela de atributos em formato CSV / Excel">
+          <i data-lucide="sheet"></i> CSV
+        </button>
+
+        <!-- BADGE STATUS DRIVER TRIMBLE -->
+        <div class="driver-badge" title="Driver de leitura AGF e AES Trimble TMX ativo" style="border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.12);">
+          <span class="pulse-dot" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+          <span style="color: #fca5a5;">TMX-2050 Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI SUMMARY BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-card">
+        <i data-lucide="layers" style="color: #ef4444;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Operações / Tarefas</span>
+          <span class="kpi-num" id="kpiOperations" style="color: #ef4444;">25 Operações</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="maximize" style="color: var(--accent);"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Mapeada (Swaths)</span>
+          <span class="kpi-num" id="kpiArea">310,12 ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="map" style="color: #38bdf8;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Talhões Mapeados (SIG)</span>
+          <span class="kpi-num" id="kpiSigCount" style="color: #38bdf8;">857 Talhões</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="pie-chart" style="color: #a855f7;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Total do SIG</span>
+          <span class="kpi-num" id="kpiSigArea" style="color: #a855f7;">10.000,45 ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="cpu" style="color: var(--warning);"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Monitor / Controlador</span>
+          <span class="kpi-num" id="kpiMonitor">TMX 6251225841</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="tractor" style="color: #f87171;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Veículo & Piloto</span>
+          <span class="kpi-num" id="kpiVehicle">MF 7318 • NAV-900</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="package" style="color: #38bdf8;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Insumo Principal</span>
+          <span class="kpi-num" id="kpiInput">Calagem / Calcário</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="building-2" style="color: var(--accent);"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Fazendas Ativas</span>
+          <span class="kpi-num" id="kpiFarmsCount">20 Fazendas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIDDLE SECTION: MAP VIEWPORT -->
+  <div id="mapContainer">
+    <div id="map"></div>
+
+    <!-- HUD FLUTUANTE DE COORDENADAS E ZOOM -->
+    <div class="map-hud" id="mapHud">
+      <div class="hud-item">
+        <i data-lucide="navigation"></i>
+        <span id="hudCoords">-18.6600, -48.4000</span>
+      </div>
+      <div class="hud-item">
+        <i data-lucide="zoom-in"></i>
+        <span>Zoom: <strong id="hudZoom">13</strong></span>
+      </div>
+      <div class="hud-item" id="hudActiveOpItem" style="display:none;">
+        <i data-lucide="check-circle" style="color:var(--accent);"></i>
+        <span id="hudActiveOpName">-</span>
+      </div>
+    </div>
+
+    <!-- MAP OVERLAY CONTROLS (CAMADAS E BASEMAP) -->
+    <div class="map-controls">
+      <button class="map-ctrl-btn" onclick="cycleBasemap()" title="Alternar Satélite (Google, Carto, Esri)">
+        <i data-lucide="globe"></i>
+      </button>
+      <button class="map-ctrl-btn active" id="btnToggleSwaths" onclick="toggleSwathsLayer()" title="Exibir/Ocultar Faixas Reais de Aplicação">
+        <i data-lucide="spline"></i>
+      </button>
+      <button class="map-ctrl-btn active" id="btnTogglePolygons" onclick="togglePolygonsLayer()" title="Exibir/Ocultar Polígonos dos Talhões">
+        <i data-lucide="hexagon"></i>
+      </button>
+      <button class="map-ctrl-btn" onclick="zoomToAll()" title="Enquadrar Todas as Tarefas (Zoom to Fit)">
+        <i data-lucide="scan"></i>
+      </button>
+    </div>
+
+    <!-- BOTÃO COLLAPSE/EXPAND TOP SECTION -->
+    <button class="btn-collapse-top" id="btnCollapseTop" onclick="toggleTopSection()" title="Recolher cabeçalho para expandir o mapa">
+      <i data-lucide="chevron-up" id="iconCollapseTop"></i>
+    </button>
+  </div>
+
+  <!-- RESIZER SPLITTER (ARRASTAR PARA MUDAR TAMANHO DO DOCK) -->
+  <div id="resizer"></div>
+
+  <!-- BOTTOM SECTION: ATTRIBUTE TABLE DOCK -->
+  <div id="dockContainer" class="dock">
+    <!-- DOCK TABS E HEADER -->
+    <div class="dock-header">
+      <div class="dock-tabs">
+        <button class="dock-tab active" id="tabOperations" onclick="switchDockTab('operations')">
+          <i data-lucide="layers" style="width:14px; height:14px;"></i>
+          <span>Operações de Máquina</span>
+          <span class="badge" id="badgeOpsCount">25</span>
+        </button>
+        <button class="dock-tab" id="tabFarmFields" onclick="switchDockTab('farmFields')">
+          <i data-lucide="map" style="width:14px; height:14px;"></i>
+          <span>Talhões Cadastrais do SIG</span>
+          <span class="badge" id="badgeFieldsCount">857</span>
+        </button>
+      </div>
+
+      <!-- FILTROS RÁPIDOS DA TABELA -->
+      <div class="dock-filters">
+        <!-- BUSCA TEXTUAL GERAL -->
+        <div class="search-box">
+          <i data-lucide="search" style="color:var(--text-muted); width:14px; height:14px;"></i>
+          <input type="text" id="searchInput" placeholder="Filtrar por nome, talhão ou UUID..." oninput="onSearchChange()">
+        </div>
+
+        <!-- FILTRO POR MONITOR / SERIAL -->
+        <select class="filter-select" id="filterMonitor" onchange="onMonitorFilterChange()">
+          <option value="all">Todos os Monitores TMX</option>
+        </select>
+
+        <!-- FILTRO POR TIPO DE OPERAÇÃO -->
+        <select class="filter-select" id="filterType" onchange="onTypeFilterChange()">
+          <option value="all">Todas as Operações</option>
+          <option value="Calagem">Calagem</option>
+          <option value="Gessagem">Gessagem</option>
+          <option value="Adubação">Adubação</option>
+          <option value="Plantio">Plantio</option>
+          <option value="Pulverização">Pulverização</option>
+        </select>
+
+        <!-- FILTRO POR FAZENDA -->
+        <select class="filter-select" id="filterFarm" onchange="onFarmFilterChange()">
+          <option value="all">Todas as Fazendas</option>
+        </select>
+
+        <!-- AÇÕES DO DOCK -->
+        <div class="dock-actions">
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="resetAllFilters()" title="Limpar todos os filtros">
+            <i data-lucide="rotate-ccw"></i> Limpar Filtros
+          </button>
+          <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="toggleDockCollapse()" id="btnDockCollapse" title="Recolher/Expandir Tabela">
+            <i data-lucide="chevron-down" id="iconDockCollapse"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCK BODY: TABELAS DINÂMICAS -->
+    <div class="dock-body">
+      <div class="table-wrap">
+        <!-- TABELA 1: OPERAÇÕES DO MONITOR TRIMBLE -->
+        <table class="attr-table" id="operationsTable">
+          <thead>
+            <tr>
+              <th data-col="idx" style="width: 44px; text-align: center;">#</th>
+              <th data-col="status" style="width: 48px; text-align: center;">GIS</th>
+              <th data-col="farm">Fazenda</th>
+              <th data-col="field">Talhão</th>
+              <th data-col="op">Operação / Insumo</th>
+              <th data-col="type">Tipo</th>
+              <th data-col="vehicle">Trator</th>
+              <th data-col="controller">Piloto Automático</th>
+              <th data-col="implement">Implemento</th>
+              <th data-col="area" style="text-align: right;">Área (ha)</th>
+              <th data-col="rate" style="text-align: right;">Taxa Média</th>
+              <th data-col="total" style="text-align: right;">Total Aplicado</th>
+              <th data-col="monitor">Série TMX</th>
+              <th data-col="uuid">UUID da Tarefa</th>
+              <th data-col="actions" style="text-align: center;">Ações</th>
+            </tr>
+            <!-- LINHA DE FILTRO INDIVIDUAL POR COLUNA -->
+            <tr class="col-filter-row" id="colFilterRow">
+              <th data-col="idx"></th>
+              <th data-col="status"></th>
+              <th data-col="farm"><input type="text" class="col-filter-input" data-filter="farm" placeholder="Filtrar fazenda..." oninput="onColumnFilterChange('farm', this.value)"></th>
+              <th data-col="field"><input type="text" class="col-filter-input" data-filter="field" placeholder="Talhão..." oninput="onColumnFilterChange('field', this.value)"></th>
+              <th data-col="op"><input type="text" class="col-filter-input" data-filter="op" placeholder="Filtrar operação..." oninput="onColumnFilterChange('op', this.value)"></th>
+              <th data-col="type"><input type="text" class="col-filter-input" data-filter="type" placeholder="Tipo..." oninput="onColumnFilterChange('type', this.value)"></th>
+              <th data-col="vehicle"><input type="text" class="col-filter-input" data-filter="vehicle" placeholder="Trator..." oninput="onColumnFilterChange('vehicle', this.value)"></th>
+              <th data-col="controller"><input type="text" class="col-filter-input" data-filter="controller" placeholder="Piloto..." oninput="onColumnFilterChange('controller', this.value)"></th>
+              <th data-col="implement"><input type="text" class="col-filter-input" data-filter="implement" placeholder="Implemento..." oninput="onColumnFilterChange('implement', this.value)"></th>
+              <th data-col="area"><input type="text" class="col-filter-input" data-filter="area" placeholder="Área..." oninput="onColumnFilterChange('area', this.value)"></th>
+              <th data-col="rate"><input type="text" class="col-filter-input" data-filter="rate" placeholder="Taxa..." oninput="onColumnFilterChange('rate', this.value)"></th>
+              <th data-col="total"><input type="text" class="col-filter-input" data-filter="total" placeholder="Total..." oninput="onColumnFilterChange('total', this.value)"></th>
+              <th data-col="monitor"><input type="text" class="col-filter-input" data-filter="monitor" placeholder="Série..." oninput="onColumnFilterChange('monitor', this.value)"></th>
+              <th data-col="uuid"><input type="text" class="col-filter-input" data-filter="uuid" placeholder="UUID..." oninput="onColumnFilterChange('uuid', this.value)"></th>
+              <th data-col="actions"></th>
+            </tr>
+          </thead>
+          <tbody id="attrTableBody">
+            <!-- Linhas geradas via JavaScript -->
+          </tbody>
+        </table>
+
+        <!-- TABELA 2: TALHÕES CADASTRAIS (SIG - 857 TALHÕES) -->
+        <table class="attr-table" id="farmFieldsTable" style="display:none;">
+          <thead>
+            <tr>
+              <th style="width: 44px; text-align: center;">#</th>
+              <th style="color:#f59e0b;">Fazenda</th>
+              <th style="color:#38bdf8;">Zona</th>
+              <th style="color:#ffffff;">Talhão</th>
+              <th>Descrição</th>
+              <th style="color:#10b981;">Variedade de Cana</th>
+              <th style="text-align:center;">Ano Plantio</th>
+              <th style="color:#10b981; text-align:right;">Área Total (ha)</th>
+              <th style="color:#f59e0b; text-align:center;">Operações de Máquina</th>
+              <th style="text-align:center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="farmFieldsTableBody">
+            <!-- Linhas geradas via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALHES E INSPEÇÃO DO manifest.xml -->
+  <div id="detailModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
+    <div style="background:#131d2e; border:1px solid var(--border); border-radius:12px; width:92%; max-width:850px; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.85); overflow:hidden;">
+      <div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#0d1522;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span id="modalOpTag" class="tag-type">Calagem</span>
+          <h3 id="modalOpTitle" style="color:#fff; font-size:1.15rem; font-weight:700;">12 Ao 17 Calcário</h3>
+        </div>
+        <button onclick="closeDetailModal()" style="background:transparent; border:none; color:#94a3b8; font-size:1.6rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding:18px 22px; display:grid; grid-template-columns:1fr 1.2fr; gap:20px;">
+        <!-- Metadados -->
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <h4 style="font-size:0.78rem; text-transform:uppercase; color:var(--primary); font-weight:700;">Identificação da Operação</h4>
+          <div class="meta-row">
+            <span class="meta-k">UUID Global:</span>
+            <span class="meta-v mono" id="modalUuid">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Nome no Monitor:</span>
+            <span class="meta-v" id="modalRawName">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Fazenda:</span>
+            <span class="meta-v" id="modalFarm">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Talhões Mapeados:</span>
+            <span class="meta-v" id="modalFields">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Área Mapeada:</span>
+            <span class="meta-v" id="modalArea" style="color:#10b981; font-weight:700;">-</span>
+          </div>
+
+          <h4 style="font-size:0.78rem; text-transform:uppercase; color:var(--warning); font-weight:700; margin-top:8px;">Hardware & Criptografia Trimble</h4>
+          <div class="meta-row">
+            <span class="meta-k">Monitor / Produto:</span>
+            <span class="meta-v" id="modalProduct">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Número de Série:</span>
+            <span class="meta-v mono" id="modalSerial">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Versão da Chave:</span>
+            <span class="meta-v mono" id="modalKeyVer">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Vetor de Inicialização (IV):</span>
+            <span class="meta-v mono" id="modalIv" style="color:#f59e0b; background:rgba(245,158,11,0.1); padding:2px 6px; border-radius:4px;">-</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-k">Arquivo de Telemetria (.enc):</span>
+            <div id="modalEntries" style="margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <!-- XML Viewer -->
+        <div style="display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#090e17; padding:6px 10px; border-radius:6px 6px 0 0; border:1px solid var(--border); border-bottom:none;">
+            <span style="font-size:0.72rem; font-family:var(--font-mono); color:var(--text-muted);">manifest.xml (Raw Source)</span>
+            <button class="btn btn-outline" style="padding:2px 8px; font-size:0.7rem;" onclick="copyModalXml()">Copiar XML</button>
+          </div>
+          <pre style="background:#060a10; border:1px solid var(--border); border-radius:0 0 6px 6px; padding:12px; color:#38bdf8; font-family:var(--font-mono); font-size:0.74rem; flex:1; max-height:360px; overflow:auto; white-space:pre-wrap;"><code id="modalXmlCode">Carregando XML...</code></pre>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px; border-top:1px solid var(--border); display:flex; justify-content:space-between; background:#0d1522;">
+        <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="deleteCurrentModalOp()">Excluir Operação</button>
+        <button class="btn btn-outline" onclick="closeDetailModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL DA APLICAÇÃO GIS -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

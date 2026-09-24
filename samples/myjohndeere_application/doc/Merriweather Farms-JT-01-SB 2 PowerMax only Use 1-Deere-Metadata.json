@@ -1,0 +1,108 @@
+{
+  "Version": "1.0",
+  "OrgId": 223031,
+  "ClientId": "46234f43-0000-1000-4014-e1e1e11124e0",
+  "ClientName": "Merriweather Farms",
+  "FarmId": "4641d448-0000-1000-4033-e1e1e11124e0",
+  "FarmName": "JT",
+  "FieldId": "e61b83f4-3a12-431e-8010-596f2466dc27",
+  "FieldName": "01",
+  "Operation": "Application",
+  "CropSeason": 2016,
+  "Product": {
+    "ProductName": "Tank Mix",
+    "BrandName": "",
+    "TankMix": true,
+    "Rate": {
+      "Value": 12.5,
+      "Unit": "gal1ac-1"
+    },
+    "Components": [
+      {
+        "Carrier": false,
+        "Name": "Roundup Powermax",
+        "Rate": {
+          "Value": 40.0,
+          "Unit": "floz1ac-1"
+        }
+      },
+      {
+        "Carrier": false,
+        "Name": "FS MaxSupreme",
+        "Rate": {
+          "Value": 20.0,
+          "Unit": "floz1ac-1"
+        }
+      },
+      {
+        "Carrier": false,
+        "Name": "AMS",
+        "Rate": {
+          "Value": 0.75,
+          "Unit": "lb1ac-1"
+        }
+      },
+      {
+        "Carrier": true,
+        "Name": "Water",
+        "Rate": {
+          "Value": 12.5,
+          "Unit": "gal1ac-1"
+        }
+      }
+    ]
+  },
+  "FileCreatedTimeStamp": "2018-04-25T21:11:37.9317999Z",
+  "DataAttributes": [
+    {
+      "Name": "Time",
+      "Description": "Timestamp"
+    },
+    {
+      "Name": "Heading",
+      "Description": "Machine Heading"
+    },
+    {
+      "Name": "DISTANCE",
+      "Unit": "ft",
+      "Description": "Distance Travelled From Previous Point"
+    },
+    {
+      "Name": "SWATHWIDTH",
+      "Unit": "ft",
+      "Description": "Width Of Element"
+    },
+    {
+      "Name": "Product",
+      "Description": "Product Name"
+    },
+    {
+      "Name": "SECTIONID",
+      "Description": "Element Id"
+    },
+    {
+      "Name": "AppliedRate",
+      "Unit": "gal1ac-1",
+      "Description": "Applied Rate"
+    },
+    {
+      "Name": "ControlRate",
+      "Unit": "gal1ac-1",
+      "Description": "Control Rate"
+    },
+    {
+      "Name": "TargetRate",
+      "Unit": "gal1ac-1",
+      "Description": "Target Rate"
+    },
+    {
+      "Name": "Elevation",
+      "Unit": "ft",
+      "Description": "Elevation"
+    },
+    {
+      "Name": "IsoTime",
+      "Description": "Precise Timestamp"
+    }
+  ]
+}

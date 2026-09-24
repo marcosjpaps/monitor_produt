@@ -1,0 +1,24 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+python-multipart>=0.0.9
+python-dotenv>=1.0.1
+
+# Base de Dados
+psycopg2-binary>=2.9.9
+asyncpg>=0.29.0
+sqlalchemy>=2.0.30
+alembic>=1.13.1
+
+# Processamento Geoespacial
+shapely>=2.0.4
+pyproj>=3.6.1
+
+# Parsing de ficheiros agrícolas
+lxml>=5.2.2
+rarfile>=4.2
+py7zr>=0.21.0
+
+# Segurança e validação
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hub Operacional • AgroTelemetry Multi-Máquinas</title>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-dark: #070b12;
+      --bg-panel: #0d1522;
+      --bg-card: #131d2e;
+      --bg-card-hover: #1a273e;
+      --border: #23354d;
+      --border-hover: #3b82f6;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --jd-green: #367c2b;
+      --jd-yellow: #ffde00;
+      --jacto-orange: #ea580c;
+      --jacto-orange-glow: rgba(234, 88, 12, 0.4);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at 50% 20%, #111d33 0%, #070b12 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(13, 21, 34, 0.8);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-top-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #070b12;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .brand-top-text h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-top-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .sys-badges {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    .badge-status .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* MAIN CONTAINER */
+    .portal-container {
+      flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 36px;
+    }
+
+    .hero-title {
+      text-align: center;
+      max-width: 720px;
+    }
+
+    .hero-title h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(180deg, #ffffff 30%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-title p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* CARDS GRID (4 COLUMNS ON DESKTOP) */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      width: 100%;
+    }
+
+    /* CARD STYLES */
+    .machine-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .machine-card:hover {
+      transform: translateY(-6px);
+      background: var(--bg-card-hover);
+    }
+
+    /* JOHN DEERE THEME */
+    .card-jd:hover {
+      border-color: var(--jd-yellow);
+      box-shadow: 0 12px 35px rgba(54, 124, 43, 0.35);
+    }
+
+    .card-jd .card-header-icon {
+      background: linear-gradient(135deg, #1b4d13 0%, #367c2b 70%, #ffde00 100%);
+      box-shadow: 0 6px 18px rgba(54, 124, 43, 0.4);
+      border: 1px solid rgba(255, 222, 0, 0.4);
+      color: #ffffff;
+    }
+
+    .card-jd .badge-brand {
+      background: rgba(54, 124, 43, 0.2);
+      border: 1px solid rgba(255, 222, 0, 0.5);
+      color: #ffde00;
+    }
+
+    .card-jd .btn-enter {
+      background: linear-gradient(135deg, #367c2b, #285e20);
+      color: #ffde00;
+      border: 1px solid rgba(255, 222, 0, 0.4);
+    }
+
+    .card-jd .btn-enter:hover {
+      background: linear-gradient(135deg, #449a37, #367c2b);
+      color: #ffffff;
+      box-shadow: 0 6px 20px rgba(54, 124, 43, 0.5);
+    }
+
+    /* JACTO THEME */
+    .card-jacto:hover {
+      border-color: #f97316;
+      box-shadow: 0 12px 35px var(--jacto-orange-glow);
+    }
+
+    .card-jacto .card-header-icon {
+      background: linear-gradient(135deg, #9a3412 0%, #ea580c 70%, #fb923c 100%);
+      box-shadow: 0 6px 18px rgba(234, 88, 12, 0.4);
+      border: 1px solid rgba(251, 146, 60, 0.4);
+      color: #ffffff;
+    }
+
+    .card-jacto .badge-brand {
+      background: rgba(234, 88, 12, 0.2);
+      border: 1px solid rgba(251, 146, 60, 0.5);
+      color: #fb923c;
+    }
+
+    .card-jacto .btn-enter {
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      color: #ffffff;
+      border: 1px solid rgba(251, 146, 60, 0.4);
+    }
+
+    .card-jacto .btn-enter:hover {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      box-shadow: 0 6px 20px rgba(234, 88, 12, 0.5);
+    }
+
+    /* DRONE THEME */
+    .card-drone:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 12px 35px rgba(2, 132, 199, 0.4);
+    }
+
+    .card-drone .card-header-icon {
+      background: linear-gradient(135deg, #0369a1 0%, #0284c7 70%, #38bdf8 100%);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #ffffff;
+    }
+
+    .card-drone .badge-brand {
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+    }
+
+    .card-drone .btn-enter {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .card-drone .btn-enter:hover {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+    }
+
+    /* STUDIO THEME */
+    .card-studio:hover {
+      border-color: #a855f7;
+      box-shadow: 0 12px 35px rgba(168, 85, 247, 0.35);
+    }
+
+    .card-studio .card-header-icon {
+      background: linear-gradient(135deg, #6b21a8 0%, #9333ea 70%, #c084fc 100%);
+      box-shadow: 0 6px 18px rgba(168, 85, 247, 0.4);
+      border: 1px solid rgba(192, 132, 252, 0.4);
+      color: #ffffff;
+    }
+
+    .card-studio .badge-brand {
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(192, 132, 252, 0.5);
+      color: #c084fc;
+    }
+
+    .card-studio .btn-enter {
+      background: linear-gradient(135deg, #9333ea, #7e22ce);
+      color: #ffffff;
+      border: 1px solid rgba(192, 132, 252, 0.4);
+    }
+
+    .card-studio .btn-enter:hover {
+      background: linear-gradient(135deg, #a855f7, #9333ea);
+      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+    }
+
+    /* MASSEY FERGUSON THEME */
+    .card-massey:hover {
+      border-color: #ef4444;
+      box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4);
+    }
+
+    .card-massey .card-header-icon {
+      background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 70%, #f87171 100%);
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: #ffffff;
+    }
+
+    .card-massey .badge-brand {
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(248, 113, 113, 0.5);
+      color: #f87171;
+    }
+
+    .card-massey .btn-enter {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #ffffff;
+      border: 1px solid rgba(248, 113, 113, 0.4);
+    }
+
+    .card-massey .btn-enter:hover {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.55);
+    }
+
+
+    /* CARD HEADER */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+
+      margin-bottom: 20px;
+    }
+
+    .card-header-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-brand {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-title h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #ffffff;
+    }
+
+    .card-title p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* SPECS LIST */
+    .specs-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+      font-size: 0.85rem;
+    }
+
+    .specs-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5e1;
+    }
+
+    .specs-list li i {
+      color: var(--accent-cyan);
+      flex-shrink: 0;
+    }
+
+    .specs-list li strong {
+      color: #ffffff;
+    }
+
+    /* CARD BUTTON */
+    .btn-enter {
+      width: 100%;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    /* FOOTER BAR */
+    .footer-stats {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 18px 24px;
+      background: rgba(13, 21, 34, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-pill strong {
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="brand-top">
+      <div class="brand-top-icon">
+        <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
+      </div>
+      <div class="brand-top-text">
+        <h1>AgroTelemetry Cockpit Multi-Máquinas</h1>
+        <p>Plataforma Integrada de Operações e Telemetria de Precisão</p>
+      </div>
+    </div>
+
+    <div class="sys-badges">
+      <div class="badge-status">
+        <span class="pulse-dot"></span>
+        <span>Servidor Online (Porta 8000)</span>
+      </div>
+      <div style="font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);">
+        <i data-lucide="cpu" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+        QGIS 3.44.11 / OGR & GDAL
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="portal-container">
+    
+    <div class="hero-title">
+      <h2>Escolha a Plataforma Operacional</h2>
+      <p>Selecione a máquina ou ecossistema de arquivos que deseja monitorar. Cada cockpit possui ferramentas e métricas customizadas para sua respectiva operação.</p>
+    </div>
+
+    <div class="cards-grid">
+      
+      <!-- CARD 1: JOHN DEERE G5 -->
+      <a href="/johndeere" class="machine-card card-jd">
+        <div>
+          <div class="card-top">
+            <div class="card-header-icon">
+              <i data-lucide="tractor" style="width: 30px; height: 30px;"></i>
+            </div>
+            <span class="badge-brand">John Deere G5</span>
+          </div>
+
+          <div class="card-title">
+            <h3>Trator JD 6150M</h3>
+            <p>Telemetria de Motor e Distribuição a Lanço • Arquivos .JDL</p>
+          </div>
+
+          <ul class="specs-list">
+            <li>
+              <i data-lucide="cpu" style="width: 16px; height: 16px;"></i>
+              <span>Fonte: <strong>Logs CAN / J1939 (.JDL) + MyJohnDeere Shapefiles</strong></span>
+            </li>
+            <li>
+              <i data-lucide="fuel" style="width: 16px; height: 16px;"></i>
+              <span>Consumo & Rendimento: <strong>Métricas SAE J1939 (L/h, L/ha, ha/h)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="flask-conical" style="width: 16px; height: 16px;"></i>
+              <span>Receituário de Tanque: <strong>Mistura Agronômica e Seções Ativas</strong></span>
+            </li>
+            <li>
+              <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+              <span>Sandbox: <strong>5 Amostras Oficiais JD Prontas para Teste</strong></span>
+            </li>
+            <li>
+              <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+              <span>Banco de Dados: <strong>SQLite WAL com 2.141 arquivos indexados</strong></span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn-enter" onclick="window.location.href='/johndeere'">
+          <span>Acessar Módulo John Deere G5</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </a>
+
+      <!-- CARD 2: JACTO / TRIMBLE AGGPS -->
+      <a href="/jacto" class="machine-card card-jacto">
+        <div>
+          <div class="card-top">
+            <div class="card-header-icon">
+              <i data-lucide="spray-can" style="width: 30px; height: 30px;"></i>
+            </div>
+            <span class="badge-brand">Jacto • Trimble AgGPS</span>
+          </div>
+
+          <div class="card-title">
+            <h3>Pulverizador Uniport</h3>
+            <p>Aplicação em Taxa Variável e Cobertura • Shapefiles AgGPS</p>
+          </div>
+
+          <ul class="specs-list">
+            <li>
+              <i data-lucide="folder-git-2" style="width: 16px; height: 16px;"></i>
+              <span>Fonte: <strong>D:\AgGPS (Coverage.shp, Swaths.shp, EventHistory)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+              <span>Área Total: <strong>409,65 ha em 28.765 polígonos mapeados</strong></span>
+            </li>
+            <li>
+              <i data-lucide="crosshair" style="width: 16px; height: 16px;"></i>
+              <span>Linhas Guia: <strong>6 Curvas e Retas de Piloto Automático AB</strong></span>
+            </li>
+            <li>
+              <i data-lucide="droplet" style="width: 16px; height: 16px;"></i>
+              <span>Barra de Aplicação: <strong>18,70 m e 21,70 m • Taxa ~120 kg/ha</strong></span>
+            </li>
+            <li>
+              <i data-lucide="user-check" style="width: 16px; height: 16px;"></i>
+              <span>Operação: <strong>SIUMAR • Usina G5 (Cascalho Rico e Palhada)</strong></span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn-enter" onclick="window.location.href='/jacto'">
+          <span>Acessar Módulo Jacto / Trimble</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </a>
+
+      <!-- CARD 3: DRONES AGRÍCOLAS (DJI AGRAS / VEREDAS DRONE) -->
+      <a href="/drone" class="machine-card card-drone">
+        <div>
+          <div class="card-top">
+            <div class="card-header-icon">
+              <i data-lucide="plane" style="width: 30px; height: 30px;"></i>
+            </div>
+            <span class="badge-brand">Drones Agrícolas • Veredas</span>
+          </div>
+
+          <div class="card-title">
+            <h3>DJI Agras T100 / T70</h3>
+            <p>Pulverização Aérea de Precisão • Arquivos KML & Shapefiles</p>
+          </div>
+
+          <ul class="specs-list">
+            <li>
+              <i data-lucide="file-code" style="width: 16px; height: 16px;"></i>
+              <span>Fonte: <strong>Logs KML (DJI Agras) + Shapefiles de Talhões</strong></span>
+            </li>
+            <li>
+              <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i>
+              <span>Conversor Geodésico: <strong>UTM Fuso 21S-24S (SIRGAS 2000) → GPS</strong></span>
+            </li>
+            <li>
+              <i data-lucide="droplets" style="width: 16px; height: 16px;"></i>
+              <span>Aplicação: <strong>Calda (L), Faixa (Route Spacing) e Taxa (L/ha)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="scan" style="width: 16px; height: 16px;"></i>
+              <span>GIS Avançado: <strong>Filtro por Área + Exportar KML Unificado 3D</strong></span>
+            </li>
+            <li>
+              <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+              <span>Filtro Temporal: <strong>Seleção Múltipla de Datas com Calendário</strong></span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn-enter" onclick="window.location.href='/drone'">
+          <span>Acessar Módulo Drones</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </a>
+
+      <!-- CARD 4: MASSEY FERGUSON 7318 / TRIMBLE TMX-2050 -->
+      <a href="/massey" class="machine-card card-massey">
+        <div>
+          <div class="card-top">
+            <div class="card-header-icon">
+              <i data-lucide="tractor" style="width: 30px; height: 30px;"></i>
+            </div>
+            <span class="badge-brand">Massey Ferguson • TMX-2050</span>
+          </div>
+
+          <div class="card-title">
+            <h3>Trator MF 7318</h3>
+            <p>Calagem e Gessagem com Autopiloto Trimble • Arquivos .AGF</p>
+          </div>
+
+          <ul class="specs-list">
+            <li>
+              <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+              <span>Fonte: <strong>Monitor TMX-2050 (S/N: 6251225841) • trimble_data.db</strong></span>
+            </li>
+            <li>
+              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+              <span>Operações: <strong>25 Tarefas • 310,12 ha Aplicados</strong></span>
+            </li>
+            <li>
+              <i data-lucide="map" style="width: 16px; height: 16px;"></i>
+              <span>SIG: <strong>857 Talhões • 10.000,45 ha • 20 Fazendas</strong></span>
+            </li>
+            <li>
+              <i data-lucide="crosshair" style="width: 16px; height: 16px;"></i>
+              <span>Piloto: <strong>NAV-900 (S/N: 6250440300) • Usina G5</strong></span>
+            </li>
+            <li>
+              <i data-lucide="package" style="width: 16px; height: 16px;"></i>
+              <span>Insumos: <strong>Calcário (12m) • Calagem 20 ops / Gessagem 5 ops</strong></span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn-enter" onclick="window.location.href='/massey'">
+          <span>Acessar Módulo Massey Ferguson</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </a>
+
+      <!-- CARD 5: PRECISION AG STUDIO (ISOXML & JDLINK) -->
+      <a href="/studio" class="machine-card card-studio">
+        <div>
+          <div class="card-top">
+            <div class="card-header-icon">
+              <i data-lucide="cpu" style="width: 30px; height: 30px;"></i>
+            </div>
+            <span class="badge-brand">ISOXML • JDLink Studio</span>
+          </div>
+
+          <div class="card-title">
+            <h3>Precision Ag Studio</h3>
+            <p>Zoneamento Agronômico, ISO 11783 TaskData & JDLink API v4</p>
+          </div>
+
+          <ul class="specs-list">
+            <li>
+              <i data-lucide="grid" style="width: 16px; height: 16px;"></i>
+              <span>Zoneamento: <strong>Grade 5m a 30m & CV% (farmingpy)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="file-code-2" style="width: 16px; height: 16px;"></i>
+              <span>Padrão Universal: <strong>ISO 11783 TaskData v4.3 (isoxml-py)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="satellite" style="width: 16px; height: 16px;"></i>
+              <span>Telemetria JDLink: <strong>Frota Conectada ao Vivo via API v4</strong></span>
+            </li>
+            <li>
+              <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+              <span>Catálogo DDI: <strong>28 Entidades AEF (ISO 11783-11)</strong></span>
+            </li>
+            <li>
+              <i data-lucide="hard-drive-download" style="width: 16px; height: 16px;"></i>
+              <span>Exportador de Campo: <strong>Gera TASKDATA.zip para Pendrives</strong></span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn-enter" onclick="window.location.href='/studio'">
+          <span>Acessar Precision Studio</span>
+          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </a>
+
+    </div>
+
+    <!-- FOOTER STATS SUMMARY -->
+    <div class="footer-stats">
+      <div class="stat-pill">
+        <i data-lucide="tractor" style="width: 15px; height: 15px; color: #10b981;"></i>
+        <span>John Deere: <strong>JD 6150M (4.242,5h)</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i data-lucide="spray-can" style="width: 15px; height: 15px; color: #ea580c;"></i>
+        <span>Jacto / Trimble: <strong>409,65 ha • 28.765 Polígonos</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i data-lucide="plane" style="width: 15px; height: 15px; color: #38bdf8;"></i>
+        <span>Drones: <strong>DJI Agras (KML & SHP)</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i data-lucide="tractor" style="width: 15px; height: 15px; color: #ef4444;"></i>
+        <span>Massey MF 7318: <strong>310,12 ha • 857 Talhões SIG</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i data-lucide="compass" style="width: 15px; height: 15px; color: #06b6d4;"></i>
+        <span>Navegação: <strong>Piloto Automático AB & Telemetria Direta</strong></span>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

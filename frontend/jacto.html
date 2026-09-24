@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jacto Uniport • Trimble AgGPS Cobertura & Aplicação</title>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Apache ECharts -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #070b12;
+      --bg-panel: #0d1522;
+      --bg-card: #131d2e;
+      --bg-hover: #1a273e;
+      --border: #23354d;
+      
+      --jacto-orange: #ea580c;
+      --jacto-orange-light: #f97316;
+      --jacto-orange-glow: rgba(234, 88, 12, 0.4);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #8b5cf6;
+      
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1320; }
+    ::-webkit-scrollbar-thumb { background: #263852; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--jacto-orange); }
+
+    /* =========================================================================
+       1. TOP SECTION (HEADER + KPI BAR) - COLLAPSIBLE
+       ========================================================================= */
+    .top-section {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+      max-height: 220px;
+      overflow: hidden;
+      z-index: 1000;
+      background: var(--bg-panel);
+    }
+    .top-section.collapsed {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* TOP HEADER */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      background: linear-gradient(135deg, #9a3412 0%, #ea580c 70%, #fb923c 100%);
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 14px var(--jacto-orange-glow);
+      border: 1px solid rgba(251, 146, 60, 0.4);
+      flex-shrink: 0;
+    }
+    .brand-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title h1 .badge-engine {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(234, 88, 12, 0.15);
+      color: #fb923c;
+      border: 1px solid rgba(234, 88, 12, 0.35);
+      text-transform: uppercase;
+    }
+    .brand-title p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn-orange { 
+      background: linear-gradient(135deg, #ea580c, #c2410c); 
+      color: #ffffff; 
+      font-weight: 700; 
+      border: 1px solid rgba(251, 146, 60, 0.4); 
+    }
+    .btn-orange:hover { 
+      background: linear-gradient(135deg, #f97316, #ea580c); 
+      box-shadow: 0 4px 12px var(--jacto-orange-glow); 
+    }
+    .btn-jd {
+      background: rgba(54, 124, 43, 0.2);
+      border-color: rgba(255, 222, 0, 0.4);
+      color: #ffde00;
+    }
+    .btn-jd:hover {
+      background: rgba(54, 124, 43, 0.4);
+      border-color: #ffde00;
+    }
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--text-muted);
+    }
+
+    /* KPI BAR */
+    .kpi-bar {
+      background: #090e17;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .kpi-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .kpi-lbl {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+    .kpi-num {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* COLLAPSE TOP TOGGLE */
+    .collapse-btn {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1001;
+      background: rgba(13, 21, 34, 0.92);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 2px 14px;
+      border-radius: 0 0 8px 8px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+    .collapse-btn:hover {
+      color: var(--text);
+      background: var(--bg-card);
+      border-color: var(--jacto-orange);
+    }
+
+    /* =========================================================================
+       2. FILTER BAR (FAZENDAS, TALHÕES, PALETAS)
+       ========================================================================= */
+    .filter-bar {
+      background: #0e1726;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.76rem;
+      z-index: 900;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-label {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    select, input[type="date"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input[type="date"]:focus {
+      border-color: var(--jacto-orange);
+    }
+
+    /* =========================================================================
+       3. MAP VIEWPORT & CONTROLS
+       ========================================================================= */
+    .map-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #06090e;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #06090e;
+    }
+
+    /* FLOATING TOOLBAR */
+    .floating-toolbar {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      background: rgba(13, 21, 34, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .tool-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .tool-btn:hover {
+      background: rgba(234, 88, 12, 0.2);
+      color: var(--jacto-orange-light);
+    }
+    .tool-btn.active {
+      background: var(--jacto-orange);
+      color: #ffffff;
+    }
+
+    /* TELEMETRY HUD OVERLAY (BOTTOM LEFT OF MAP) */
+    .telemetry-hud {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      z-index: 998;
+      background: rgba(13, 21, 34, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      min-width: 200px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .hud-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fb923c;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-stat {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .hud-stat span:first-child {
+      color: var(--text-muted);
+      font-weight: normal;
+    }
+
+    /* COLOR LEGEND IN HUD */
+    .legend-bar {
+      display: flex;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* =========================================================================
+       4. BOTTOM SLIDING DOCK (TABLE + CHARTS)
+       ========================================================================= */
+    .bottom-dock {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 290px;
+      transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      position: relative;
+    }
+    .bottom-dock.dock-minimized {
+      height: 38px !important;
+    }
+    .bottom-dock.dock-maximized {
+      height: 65vh !important;
+    }
+
+    .dock-header {
+      height: 38px;
+      background: #090e17;
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .dock-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .dock-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .dock-tab:hover {
+      color: var(--text);
+    }
+    .dock-tab.active {
+      color: #fb923c;
+      border-bottom-color: #ea580c;
+      background: rgba(234, 88, 12, 0.08);
+    }
+
+    .dock-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dock-btn {
+      width: 26px;
+      height: 26px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dock-btn:hover {
+      color: var(--text);
+      border-color: #fb923c;
+    }
+
+    .dock-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: #090e17;
+    }
+
+    .dock-pane {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    .dock-pane.active {
+      display: flex;
+    }
+
+    /* TABLE */
+    .table-container {
+      width: 100%;
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.74rem;
+      text-align: left;
+    }
+    th {
+      background: #0d1522;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    td {
+      padding: 7px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+    tr:hover td {
+      background: rgba(234, 88, 12, 0.05);
+      color: #ffffff;
+    }
+
+    /* CHARTS CONTAINER */
+    .charts-row {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      gap: 12px;
+    }
+    .chart-box {
+      flex: 1;
+      height: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-header {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .chart-body {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SPINNER */
+    .loader {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fb923c;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* =========================================================================
+       UPLOAD MODAL & DRAG-AND-DROP OVERLAY
+       ========================================================================= */
+    .drop-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 11, 18, 0.88);
+      backdrop-filter: blur(12px);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      border: 3px dashed var(--jacto-orange);
+      pointer-events: none;
+    }
+    .drop-overlay.active {
+      display: flex;
+    }
+    .drop-box {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 520px;
+      padding: 30px;
+      background: #0d1522;
+      border: 1px solid rgba(251, 146, 60, 0.4);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    }
+    .drop-box h3 {
+      font-size: 1.25rem;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .drop-box p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* MODAL WINDOW */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 5000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-card {
+      background: #0d1522;
+      border: 1px solid rgba(251, 146, 60, 0.35);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(234, 88, 12, 0.15);
+      animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #090e17;
+    }
+    .modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .upload-zone {
+      border: 2px dashed rgba(251, 146, 60, 0.4);
+      background: rgba(234, 88, 12, 0.04);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: #fb923c;
+      background: rgba(234, 88, 12, 0.12);
+      box-shadow: 0 0 20px rgba(234, 88, 12, 0.2);
+    }
+    .upload-zone h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .upload-zone p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .upload-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .progress-bar-wrap {
+      display: none;
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ea580c, #fb923c);
+      transition: width 0.2s ease;
+    }
+    .upload-results {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #080d14;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+    .upload-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .upload-item:last-child {
+      border-bottom: none;
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast-box {
+      background: rgba(13, 21, 34, 0.94);
+      border: 1px solid rgba(251, 146, 60, 0.5);
+      border-left: 4px solid #ea580c;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+      animation: toastIn 0.25s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 380px;
+    }
+    .toast-box.success {
+      border-left-color: #10b981;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .toast-box.error {
+      border-left-color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COLLAPSE HANDLE -->
+  <div class="collapse-btn" id="collapseBtn" onclick="toggleTopSection()">
+    <i data-lucide="chevron-up" id="collapseIcon" style="width:14px; height:14px;"></i>
+    <span id="collapseText">Ocultar Topo</span>
+  </div>
+
+  <!-- 1. TOP SECTION (HEADER + KPIS) -->
+  <div id="topSection" class="top-section">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="spray-can" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-title">
+          <h1>
+            <span>Jacto Uniport • Trimble AgGPS Cobertura & Aplicação</span>
+            <span class="badge-engine">CFX-750 • Live Engine</span>
+          </h1>
+          <p id="subHeaderDesc">Usina G5 • Cascalho Rico / Default_Farm • Operador: SIUMAR • Fonte: <span id="displayAgGPSPath" style="color: #fb923c; font-family: monospace;">Carregando...</span></p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Switcher Buttons -->
+        <a href="/johndeere" class="btn btn-jd" title="Alternar para o Módulo John Deere G5 (.JDL)">
+          <i data-lucide="tractor" style="width:14px; height:14px;"></i> John Deere G5
+        </a>
+
+        <a href="/drone" class="btn btn-outline" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Alternar para o Módulo Drones Agrícolas">
+          <i data-lucide="plane" style="width:14px; height:14px;"></i> Drones Agrícolas
+        </a>
+
+        <a href="/" class="btn btn-outline" title="Voltar ao Portal de Escolha de Máquinas">
+          <i data-lucide="home" style="width:14px; height:14px;"></i> Portal
+        </a>
+
+        <button class="btn btn-outline" onclick="openFolderConfigModal()" style="border-color: rgba(251, 146, 60, 0.4); color: #fb923c;" title="Alterar ou conectar pasta AgGPS no computador">
+          <i data-lucide="folder" style="width:14px; height:14px;"></i> Pasta AgGPS
+        </button>
+
+        <button class="btn btn-orange" onclick="openJactoUploadModal()" title="Importar arquivos (.ZIP, .RAR, Shapefiles AgGPS)" style="background: linear-gradient(135deg, #ea580c, #c2410c); color: white; border: 1px solid rgba(251, 146, 60, 0.4); box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);">
+          <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i> Importar Arquivos
+        </button>
+
+        <button class="btn btn-orange" onclick="reloadAllData()" title="Recarregar dados da pasta configurada">
+          <i data-lucide="refresh-cw" id="refreshIcon" style="width:14px; height:14px;"></i> Atualizar
+        </button>
+
+        <button class="btn btn-outline" onclick="exportJactoCSV()" title="Exportar histórico de eventos para CSV">
+          <i data-lucide="download" style="width:14px; height:14px;"></i> Exportar CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- AGGPS DIRECTORY STRIP -->
+    <div class="aggps-dir-strip" id="aggpsDirStrip" style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(251, 146, 60, 0.25); border-radius: 8px; padding: 6px 14px; margin: 0 16px 8px 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem;">
+      <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <i data-lucide="folder-check" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
+        <span style="color: #94a3b8; font-weight: 500;">Pasta Conectada:</span>
+        <span id="activePathLabel" style="color: #f8fafc; font-family: monospace; font-weight: 600; background: rgba(15, 23, 42, 0.6); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; text-overflow: ellipsis; max-width: 550px;">Carregando...</span>
+        <span id="activePathStatusBadge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">● CONECTADO</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <button class="btn btn-outline" onclick="openFolderConfigModal()" style="padding: 3px 10px; font-size: 0.72rem; color: #fb923c; border-color: rgba(251,146,60,0.4);">
+          <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i> Alterar Pasta
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI BAR -->
+    <div class="kpi-bar">
+      <div class="kpi-card">
+        <i data-lucide="layers" style="color: #fb923c; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Aplicada</span>
+          <span class="kpi-num" id="kpiArea" style="color: #fb923c;">409,65 ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="grid" style="color: #06b6d4; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Polígonos Cobertura</span>
+          <span class="kpi-num" id="kpiPolygons">28.765</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="maximize-2" style="color: #10b981; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Largura de Barra</span>
+          <span class="kpi-num" id="kpiWidth">21,70 m</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="droplet" style="color: #38bdf8; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Taxa Média</span>
+          <span class="kpi-num" id="kpiRate">120,0 kg/ha</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="crosshair" style="color: #a855f7; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Linhas Guia AB</span>
+          <span class="kpi-num" id="kpiSwaths">6 Linhas</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="gauge" style="color: #f59e0b; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Velocidade Média</span>
+          <span class="kpi-num" id="kpiSpeed">3,5 km/h</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <i data-lucide="user-check" style="color: #10b981; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Operador Ativo</span>
+          <span class="kpi-num" id="kpiOperator">SIUMAR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Fazenda:</span>
+      <select id="selectFazenda" onchange="onFilterChange()">
+        <option value="all">Todas as Fazendas (G5)</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Talhão:</span>
+      <select id="selectTalhao" onchange="onFilterChange()">
+        <option value="all">Todos os Talhões</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Colorir Mapa Por:</span>
+      <select id="selectThematic" onchange="updateThematicColoring()">
+        <option value="rate">Taxa Aplicada (kg/ha ou L/ha)</option>
+        <option value="speed">Velocidade Operacional (km/h)</option>
+        <option value="field">Diferenciação por Talhão</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Data Início:</span>
+      <input type="date" id="dateStart" onchange="onFilterChange()" />
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Data Fim:</span>
+      <input type="date" id="dateEnd" onchange="onFilterChange()" />
+    </div>
+
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <span id="loadStatus" style="font-size: 0.72rem; color: #10b981;">
+        <i data-lucide="check-circle" style="width:13px; height:13px; display:inline-block; vertical-align:middle;"></i> Pronto
+      </span>
+    </div>
+  </div>
+
+  <!-- 3. MAP VIEWPORT -->
+  <div class="map-container">
+    <div id="map"></div>
+
+    <!-- FLOATING TOOLBAR -->
+    <div class="floating-toolbar">
+      <button class="tool-btn" onclick="toggleFullscreen()" title="Alternar Tela Cheia">
+        <i data-lucide="maximize" id="fsIcon" style="width:16px; height:16px;"></i>
+      </button>
+      <button class="tool-btn active" id="btnToggleCoverage" onclick="toggleCoverageLayer()" title="Ligar/Desligar Polígonos de Cobertura">
+        <i data-lucide="layers" style="width:16px; height:16px;"></i>
+      </button>
+      <button class="tool-btn active" id="btnToggleSwaths" onclick="toggleSwathsLayer()" title="Ligar/Desligar Linhas Guia AB">
+        <i data-lucide="crosshair" style="width:16px; height:16px;"></i>
+      </button>
+      <button class="tool-btn" onclick="zoomToFeatures()" title="Ajustar Zoom para Toda a Área">
+        <i data-lucide="focus" style="width:16px; height:16px;"></i>
+      </button>
+      <button class="tool-btn" onclick="cycleBasemap()" title="Trocar Camada Base (Satélite/Dark/Híbrido)">
+        <i data-lucide="map" style="width:16px; height:16px;"></i>
+      </button>
+    </div>
+
+    <!-- TELEMETRY HUD -->
+    <div class="telemetry-hud">
+      <div class="hud-title">
+        <i data-lucide="crosshair" style="width:13px; height:13px;"></i>
+        <span>Jacto AgGPS HUD</span>
+      </div>
+      <div class="hud-stat">
+        <span>Polígonos Renderizados:</span>
+        <span id="hudPolyCount">28.765</span>
+      </div>
+      <div class="hud-stat">
+        <span>Linhas Piloto AB:</span>
+        <span id="hudSwathCount">6</span>
+      </div>
+      <div class="hud-stat">
+        <span>Talhão em Foco:</span>
+        <span id="hudActiveField">Todos</span>
+      </div>
+      
+      <!-- Legenda Dinâmica -->
+      <div style="margin-top: 4px;">
+        <span id="legendTitle" style="font-size: 0.65rem; color: #cbd5e1; font-weight: 600;">Legenda: Taxa Aplicada</span>
+        <div class="legend-bar" id="legendBar" style="background: linear-gradient(to right, #10b981, #f59e0b, #ea580c, #ef4444);"></div>
+        <div class="legend-labels">
+          <span id="legendMin">Baixa (0)</span>
+          <span id="legendMid">Média (120)</span>
+          <span id="legendMax">Alta (250+)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. BOTTOM SLIDING DOCK -->
+  <div id="bottomDock" class="bottom-dock">
+    <div class="dock-header">
+      <div class="dock-tabs">
+        <button class="dock-tab active" onclick="switchDockTab('events')">
+          <i data-lucide="table" style="width:14px; height:14px;"></i>
+          <span>Histórico de Sessões (EventHistory)</span>
+        </button>
+        <button class="dock-tab" onclick="switchDockTab('charts')">
+          <i data-lucide="bar-chart-2" style="width:14px; height:14px;"></i>
+          <span>Variabilidade de Aplicação & Gráficos</span>
+        </button>
+      </div>
+
+      <div class="dock-controls">
+        <button class="dock-btn" onclick="toggleDockSize()" title="Alternar Tamanho">
+          <i data-lucide="chevrons-up-down" style="width:14px; height:14px;"></i>
+        </button>
+        <button class="dock-btn" onclick="minimizeDock()" title="Minimizar Painel">
+          <i data-lucide="minus" style="width:14px; height:14px;"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="dock-content">
+      <!-- PANE 1: TABELA DE EVENTOS -->
+      <div id="paneEvents" class="dock-pane active">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento / Sessão</th>
+                <th>Fazenda</th>
+                <th>Talhão</th>
+                <th>Operador</th>
+                <th>Área Coberta</th>
+                <th>Volume Aplicado</th>
+                <th>Largura de Barra</th>
+                <th>Distância</th>
+                <th>Duração</th>
+                <th>Início Operação</th>
+                <th>Término Operação</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <tr>
+                <td colspan="11" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                  Carregando sessões da Jacto...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANE 2: GRÁFICOS ECHARTS -->
+      <div id="paneCharts" class="dock-pane">
+        <div class="charts-row">
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Distribuição de Taxa de Aplicação (kg/ha)</span>
+              <i data-lucide="activity" style="width:14px; height:14px; color: #fb923c;"></i>
+            </div>
+            <div id="chartRateDist" class="chart-body"></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Área Aplicada por Talhão (ha)</span>
+              <i data-lucide="pie-chart" style="width:14px; height:14px; color: #06b6d4;"></i>
+            </div>
+            <div id="chartAreaField" class="chart-body"></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Correlação Velocidade x Taxa Aplicada</span>
+              <i data-lucide="trending-up" style="width:14px; height:14px; color: #10b981;"></i>
+            </div>
+            <div id="chartSpeedRate" class="chart-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ESTADO GLOBAL & VARIÁVEIS
+    // ==========================================
+    let map = null;
+    let coverageLayerGroup = null;
+    let swathsLayerGroup = null;
+    let coverageData = null;
+    let swathsData = null;
+    let eventsData = [];
+    let basemapIndex = 0;
+    let basemapLayers = [];
+    let isCoverageVisible = true;
+    let isSwathsVisible = true;
+
+    let chartRateDistInstance = null;
+    let chartAreaFieldInstance = null;
+    let chartSpeedRateInstance = null;
+
+    // ==========================================
+    // GESTÃO DE PASTA AGGPS LOCAL
+    // ==========================================
+    let currentAgGPSPath = "";
+
+    async function checkAndLoadAgGPSConfig() {
+      try {
+        const res = await fetch("/api/jacto/config_dir");
+        const data = await res.json();
+        currentAgGPSPath = data.active_path || "";
+        
+        const activeLabel = document.getElementById("activePathLabel");
+        const statusBadge = document.getElementById("activePathStatusBadge");
+        const displayPath = document.getElementById("displayAgGPSPath");
+        const inputPath = document.getElementById("inputCustomPath");
+
+        if (activeLabel) activeLabel.textContent = currentAgGPSPath;
+        if (displayPath) displayPath.textContent = currentAgGPSPath;
+        if (inputPath) inputPath.value = currentAgGPSPath;
+        if (statusBadge) {
+          if (data.exists) {
+            statusBadge.textContent = "● CONECTADO";
+            statusBadge.style.color = "#10b981";
+            statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
+            statusBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+          } else {
+            statusBadge.textContent = "● NÃO ENCONTRADO";
+            statusBadge.style.color = "#ef4444";
+            statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+            statusBadge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+          }
+        }
+
+        renderCandidates(data.candidates || []);
+      } catch (e) {
+        console.warn("Erro ao buscar config AgGPS:", e);
+      }
+    }
+
+    function renderCandidates(candidates) {
+      const container = document.getElementById("candidatesList");
+      if (!container) return;
+      container.innerHTML = "";
+
+      candidates.forEach(c => {
+        const item = document.createElement("div");
+        item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem;";
+        
+        let statusText = "";
+        if (c.is_active) {
+          statusText = '<span style="color: #10b981; font-weight: 700; font-size: 0.7rem;">[ATIVA]</span>';
+        } else if (c.has_data) {
+          statusText = `<span style="color: #38bdf8; font-size: 0.7rem;">(${c.events_count} eventos / ${c.coverages_count} coberturas)</span>`;
+        } else if (c.exists) {
+          statusText = '<span style="color: #94a3b8; font-size: 0.7rem;">(Vazia)</span>';
+        } else {
+          statusText = '<span style="color: #64748b; font-size: 0.7rem;">(Inexistente)</span>';
+        }
+
+        const safePath = c.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 440px;">
+            <i data-lucide="${c.exists ? 'folder' : 'folder-x'}" style="width: 14px; height: 14px; color: ${c.is_active ? '#10b981' : (c.has_data ? '#fb923c' : '#64748b')}; flex-shrink: 0;"></i>
+            <span style="font-family: monospace; color: ${c.is_active ? '#f8fafc' : '#94a3b8'}; overflow: hidden; text-overflow: ellipsis;">${c.path}</span>
+            ${statusText}
+          </div>
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.68rem; color: #fb923c; border-color: rgba(251,146,60,0.3); flex-shrink: 0;" onclick="selectCandidatePath('${safePath}')">
+            Usar Esta
+          </button>
+        `;
+        container.appendChild(item);
+      });
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openFolderConfigModal() {
+      document.getElementById("folderConfigModal").classList.add("open");
+      checkAndLoadAgGPSConfig();
+    }
+
+    function closeFolderConfigModal() {
+      document.getElementById("folderConfigModal").classList.remove("open");
+    }
+
+    function selectCandidatePath(path) {
+      document.getElementById("inputCustomPath").value = path;
+      applyCustomAgGPSPath();
+    }
+
+    async function applyCustomAgGPSPath() {
+      const p = document.getElementById("inputCustomPath").value.trim();
+      if (!p) {
+        showToast("Por favor, digite o caminho da pasta.", "error");
+        return;
+      }
+      const feedback = document.getElementById("folderFeedback");
+      feedback.style.display = "block";
+      feedback.style.background = "rgba(56, 189, 248, 0.15)";
+      feedback.style.color = "#38bdf8";
+      feedback.innerHTML = '<span class="loader"></span> Conectando e validando diretório...';
+
+      try {
+        const res = await fetch("/api/jacto/config_dir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: p })
+        });
+        const data = await res.json();
+        if (data.success) {
+          feedback.style.background = "rgba(16, 185, 129, 0.15)";
+          feedback.style.color = "#10b981";
+          feedback.innerHTML = `✓ ${data.message}`;
+          showToast("Pasta conectada com sucesso!", "success");
+          setTimeout(() => {
+            closeFolderConfigModal();
+            checkAndLoadAgGPSConfig();
+            loadFarmsAndFields();
+            reloadAllData();
+          }, 1000);
+        } else {
+          feedback.style.background = "rgba(239, 68, 68, 0.15)";
+          feedback.style.color = "#ef4444";
+          feedback.innerHTML = `✗ ${data.message}`;
+          showToast(data.message, "error");
+        }
+      } catch (err) {
+        feedback.style.background = "rgba(239, 68, 68, 0.15)";
+        feedback.style.color = "#ef4444";
+        feedback.innerHTML = `✗ Erro de rede: ${err.message}`;
+      }
+    }
+
+    // ==========================================
+    // INICIALIZAÇÃO
+    // ==========================================
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      initMap();
+      checkAndLoadAgGPSConfig();
+      loadFarmsAndFields();
+      reloadAllData();
+      initEChartsResize();
+    });
+
+    function initMap() {
+      // Coordenadas centrais aproximadas da Usina G5 (-18.66, -48.40)
+      map = L.map("map", {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([-18.66, -48.40], 13);
+
+      // Basemaps
+      const googleSat = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", { maxZoom: 21 });
+      const googleHybrid = L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { maxZoom: 21 });
+      const cartoDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 20 });
+      const esriSat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 });
+
+      basemapLayers = [googleHybrid, googleSat, cartoDark, esriSat];
+      googleHybrid.addTo(map);
+
+      // Layer groups
+      coverageLayerGroup = L.layerGroup().addTo(map);
+      swathsLayerGroup = L.layerGroup().addTo(map);
+
+      // Map scale
+      L.control.scale({ imperial: false, position: "bottomright" }).addTo(map);
+    }
+
+    function cycleBasemap() {
+      basemapLayers[basemapIndex].remove();
+      basemapIndex = (basemapIndex + 1) % basemapLayers.length;
+      basemapLayers[basemapIndex].addTo(map);
+    }
+
+    // ==========================================
+    // CARREGAMENTO DE DADOS (APIs FASTAPI)
+    // ==========================================
+    async function loadFarmsAndFields() {
+      try {
+        const res = await fetch("/api/jacto/fazendas");
+        const farms = await res.json();
+        const selFaz = document.getElementById("selectFazenda");
+        selFaz.innerHTML = '<option value="all">Todas as Fazendas (G5)</option>';
+
+        farms.forEach(f => {
+          const opt = document.createElement("option");
+          opt.value = f.fazenda;
+          opt.textContent = `${f.fazenda} (${f.total_area_ha} ha)`;
+          selFaz.appendChild(opt);
+        });
+
+        updateTalhaoOptions(farms);
+      } catch (err) {
+        console.error("Falha ao carregar fazendas:", err);
+      }
+    }
+
+    async function updateTalhaoOptions(farmsList) {
+      if (!farmsList) {
+        const res = await fetch("/api/jacto/fazendas");
+        farmsList = await res.json();
+      }
+      const selFaz = document.getElementById("selectFazenda").value;
+      const selTal = document.getElementById("selectTalhao");
+      selTal.innerHTML = '<option value="all">Todos os Talhões</option>';
+
+      farmsList.forEach(f => {
+        if (selFaz === "all" || selFaz === f.fazenda) {
+          f.talhoes.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = `${t} (${f.fazenda})`;
+            selTal.appendChild(opt);
+          });
+        }
+      });
+    }
+
+    async function reloadAllData() {
+      const loadStatus = document.getElementById("loadStatus");
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.add("loader");
+      loadStatus.innerHTML = '<span class="loader"></span> Carregando AgGPS...';
+
+      const fazenda = document.getElementById("selectFazenda").value;
+      const talhao = document.getElementById("selectTalhao").value;
+      const dataInicio = document.getElementById("dateStart").value;
+      const dataFim = document.getElementById("dateEnd").value;
+
+      let q = new URLSearchParams();
+      if (fazenda && fazenda !== "all") q.append("fazenda", fazenda);
+      if (talhao && talhao !== "all") q.append("talhao", talhao);
+      if (dataInicio) q.append("data_inicio", dataInicio);
+      if (dataFim) q.append("data_fim", dataFim);
+
+      const qs = q.toString() ? `?${q.toString()}` : "";
+
+      try {
+        // 1. KPIs
+        const kpiPromise = fetch(`/api/jacto/kpis${qs}`).then(r => r.json());
+        // 2. Events List
+        const eventsPromise = fetch(`/api/jacto/eventos${qs}`).then(r => r.json());
+        // 3. Swaths (Linhas AB)
+        const swathsPromise = fetch(`/api/jacto/linhas-guia${qs}`).then(r => r.json());
+        // 4. Coverage (Polígonos de Cobertura)
+        const covPromise = fetch(`/api/jacto/cobertura${qs}`).then(r => r.json());
+
+        const [kpis, events, swaths, coverage] = await Promise.all([kpiPromise, eventsPromise, swathsPromise, covPromise]);
+
+        renderKPIs(kpis);
+        renderEventsTable(events);
+        eventsData = events;
+
+        renderSwaths(swaths);
+        renderCoverage(coverage);
+
+        renderCharts(coverage, events);
+
+        loadStatus.innerHTML = '<i data-lucide="check-circle" style="width:13px; height:13px; display:inline-block; vertical-align:middle;"></i> Pronto';
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+        loadStatus.innerHTML = '<span style="color:#ef4444;">Erro ao carregar</span>';
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove("loader");
+      }
+    }
+
+    function onFilterChange() {
+      const selFaz = document.getElementById("selectFazenda").value;
+      document.getElementById("hudActiveField").textContent = selFaz === "all" ? "Todos" : selFaz;
+      reloadAllData();
+    }
+
+    // ==========================================
+    // RENDERIZAÇÃO DE KPIS
+    // ==========================================
+    function renderKPIs(data) {
+      if (!data || !data.has_data) return;
+      const s = data.summary;
+      const op = data.operation;
+
+      document.getElementById("kpiArea").textContent = `${s.total_area_ha.toLocaleString("pt-BR", {minimumFractionDigits: 2})} ha`;
+      document.getElementById("kpiPolygons").textContent = s.total_polygons.toLocaleString("pt-BR");
+      document.getElementById("kpiWidth").textContent = `${op.largura_trabalho_m.toFixed(2).replace(".", ",")} m`;
+      document.getElementById("kpiRate").textContent = `${op.avg_rate.toFixed(1).replace(".", ",")} kg/ha`;
+      document.getElementById("kpiSwaths").textContent = `${s.total_swaths} Linhas`;
+      document.getElementById("kpiSpeed").textContent = `${op.avg_speed_kmh.toFixed(1).replace(".", ",")} km/h`;
+
+      const opName = (data.operators && data.operators.length > 0) ? data.operators[0] : "SIUMAR";
+      document.getElementById("kpiOperator").textContent = opName;
+
+      document.getElementById("hudPolyCount").textContent = s.total_polygons.toLocaleString("pt-BR");
+      document.getElementById("hudSwathCount").textContent = s.total_swaths;
+    }
+
+    // ==========================================
+    // RENDERIZAÇÃO DO MAPA (COVERAGE & SWATHS)
+    // ==========================================
+    function renderCoverage(geo) {
+      coverageData = geo;
+      coverageLayerGroup.clearLayers();
+      if (!geo || !geo.features || geo.features.length === 0) return;
+
+      const thematicMode = document.getElementById("selectThematic").value;
+
+      const layer = L.geoJSON(geo, {
+        style: feature => getPolygonStyle(feature, thematicMode),
+        onEachFeature: (feature, l) => {
+          const p = feature.properties;
+          l.bindPopup(`
+            <div style="font-family: inherit; font-size: 0.8rem; color: #1e293b; min-width: 170px;">
+              <div style="font-weight: 700; color: #ea580c; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                ${p.field} • ${p.farm}
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span>Taxa Aplicada:</span> <strong>${p.rate} kg/ha</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span>Velocidade:</span> <strong>${p.speed} km/h</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span>Data/Hora:</span> <span>${p.date} ${p.time}</span>
+              </div>
+            </div>
+          `);
+        }
+      });
+
+      if (isCoverageVisible) {
+        coverageLayerGroup.addLayer(layer);
+      }
+
+      if (geo.bounds) {
+        map.fitBounds([
+          [geo.bounds.min_lat, geo.bounds.min_lon],
+          [geo.bounds.max_lat, geo.bounds.max_lon]
+        ], { padding: [40, 40] });
+      }
+    }
+
+    function getPolygonStyle(feature, mode) {
+      const p = feature.properties;
+      let color = "#ea580c";
+
+      if (mode === "rate") {
+        const r = p.rate || 0;
+        if (r < 50) color = "#10b981"; // Verde
+        else if (r < 110) color = "#84cc16"; // Verde claro
+        else if (r < 150) color = "#f59e0b"; // Amarelo
+        else if (r < 200) color = "#ea580c"; // Laranja Jacto
+        else color = "#ef4444"; // Vermelho
+      } else if (mode === "speed") {
+        const s = p.speed || 0;
+        if (s < 2.5) color = "#3b82f6";
+        else if (s < 4.0) color = "#06b6d4";
+        else if (s < 5.5) color = "#10b981";
+        else color = "#8b5cf6";
+      } else if (mode === "field") {
+        const hash = (p.field || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const palette = ["#ea580c", "#06b6d4", "#10b981", "#8b5cf6", "#f59e0b"];
+        color = palette[hash % palette.length];
+      }
+
+      return {
+        fillColor: color,
+        weight: 0.4,
+        opacity: 0.8,
+        color: color,
+        fillOpacity: 0.65
+      };
+    }
+
+    function updateThematicColoring() {
+      const mode = document.getElementById("selectThematic").value;
+      const legTitle = document.getElementById("legendTitle");
+      const legBar = document.getElementById("legendBar");
+      const legMin = document.getElementById("legendMin");
+      const legMid = document.getElementById("legendMid");
+      const legMax = document.getElementById("legendMax");
+
+      if (mode === "rate") {
+        legTitle.textContent = "Legenda: Taxa Aplicada (kg/ha)";
+        legBar.style.background = "linear-gradient(to right, #10b981, #f59e0b, #ea580c, #ef4444)";
+        legMin.textContent = "Baixa (<50)";
+        legMid.textContent = "Média (~120)";
+        legMax.textContent = "Alta (200+)";
+      } else if (mode === "speed") {
+        legTitle.textContent = "Legenda: Velocidade Operacional (km/h)";
+        legBar.style.background = "linear-gradient(to right, #3b82f6, #06b6d4, #10b981, #8b5cf6)";
+        legMin.textContent = "Lenta (<2.5)";
+        legMid.textContent = "Ideal (3.5 - 4.5)";
+        legMax.textContent = "Rápida (5.5+)";
+      } else {
+        legTitle.textContent = "Legenda: Diferenciação por Talhão";
+        legBar.style.background = "linear-gradient(to right, #ea580c, #06b6d4, #10b981, #8b5cf6)";
+        legMin.textContent = "PALHADA";
+        legMid.textContent = "091826";
+        legMax.textContent = "Cana Planta";
+      }
+
+      if (coverageData) {
+        renderCoverage(coverageData);
+      }
+    }
+
+    function renderSwaths(geo) {
+      swathsData = geo;
+      swathsLayerGroup.clearLayers();
+      if (!geo || !geo.features || geo.features.length === 0) return;
+
+      const layer = L.geoJSON(geo, {
+        style: {
+          color: "#06b6d4",
+          weight: 2.5,
+          dashArray: "6, 6",
+          opacity: 0.95
+        },
+        onEachFeature: (feature, l) => {
+          const p = feature.properties;
+          l.bindPopup(`
+            <div style="font-family: inherit; font-size: 0.8rem; color: #1e293b;">
+              <strong style="color: #0284c7;">Linha Guia AB Piloto</strong><br/>
+              Nome: <strong>${p.name}</strong><br/>
+              Comprimento: <strong>${p.length_m} m</strong><br/>
+              Talhão: <strong>${p.field}</strong> (${p.farm})<br/>
+              Data: ${p.date} ${p.time}
+            </div>
+          `);
+        }
+      });
+
+      if (isSwathsVisible) {
+        swathsLayerGroup.addLayer(layer);
+      }
+    }
+
+    function toggleCoverageLayer() {
+      isCoverageVisible = !isCoverageVisible;
+      const btn = document.getElementById("btnToggleCoverage");
+      if (isCoverageVisible) {
+        btn.classList.add("active");
+        if (coverageData) renderCoverage(coverageData);
+      } else {
+        btn.classList.remove("active");
+        coverageLayerGroup.clearLayers();
+      }
+    }
+
+    function toggleSwathsLayer() {
+      isSwathsVisible = !isSwathsVisible;
+      const btn = document.getElementById("btnToggleSwaths");
+      if (isSwathsVisible) {
+        btn.classList.add("active");
+        if (swathsData) renderSwaths(swathsData);
+      } else {
+        btn.classList.remove("active");
+        swathsLayerGroup.clearLayers();
+      }
+    }
+
+    function zoomToFeatures() {
+      if (coverageData && coverageData.bounds) {
+        map.fitBounds([
+          [coverageData.bounds.min_lat, coverageData.bounds.min_lon],
+          [coverageData.bounds.max_lat, coverageData.bounds.max_lon]
+        ], { padding: [40, 40] });
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // ==========================================
+    // TABELA DE SESSÕES (EVENT HISTORY)
+    // ==========================================
+    function renderEventsTable(events) {
+      const tbody = document.getElementById("eventsTableBody");
+      tbody.innerHTML = "";
+
+      if (!events || events.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 20px; color: var(--text-muted);">Nenhum evento registrado com os filtros selecionados.</td></tr>`;
+        return;
+      }
+
+      events.forEach(ev => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-weight: 600; color: #fb923c;">${ev.event}</td>
+          <td>${ev.farm}</td>
+          <td><span style="background: rgba(6, 182, 212, 0.15); color: #06b6d4; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${ev.field}</span></td>
+          <td><i data-lucide="user" style="width:12px; height:12px; display:inline-block; vertical-align:middle; color:#10b981;"></i> ${ev.operator}</td>
+          <td style="font-weight: 700; color: #ffffff;">${ev.area_ha.toLocaleString("pt-BR", {minimumFractionDigits: 2})} ha</td>
+          <td>${ev.volume_l_kg.toLocaleString("pt-BR", {minimumFractionDigits: 1})} kg/L</td>
+          <td>${ev.largura_m.toFixed(2).replace(".", ",")} m</td>
+          <td>${ev.distance_km.toFixed(2).replace(".", ",")} km</td>
+          <td>${ev.duration_hours.toFixed(2).replace(".", ",")} h</td>
+          <td style="font-size: 0.7rem; color: var(--text-muted);">${ev.date_open}</td>
+          <td style="font-size: 0.7rem; color: var(--text-muted);">${ev.date_close}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function exportJactoCSV() {
+      if (!eventsData || eventsData.length === 0) {
+        alert("Nenhum dado disponível para exportação.");
+        return;
+      }
+
+      let csv = "Evento;Fazenda;Talhao;Operador;Area_ha;Volume_kg_L;Largura_m;Distancia_km;Duracao_h;Inicio;Termino\n";
+      eventsData.forEach(ev => {
+        csv += `"${ev.event}";"${ev.farm}";"${ev.field}";"${ev.operator}";${ev.area_ha};${ev.volume_l_kg};${ev.largura_m};${ev.distance_km};${ev.duration_hours};"${ev.date_open}";"${ev.date_close}"\n`;
+      });
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Jacto_Trimble_Eventos_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    // ==========================================
+    // GRÁFICOS APACHE ECHARTS
+    // ==========================================
+    function renderCharts(coverage, events) {
+      if (!chartRateDistInstance) {
+        chartRateDistInstance = echarts.init(document.getElementById("chartRateDist"), "dark");
+        chartAreaFieldInstance = echarts.init(document.getElementById("chartAreaField"), "dark");
+        chartSpeedRateInstance = echarts.init(document.getElementById("chartSpeedRate"), "dark");
+      }
+
+      // 1. Histograma de Taxa
+      const rates = (coverage && coverage.features) ? coverage.features.map(f => f.properties.rate).filter(r => r > 0) : [];
+      let bins = { "0-50": 0, "50-100": 0, "100-130": 0, "130-180": 0, "180+": 0 };
+      rates.forEach(r => {
+        if (r < 50) bins["0-50"]++;
+        else if (r < 100) bins["50-100"]++;
+        else if (r < 130) bins["100-130"]++;
+        else if (r < 180) bins["130-180"]++;
+        else bins["180+"]++;
+      });
+
+      chartRateDistInstance.setOption({
+        backgroundColor: "transparent",
+        tooltip: { trigger: "axis" },
+        grid: { top: 20, right: 15, bottom: 25, left: 45 },
+        xAxis: { type: "category", data: Object.keys(bins), axisLabel: { color: "#94a3b8", fontSize: 10 } },
+        yAxis: { type: "value", splitLine: { lineStyle: { color: "#1e293b" } }, axisLabel: { color: "#94a3b8", fontSize: 10 } },
+        series: [{
+          data: Object.values(bins),
+          type: "bar",
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "#f97316" },
+              { offset: 1, color: "#ea580c" }
+            ]),
+            borderRadius: [4, 4, 0, 0]
+          }
+        }]
+      });
+
+      // 2. Área por Talhão
+      const fieldAreaMap = {};
+      (events || []).forEach(e => {
+        fieldAreaMap[e.field] = (fieldAreaMap[e.field] || 0) + e.area_ha;
+      });
+
+      chartAreaFieldInstance.setOption({
+        backgroundColor: "transparent",
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        grid: { top: 15, right: 20, bottom: 25, left: 80 },
+        xAxis: { type: "value", splitLine: { lineStyle: { color: "#1e293b" } }, axisLabel: { color: "#94a3b8", fontSize: 10 } },
+        yAxis: { type: "category", data: Object.keys(fieldAreaMap), axisLabel: { color: "#cbd5e1", fontSize: 10 } },
+        series: [{
+          name: "Área (ha)",
+          type: "bar",
+          data: Object.values(fieldAreaMap).map(v => Math.round(v * 10) / 10),
+          itemStyle: {
+            color: "#06b6d4",
+            borderRadius: [0, 4, 4, 0]
+          }
+        }]
+      });
+
+      // 3. Scatter Velocidade x Taxa
+      const scatterData = (coverage && coverage.features) 
+        ? coverage.features.slice(0, 1000).map(f => [f.properties.speed, f.properties.rate]).filter(d => d[0] > 0 && d[1] > 0)
+        : [];
+
+      chartSpeedRateInstance.setOption({
+        backgroundColor: "transparent",
+        tooltip: {
+          formatter: params => `Velocidade: ${params.value[0]} km/h<br/>Taxa: ${params.value[1]} kg/ha`
+        },
+        grid: { top: 20, right: 15, bottom: 25, left: 45 },
+        xAxis: { name: "km/h", type: "value", splitLine: { lineStyle: { color: "#1e293b" } }, axisLabel: { color: "#94a3b8", fontSize: 10 } },
+        yAxis: { name: "kg/ha", type: "value", splitLine: { lineStyle: { color: "#1e293b" } }, axisLabel: { color: "#94a3b8", fontSize: 10 } },
+        series: [{
+          type: "scatter",
+          symbolSize: 4,
+          data: scatterData,
+          itemStyle: { color: "#10b981", opacity: 0.6 }
+        }]
+      });
+    }
+
+    function initEChartsResize() {
+      window.addEventListener("resize", () => {
+        if (chartRateDistInstance) chartRateDistInstance.resize();
+        if (chartAreaFieldInstance) chartAreaFieldInstance.resize();
+        if (chartSpeedRateInstance) chartSpeedRateInstance.resize();
+      });
+    }
+
+    // ==========================================
+    // UI INTERATIONS (COLLAPSE & DOCK)
+    // ==========================================
+    function toggleTopSection() {
+      const top = document.getElementById("topSection");
+      const icon = document.getElementById("collapseIcon");
+      const text = document.getElementById("collapseText");
+      top.classList.toggle("collapsed");
+
+      if (top.classList.contains("collapsed")) {
+        icon.setAttribute("data-lucide", "chevron-down");
+        text.textContent = "Mostrar Topo";
+      } else {
+        icon.setAttribute("data-lucide", "chevron-up");
+        text.textContent = "Ocultar Topo";
+      }
+      lucide.createIcons();
+      setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+    }
+
+    function switchDockTab(tab) {
+      document.querySelectorAll(".dock-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".dock-pane").forEach(p => p.classList.remove("active"));
+
+      if (tab === "events") {
+        document.querySelectorAll(".dock-tab")[0].classList.add("active");
+        document.getElementById("paneEvents").classList.add("active");
+      } else {
+        document.querySelectorAll(".dock-tab")[1].classList.add("active");
+        document.getElementById("paneCharts").classList.add("active");
+        setTimeout(() => {
+          if (chartRateDistInstance) chartRateDistInstance.resize();
+          if (chartAreaFieldInstance) chartAreaFieldInstance.resize();
+          if (chartSpeedRateInstance) chartSpeedRateInstance.resize();
+        }, 100);
+      }
+    }
+
+    function toggleDockSize() {
+      const dock = document.getElementById("bottomDock");
+      if (dock.classList.contains("dock-maximized")) {
+        dock.classList.remove("dock-maximized");
+      } else {
+        dock.classList.remove("dock-minimized");
+        dock.classList.add("dock-maximized");
+      }
+      setTimeout(() => {
+        if (map) map.invalidateSize();
+        if (chartRateDistInstance) chartRateDistInstance.resize();
+      }, 260);
+    }
+
+    function minimizeDock() {
+      const dock = document.getElementById("bottomDock");
+      dock.classList.toggle("dock-minimized");
+      dock.classList.remove("dock-maximized");
+      setTimeout(() => { if (map) map.invalidateSize(); }, 260);
+    }
+
+    // ==========================================
+    // UPLOAD & IMPORT ENGINE (JACTO / TRIMBLE)
+    // ==========================================
+    function openJactoUploadModal() {
+      document.getElementById('jactoUploadModal').classList.add('open');
+      lucide.createIcons();
+    }
+
+    function closeJactoUploadModal() {
+      document.getElementById('jactoUploadModal').classList.remove('open');
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast-box ${type}`;
+      const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+      toast.innerHTML = `<i data-lucide="${iconName}" style="width:16px; height:16px; flex-shrink:0;"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function isSupportedJactoFile(fname) {
+      if (!fname) return false;
+      const lower = fname.toLowerCase();
+      const exts = ['.zip', '.rar', '.shp', '.dbf', '.shx', '.prj', '.xml', '.kml', '.jdl'];
+      return exts.some(ext => lower.endsWith(ext));
+    }
+
+    function handleJactoFiles(files) {
+      if (!files || files.length === 0) return;
+      const valid = Array.from(files).filter(f => isSupportedJactoFile(f.name));
+      if (valid.length === 0) {
+        showToast("Nenhum arquivo compatível (.ZIP, .RAR, Shapefile AgGPS ou JDL) selecionado.", "error");
+        return;
+      }
+      uploadJactoFiles(valid);
+    }
+
+    async function uploadJactoFiles(files) {
+      if (!files || files.length === 0) return;
+      openJactoUploadModal();
+
+      const progressWrap = document.getElementById('jactoProgressWrap');
+      const progressFill = document.getElementById('jactoProgressFill');
+      const resultsBox = document.getElementById('jactoResultsBox');
+      const resultsList = document.getElementById('jactoResultsList');
+
+      progressWrap.style.display = 'block';
+      progressFill.style.width = '10%';
+      resultsBox.style.display = 'block';
+      resultsList.innerHTML = `<div style="color: #94a3b8; padding: 6px;">Enviando ${files.length} arquivo(s)...</div>`;
+
+      showToast(`Iniciando upload de ${files.length} arquivo(s)...`);
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const relPath = file.webkitRelativePath || file.name;
+        formData.append('files', file, relPath);
+      }
+
+      try {
+        progressFill.style.width = '45%';
+        const resp = await fetch('/api/jacto/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        progressFill.style.width = '85%';
+        if (!resp.ok) {
+          throw new Error(`Erro no servidor HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        progressFill.style.width = '100%';
+
+        const resultados = data.resultados || [];
+        let successCount = 0;
+        resultsList.innerHTML = '';
+
+        resultados.forEach(item => {
+          const isOk = item.status === 'imported';
+          if (isOk) successCount++;
+          const row = document.createElement('div');
+          row.className = 'upload-item';
+          row.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i data-lucide="${isOk ? 'check-circle' : 'alert-triangle'}" style="width: 14px; height: 14px; color: ${isOk ? '#10b981' : '#ef4444'};"></i>
+              <span style="font-weight: 600; color: #f8fafc;">${item.filename}</span>
+              ${item.type ? `<span style="font-size: 0.68rem; color: #fb923c; background: rgba(234,88,12,0.15); padding: 1px 6px; border-radius: 4px;">${item.type}</span>` : ''}
+            </div>
+            <span style="font-size: 0.7rem; color: ${isOk ? '#10b981' : '#ef4444'}; font-weight: 700;">
+              ${isOk ? 'IMPORTADO' : 'ERRO'}
+            </span>
+          `;
+          resultsList.appendChild(row);
+        });
+
+        lucide.createIcons();
+
+        showToast(`Importação finalizada: ${successCount} de ${files.length} processado(s) com êxito!`, successCount > 0 ? "success" : "error");
+
+        // Recarrega automaticamente as coberturas e KPIs da Jacto
+        setTimeout(() => {
+          reloadAllData();
+        }, 1200);
+
+      } catch (err) {
+        console.error("Falha no upload Jacto:", err);
+        progressFill.style.width = '100%';
+        progressFill.style.background = '#ef4444';
+        showToast(`Erro na importação: ${err.message}`, "error");
+        resultsList.innerHTML = `<div style="color: #ef4444; padding: 6px;">Falha: ${err.message}</div>`;
+      } finally {
+        setTimeout(() => {
+          progressWrap.style.display = 'none';
+          progressFill.style.width = '0%';
+          progressFill.style.background = 'linear-gradient(90deg, #ea580c, #fb923c)';
+        }, 3000);
+      }
+    }
+
+    // Drag-and-drop global na janela
+    let dragCounter = 0;
+    const dropOverlay = document.getElementById('jactoDropOverlay');
+
+    window.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      dropOverlay.classList.add('active');
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropOverlay.classList.remove('active');
+      }
+    });
+
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    window.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.remove('active');
+
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleJactoFiles(e.dataTransfer.files);
+      }
+    });
+
+    // Zona interna do modal
+    const modalZone = document.getElementById('jactoModalZone');
+    if (modalZone) {
+      modalZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        modalZone.classList.add('dragover');
+      });
+      modalZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        modalZone.classList.remove('dragover');
+      });
+      modalZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        modalZone.classList.remove('dragover');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleJactoFiles(e.dataTransfer.files);
+        }
+      });
+    }
+  </script>
+
+  <!-- HIDDEN FILE & FOLDER INPUTS -->
+  <input type="file" id="jactoFileInput" multiple accept=".zip,.rar,.shp,.dbf,.shx,.prj,.xml,.kml,.jdl" style="display:none;" onchange="handleJactoFiles(this.files)">
+  <input type="file" id="jactoFolderInput" webkitdirectory directory multiple style="display:none;" onchange="handleJactoFiles(this.files)">
+
+  <!-- FULLSCREEN DRAG & DROP OVERLAY -->
+  <div id="jactoDropOverlay" class="drop-overlay">
+    <div class="drop-box">
+      <i data-lucide="upload-cloud" style="width: 52px; height: 52px; color: #fb923c;"></i>
+      <h3>Solte os arquivos para importar na Jacto Uniport</h3>
+      <p>Aceita pacotes .ZIP e .RAR (AgGPS Coverage.shp, Swaths.shp, EventHistory.dbf e telemetria .JDL)</p>
+    </div>
+  </div>
+
+  <!-- UPLOAD MODAL WINDOW -->
+  <div id="jactoUploadModal" class="modal-backdrop" onclick="if(event.target===this) closeJactoUploadModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>
+          <i data-lucide="spray-can" style="color: #ea580c; width: 22px; height: 22px;"></i>
+          <span>Importar Arquivos • Jacto Uniport & Trimble AgGPS</span>
+        </h3>
+        <button class="modal-close" onclick="closeJactoUploadModal()">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- LOCAL FOLDER QUICK-LINK -->
+        <div style="background: rgba(234, 88, 12, 0.12); border: 1px solid rgba(251, 146, 60, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #fed7aa;">
+            <i data-lucide="hard-drive" style="width: 18px; height: 18px; color: #fb923c; flex-shrink: 0;"></i>
+            <span>Seus arquivos já estão no disco local? Conecte a pasta instantaneamente sem fazer upload.</span>
+          </div>
+          <button class="btn btn-orange" onclick="closeJactoUploadModal(); openFolderConfigModal();" style="padding: 5px 12px; font-size: 0.74rem; flex-shrink: 0;">
+            <i data-lucide="folder-check" style="width: 13px; height: 13px;"></i> Conectar Pasta Local
+          </button>
+        </div>
+
+        <div class="upload-zone" id="jactoModalZone" onclick="document.getElementById('jactoFileInput').click()">
+          <i data-lucide="upload-cloud" style="width: 44px; height: 44px; color: #fb923c;"></i>
+          <h4>Arraste e solte seus arquivos ou pacotes aqui</h4>
+          <p>Compatível com pacotes .ZIP, .RAR, Shapefiles AgGPS (.shp, .dbf, .shx) e telemetria .JDL</p>
+          
+          <div class="upload-actions" onclick="event.stopPropagation()">
+            <button class="btn btn-orange" onclick="document.getElementById('jactoFileInput').click()">
+              <i data-lucide="file-plus" style="width: 14px; height: 14px;"></i> Selecionar Arquivos
+            </button>
+            <button class="btn btn-outline" onclick="document.getElementById('jactoFolderInput').click()" style="color: #fb923c; border-color: rgba(251, 146, 60, 0.4);">
+              <i data-lucide="folder-plus" style="width: 14px; height: 14px;"></i> Selecionar Pasta
+            </button>
+          </div>
+        </div>
+
+        <!-- PROGRESS STRIP -->
+        <div class="progress-bar-wrap" id="jactoProgressWrap">
+          <div class="progress-bar-fill" id="jactoProgressFill"></div>
+        </div>
+
+        <!-- RESULTS CONTAINER -->
+        <div id="jactoResultsBox" style="display: none;">
+          <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Arquivos Processados:</span>
+          <div class="upload-results" id="jactoResultsList"></div>
+        </div>
+
+        <!-- FOOTER INFO -->
+        <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
+          <i data-lucide="info" style="width: 14px; height: 14px; color: #38bdf8; flex-shrink: 0; margin-top: 1px;"></i>
+          <span>Os arquivos AgGPS são processados e integrados nativamente com suporte total a Shapefiles, Linhas AB e Taxas de Pulverização.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOLDER CONFIG MODAL -->
+  <div id="folderConfigModal" class="modal-backdrop" onclick="if(event.target===this) closeFolderConfigModal()">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3>
+          <i data-lucide="folder-cog" style="color: #ea580c; width: 22px; height: 22px;"></i>
+          <span>Configurar Pasta de Dados AgGPS (Jacto / Trimble)</span>
+        </h3>
+        <button class="modal-close" onclick="closeFolderConfigModal()">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <p style="font-size: 0.8rem; color: #94a3b8; line-height: 1.5;">
+          Informe o caminho completo da pasta no seu computador onde estão os arquivos da AgGPS (contendo a pasta <code style="color: #fb923c;">Data</code> ou arquivos <code style="color: #fb923c;">Coverage.shp</code> e <code style="color: #fb923c;">EventHistory.dbf</code>).
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 0.75rem; font-weight: 600; color: #cbd5e1;">Caminho da Pasta no Computador:</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="inputCustomPath" placeholder="Ex: C:\Users\Topologia\Desktop\tratones minac\jactor\AgGPS" 
+                   style="flex: 1; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(251, 146, 60, 0.4); border-radius: 6px; padding: 9px 12px; color: #f8fafc; font-family: monospace; font-size: 0.82rem;" />
+            <button class="btn btn-orange" onclick="applyCustomAgGPSPath()" style="padding: 9px 18px; white-space: nowrap;">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i> Conectar
+            </button>
+          </div>
+        </div>
+
+        <!-- DETECTED CANDIDATES -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+          <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Pastas Detectadas no Computador:</span>
+          <div id="candidatesList" style="display: flex; flex-direction: column; gap: 6px;">
+            <!-- Preenchido via JavaScript -->
+          </div>
+        </div>
+
+        <div id="folderFeedback" style="display: none; padding: 10px 14px; border-radius: 6px; font-size: 0.78rem; line-height: 1.4;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+</body>
+</html>
