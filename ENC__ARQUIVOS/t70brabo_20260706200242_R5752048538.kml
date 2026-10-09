@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R5752048538</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>t70brabo</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZXW256200170PS</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 115600</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>6.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>10.104000091552734</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>14.399999618530273</value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.01666666675</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>35294</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-45.9964991457829,-17.800533226723292,0 -45.99615119527011,-17.800719387213285,0 -45.99214081398527,-17.802578421323222,0 -45.992105636140614,-17.802579290586372,0 -45.992081438250295,-17.80255895054272,0 -45.99200901045945,-17.802450383903093,0 -45.9919436658472,-17.802352368601113,0 -45.99907869271652,-17.804526274763106,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

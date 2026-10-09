@@ -6,14 +6,14 @@
   <title>Telemetria John Deere G5 • Cockpit GIS de Produtividade & Aplicação</title>
 
   <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
 
   <!-- Apache ECharts -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="/static/vendor/echarts.min.js"></script>
 
   <!-- Shapefile Parser (shp.js) -->
   <script src="shp.js"></script>
@@ -696,6 +696,7 @@
       transition: width 0.2s ease;
     }
   </style>
+  <link rel="stylesheet" href="/css/refinements.css">
 </head>
 <body>
 
@@ -739,7 +740,7 @@
             <span>Monitor John Deere G5 • Telemetria & Produtividade</span>
             <span class="badge-engine">G5 Live Engine</span>
           </h1>
-          <p>Trator JD 6150M • Chassi: 1BM6150MJP3000947 • Implemento: DN 1006 (Distribuição a Lanço)</p>
+          <p>Telemetria dos arquivos importados • John Deere G5</p>
         </div>
       </div>
 
@@ -749,13 +750,9 @@
           <i data-lucide="spray-can" style="width:14px; height:14px;"></i> Jacto / Trimble
         </a>
 
-        <a href="/drone" class="btn btn-outline" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Alternar para o Módulo Drones Agrícolas">
-          <i data-lucide="plane" style="width:14px; height:14px;"></i> Drones Agrícolas
-        </a>
+        
 
-        <a href="/studio" class="btn btn-outline" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" title="Alternar para o Precision Ag Studio (ISOXML, Zoneamento e JDLink)">
-          <i data-lucide="cpu" style="width:14px; height:14px;"></i> Precision Studio
-        </a>
+        
 
         <a href="/" class="btn btn-outline" title="Voltar ao Portal de Escolha de Máquinas">
           <i data-lucide="home" style="width:14px; height:14px;"></i> Portal
@@ -813,7 +810,7 @@
         <i data-lucide="clock" style="color: #10b981; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Horímetro Total</span>
-          <span class="kpi-num" id="kpiCurrentHorimeter">4.242,50 h</span>
+          <span class="kpi-num" id="kpiCurrentHorimeter">—</span>
         </div>
       </div>
 
@@ -822,7 +819,7 @@
         <i data-lucide="activity" style="color: #38bdf8; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Horas Trabalhadas</span>
-          <span class="kpi-num" id="kpiDeltaHours" style="color: #38bdf8;">+382,75 h</span>
+          <span class="kpi-num" id="kpiDeltaHours" style="color: #38bdf8;">—</span>
         </div>
       </div>
 
@@ -831,7 +828,7 @@
         <i data-lucide="maximize-2" style="color: #10b981; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Área Coberta</span>
-          <span class="kpi-num" id="kpiTotalArea" style="color: #10b981;">1.719,15 ha</span>
+          <span class="kpi-num" id="kpiTotalArea" style="color: #10b981;">—</span>
         </div>
       </div>
 
@@ -840,7 +837,7 @@
         <i data-lucide="droplets" style="color: #f59e0b; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Taxa Média</span>
-          <span class="kpi-num" id="kpiAvgRate" style="color: #f59e0b;">1.183 kg/ha</span>
+          <span class="kpi-num" id="kpiAvgRate" style="color: #f59e0b;">—</span>
         </div>
       </div>
 
@@ -849,7 +846,7 @@
         <i data-lucide="split" style="color: #06b6d4; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Faixa de Trabalho</span>
-          <span class="kpi-num" id="kpiWorkingWidth" style="color: #06b6d4;">4,50 m</span>
+          <span class="kpi-num" id="kpiWorkingWidth" style="color: #06b6d4;">—</span>
         </div>
       </div>
 
@@ -858,7 +855,7 @@
         <i data-lucide="gauge" style="color: #f97316; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Velocidade Média</span>
-          <span class="kpi-num" id="kpiAvgSpeed" style="color: #f97316;">6,1 km/h</span>
+          <span class="kpi-num" id="kpiAvgSpeed" style="color: #f97316;">—</span>
         </div>
       </div>
 
@@ -867,7 +864,7 @@
         <i data-lucide="zap" style="color: #a855f7; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">RPM Motor Médio</span>
-          <span class="kpi-num" id="kpiAvgRpm" style="color: #a855f7;">1.380 RPM</span>
+          <span class="kpi-num" id="kpiAvgRpm" style="color: #a855f7;">—</span>
         </div>
       </div>
 
@@ -876,7 +873,7 @@
         <i data-lucide="percent" style="color: #eab308; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Carga Motor Média</span>
-          <span class="kpi-num" id="kpiAvgLoad" style="color: #eab308;">~25%</span>
+          <span class="kpi-num" id="kpiAvgLoad" style="color: #eab308;">—</span>
         </div>
       </div>
 
@@ -885,7 +882,7 @@
         <i data-lucide="layers" style="color: #ec4899; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Arquivos Indexados</span>
-          <span class="kpi-num" id="kpiFilesCount">2.141</span>
+          <span class="kpi-num" id="kpiFilesCount">—</span>
         </div>
       </div>
 
@@ -893,8 +890,8 @@
       <div class="kpi-card" title="Estimativa de consumo de diesel baseado na telemetria J1939 EEC1/EEC2 (L/h e L/ha)">
         <i data-lucide="fuel" style="color: #ef4444; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
-          <span class="kpi-lbl">Consumo Diesel (J1939)</span>
-          <span class="kpi-num" id="kpiDieselCons" style="color: #ef4444;">~8,1 L/h • 1,14 L/ha</span>
+          <span class="kpi-lbl">Consumo Diesel (Estimado)</span>
+          <span class="kpi-num" id="kpiDieselCons" style="color: #ef4444;">—</span>
         </div>
       </div>
 
@@ -903,7 +900,7 @@
         <i data-lucide="trending-up" style="color: #38bdf8; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Rendimento Operacional</span>
-          <span class="kpi-num" id="kpiFieldCapacity" style="color: #38bdf8;">~7,11 ha/h</span>
+          <span class="kpi-num" id="kpiFieldCapacity" style="color: #38bdf8;">—</span>
         </div>
       </div>
     </div>
@@ -1743,9 +1740,8 @@
         // Carrega KPIs
         const resKpis = await fetch(`/api/dashboard/kpis${qStr}`);
         const kpiData = await resKpis.json();
-        if (kpiData.has_data) {
-          updateKpisUI(kpiData);
-        }
+        if (kpiData.has_data) updateKpisUI(kpiData);
+        else document.querySelectorAll('[id^=kpi]').forEach(el=>el.textContent='—');
 
         // Carrega Trajetórias do Mapa
         const resMap = await fetch(`/api/dashboard/mapa${qStr}`);

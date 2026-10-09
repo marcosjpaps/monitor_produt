@@ -7,7 +7,7 @@ Em produção, configure MASSEY_DB_PATH via variável de ambiente.
 import os
 import re
 import json
-import sqlite3
+import sqlite3; from .pg_adapter import connect as pg_connect
 import unicodedata
 from typing import Dict, Any, List, Optional
 
@@ -22,10 +22,7 @@ DEFAULT_TRACTOR_FOLDER = os.environ.get(
 )
 
 def _get_db_conn() -> Optional[sqlite3.Connection]:
-    if not os.path.exists(MASSEY_DB_PATH):
-        return None
-    conn = sqlite3.connect(MASSEY_DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = pg_connect()
     return conn
 
 def _norm_str(text: str) -> str:
@@ -129,10 +126,10 @@ def get_massey_stats() -> Dict[str, Any]:
         
         # Veículo e Controlador padrão
         first_op = ops[0] if ops else None
-        vehicle_name = first_op["vehicle_name"] if first_op and first_op["vehicle_name"] else "Massey Ferguson 7318 (Autopilot)"
-        controller_name = first_op["controller_name"] if first_op and first_op["controller_name"] else "Trimble NAV-900 (S/N: 6250440300)"
-        implement_name = first_op["implement_name"] if first_op and first_op["implement_name"] else "Espalhadeira do Tipo Puxar"
-        device_product = first_op["device_product"] if first_op and first_op["device_product"] else "TMX-2050"
+        vehicle_name = first_op["vehicle_name"] if first_op and first_op["vehicle_name"] else "Não informado"
+        controller_name = first_op["controller_name"] if first_op and first_op["controller_name"] else "Não informado"
+        implement_name = first_op["implement_name"] if first_op and first_op["implement_name"] else "Não informado"
+        device_product = first_op["device_product"] if first_op and first_op["device_product"] else "Não informado"
 
         return {
             "has_data": total_ops > 0,
@@ -149,8 +146,8 @@ def get_massey_stats() -> Dict[str, Any]:
                 "controller_name": controller_name,
                 "implement_name": implement_name,
                 "device_product": device_product,
-                "device_serial": monitors[0] if monitors else "6251225841",
-                "client": "Usina G5"
+                "device_serial": monitors[0] if monitors else "Não informado",
+                "client": first_op["client_name"] if first_op else "Não informado"
             }
         }
     finally:
@@ -222,9 +219,9 @@ def get_massey_operations(
                 "detected_fields": det_fields,
                 "device_product": r["device_product"],
                 "device_serial": r["device_serial"],
-                "vehicle_name": r["vehicle_name"] or "Massey Ferguson 7318",
-                "implement_name": r["implement_name"] or "Espalhadeira do Tipo Puxar",
-                "controller_name": r["controller_name"] or "Trimble NAV-900 (S/N: 6250440300)",
+                "vehicle_name": r["vehicle_name"] or "Não informado",
+                "implement_name": r["implement_name"] or "Não informado",
+                "controller_name": r["controller_name"] or "Não informado",
                 "area_ha": r["area_ha"],
                 "applied_rate": r["applied_rate"],
                 "total_applied": r["total_applied"],

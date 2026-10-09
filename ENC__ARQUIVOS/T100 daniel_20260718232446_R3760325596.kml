@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R3760325596</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>T100 daniel</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC255G00216GV</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 18200</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>M/M+</value>
+          </Data>
+          <Data name="Height">
+            <value></value>
+          </Data>
+          <Data name="Route Spacing">
+            <value></value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value></value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.10133333384000001</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>5334</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.314090480507645,-17.689884522371145,0 -46.314694844063574,-17.690507847037214,0 -46.314919153419844,-17.690712069188784,0 -46.31496852287566,-17.690758650560003,0 -46.31497091225647,-17.690761051834993,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

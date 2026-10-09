@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R6879287654</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>DAGRO T100</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC258L002T7DJ</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 72500</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>15.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>15.048</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>18.100000381469727</value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.31266666823</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>68951</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.00114684570425,-18.042031540011028,0 -46.002696597623085,-18.043220164816557,0 -46.0029576652535,-18.04343279627196,0 -46.00641544920255,-18.043700406232933,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

@@ -41,19 +41,7 @@ from .massey_engine import (
     get_massey_farm_fields_geojson
 )
 
-def _extract_rar(rar_path: str, extract_dir: str):
-    """Extrai arquivos .rar se rarfile ou unrar/7z estiverem instalados."""
-    try:
-        import rarfile
-        with rarfile.RarFile(rar_path, "r") as rf:
-            rf.extractall(extract_dir)
-            return
-    except Exception:
-        pass
-    import shutil, subprocess
-    unrar = shutil.which("unrar") or shutil.which("7z")
-    if unrar:
-        subprocess.run([unrar, "x", "-y", rar_path, extract_dir + os.sep], capture_output=True)
+from .archive_utils import safe_name, safe_extract, extract_rar as _extract_rar
 
 app = FastAPI(
     title="Monitor Agrícola Multi-Máquinas (John Deere G5 & Jacto AgGPS)",
@@ -63,8 +51,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://127.0.0.1:" + os.environ.get("PORT", "3000"), "http://localhost:" + os.environ.get("PORT", "3000")],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -74,6 +62,8 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "f
 @app.on_event("startup")
 def startup_event():
     init_db()
+    from .massey_import import connect
+    connect().close()
     # Sincroniza arquivos locais padrão caso existam
     sync_default_local_files()
 
@@ -335,15 +325,21 @@ async def api_upload(files: List[UploadFile] = File(...)):
 
     with get_connection() as conn:
         for file in files:
-            fname = file.filename
+            try: fname = safe_name(file.filename)
+            except ValueError as e:
+                results.append({"filename":file.filename,"status":"error","message":str(e)})
+                continue
             lower_name = fname.lower()
-            raw_bytes = await file.read()
+            raw_bytes = await file.read(50 * 1024 * 1024 + 1)
+            if len(raw_bytes) > 50 * 1024 * 1024:
+                results.append({"filename":fname,"status":"error","message":"Arquivo excede 50 MB"})
+                continue
 
             # CASO 1: Arquivo Compactado (.zip ou .rar)
             if lower_name.endswith(".zip") or lower_name.endswith(".rar"):
                 try:
                     with tempfile.TemporaryDirectory(prefix="up_arch_") as tmp_dir:
-                        archive_path = os.path.join(tmp_dir, fname)
+                        archive_path = os.path.join(tmp_dir, os.path.basename(fname))
                         with open(archive_path, "wb") as af:
                             af.write(raw_bytes)
 
@@ -352,7 +348,7 @@ async def api_upload(files: List[UploadFile] = File(...)):
 
                         if lower_name.endswith(".zip"):
                             with zipfile.ZipFile(archive_path, "r") as zf:
-                                zf.extractall(extract_dir)
+                                safe_extract(zf, extract_dir)
                         else:
                             _extract_rar(archive_path, extract_dir)
 
@@ -547,7 +543,7 @@ def api_jd_amostras_lista():
     return get_available_jd_samples()
 
 @app.get("/api/johndeere/amostras/{sample_id}")
-def api_jd_amostra_detalhe(sample_id: str, max_points: int = Query(15000)):
+def api_jd_amostra_detalhe(sample_id: str, max_points: int = Query(15000, ge=1, le=50000)):
     """Carrega uma amostra oficial com telemetria, corte de seções e receituário de tanque."""
     samples = get_available_jd_samples()
     target = next((s for s in samples if s["id"] == sample_id), None)
@@ -712,7 +708,7 @@ def api_jacto_cobertura(
     fazenda: Optional[str] = Query(None),
     talhao: Optional[str] = Query(None),
     evento: Optional[str] = Query(None),
-    max_features: int = Query(15000)
+    max_features: int = Query(15000, ge=1, le=50000)
 ):
     """Retorna polígonos reais de cobertura (Coverage.shp) em GeoJSON para o Leaflet."""
     return get_aggps_coverage_geojson(
@@ -756,15 +752,21 @@ async def api_jacto_upload(files: List[UploadFile] = File(...)):
 
     with get_connection() as conn:
         for file in files:
-            fname = file.filename
+            try: fname = safe_name(file.filename)
+            except ValueError as e:
+                results.append({"filename":file.filename,"status":"error","message":str(e)})
+                continue
             lower_name = fname.lower()
-            raw_bytes = await file.read()
+            raw_bytes = await file.read(50 * 1024 * 1024 + 1)
+            if len(raw_bytes) > 50 * 1024 * 1024:
+                results.append({"filename":fname,"status":"error","message":"Arquivo excede 50 MB"})
+                continue
 
             # CASO 1: Pacote Compactado (.zip ou .rar)
             if lower_name.endswith(".zip") or lower_name.endswith(".rar"):
                 try:
                     with tempfile.TemporaryDirectory(prefix="jacto_up_") as tmp_dir:
-                        archive_path = os.path.join(tmp_dir, fname)
+                        archive_path = os.path.join(tmp_dir, os.path.basename(fname))
                         with open(archive_path, "wb") as af:
                             af.write(raw_bytes)
 
@@ -773,7 +775,7 @@ async def api_jacto_upload(files: List[UploadFile] = File(...)):
 
                         if lower_name.endswith(".zip"):
                             with zipfile.ZipFile(archive_path, "r") as zf:
-                                zf.extractall(extract_dir)
+                                safe_extract(zf, extract_dir)
                         else:
                             _extract_rar(archive_path, extract_dir)
 
@@ -784,7 +786,7 @@ async def api_jacto_upload(files: List[UploadFile] = File(...)):
                             for f in fnames:
                                 f_lower = f.lower()
                                 full_f = os.path.join(root, f)
-                                if f_lower.endswith(".shp") or f_lower.endswith(".dbf") or f_lower.endswith(".shx"):
+                                if any(f_lower.endswith(e) for e in (".shp", ".dbf", ".shx", ".prj", ".xml", ".kml")):
                                     aggps_files.append(full_f)
                                 elif f_lower.endswith(".jdl"):
                                     jdl_files.append(full_f)
@@ -793,12 +795,16 @@ async def api_jacto_upload(files: List[UploadFile] = File(...)):
 
                         # Se contém Shapefiles AgGPS (Coverage, Swaths, etc.)
                         if aggps_files:
+                            from .vector_reader import Open
+                            for candidate in aggps_files:
+                                if candidate.lower().endswith('.shp'): Open(candidate)
                             folder_name = os.path.splitext(os.path.basename(fname))[0]
                             dest_folder = os.path.join(aggps_target_dir, "Importados_Jacto", folder_name)
                             os.makedirs(dest_folder, exist_ok=True)
 
                             for sf in aggps_files:
-                                target_path = os.path.join(dest_folder, os.path.basename(sf))
+                                target_path = os.path.join(dest_folder, os.path.relpath(sf, extract_dir))
+                                os.makedirs(os.path.dirname(target_path), exist_ok=True)
                                 shutil.copy2(sf, target_path)
 
                             results.append({
@@ -849,6 +855,7 @@ async def api_jacto_upload(files: List[UploadFile] = File(...)):
                     dest_folder = os.path.join(aggps_target_dir, "Importados_Jacto", "Diretos")
                     os.makedirs(dest_folder, exist_ok=True)
                     target_file = os.path.join(dest_folder, fname)
+                    os.makedirs(os.path.dirname(target_file), exist_ok=True)
                     with open(target_file, "wb") as f_out:
                         f_out.write(raw_bytes)
                     results.append({
@@ -1037,8 +1044,8 @@ def api_massey_farm_fields(
     zone: Optional[str] = Query(None),
     variety: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
-    limit: int = Query(1000),
-    offset: int = Query(0)
+    limit: int = Query(1000, ge=1, le=10000),
+    offset: int = Query(0, ge=0)
 ):
     """Lista de talhões cadastrais do SIG com cruzamento de operações."""
     return get_massey_farm_fields(farm=farm, zone=zone, variety=variety, search=search, limit=limit, offset=offset)
@@ -1056,8 +1063,58 @@ def api_massey_farm_fields_geojson(
 @app.post("/api/massey/import-tractor-folder")
 def api_import_tractor_folder():
     """Sincroniza e recarrega os dados do trator Massey Ferguson."""
-    return {"status": "ok", "message": "Dados do Trator Massey Ferguson sincronizados com sucesso."}
+    from .massey_import import import_folder
+    return import_folder()
 
 # Monta pasta static
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
+
+@app.get('/api/health')
+def health(): return {'status':'ok'}
+
+@app.post('/api/upload-multi')
+@app.post('/api/massey/upload')
+async def massey_upload(files: List[UploadFile] = File(...)):
+    import tempfile
+    from pathlib import Path
+    from .massey_import import connect, import_file
+    results=[]; imported=0
+    with tempfile.TemporaryDirectory() as tmp, connect() as conn:
+        staged=[]
+        for file in files:
+            try:
+                name=safe_name(file.filename);p=Path(tmp)/name;p.parent.mkdir(parents=True,exist_ok=True)
+                raw=await file.read(50*1024*1024+1)
+                if len(raw)>50*1024*1024: raise ValueError('Arquivo excede 50 MB')
+                p.write_bytes(raw);staged.append((p,name))
+            except Exception as e: results.append({'filename':file.filename,'status':'error','message':str(e)})
+        for p,name in staged:
+            if p.suffix.lower() in ('.dbf','.shx','.prj','.cpg'):continue
+            try:
+                conn.execute('SAVEPOINT single_file')
+                n=import_file(conn,p,name)
+                conn.execute('RELEASE single_file');imported+=n
+                results.append({'filename':name,'status':'imported' if n else 'duplicate','imported':n})
+            except Exception as e:
+                conn.execute('ROLLBACK TO single_file');conn.execute('RELEASE single_file')
+                results.append({'filename':name,'status':'error','message':str(e)})
+    errors=sum(r['status']=='error' for r in results)
+    if not results: raise HTTPException(400,'Envie um arquivo SHP com seus componentes, KML, GeoJSON ou ZIP.')
+    return JSONResponse(status_code=400 if errors==len(results) else 200,content={'imported':imported,'results':results,'message':f'{imported} registros novos; {errors} arquivos com erro.','detail':next((r['message'] for r in results if r['status']=='error'),None)})
+
+@app.delete('/api/operations/{operation_uuid}')
+@app.delete('/api/massey/operations/{operation_uuid}')
+def delete_massey_operation(operation_uuid: str):
+    from .massey_import import connect
+    with connect() as conn:
+        count=conn.execute('DELETE FROM agricultural_operations WHERE id=?',(operation_uuid,)).rowcount
+    if not count: raise HTTPException(404,'Operação não encontrada')
+    return {'success':True,'deleted_count':count}
+
+@app.delete('/api/operations')
+@app.delete('/api/massey/operations')
+def delete_massey_operations():
+    from .massey_import import connect
+    with connect() as conn: count=conn.execute('DELETE FROM agricultural_operations').rowcount
+    return {'success':True,'deleted_count':count}

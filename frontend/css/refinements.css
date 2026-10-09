@@ -1,0 +1,39 @@
+/* Acabamento compartilhado; preserva cores e estrutura de cada módulo. */
+:root{color-scheme:dark;}
+html{scroll-behavior:smooth;}
+body{-webkit-font-smoothing:antialiased;}
+button,a,input,select{outline-offset:4px;}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6ee7b7;}
+.machine-card{box-shadow:0 10px 30px rgba(0,0,0,.18);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;}
+.machine-card:hover{transform:translateY(-5px);box-shadow:0 18px 45px rgba(0,0,0,.3);}
+.machine-card .btn-enter{letter-spacing:.015em;}
+button{transition:filter .15s ease,box-shadow .15s ease;}
+button:hover{filter:brightness(1.08);}
+button:disabled{cursor:wait;opacity:.6;}
+input,select{min-height:32px;}
+table thead th{letter-spacing:.025em;}
+table tbody tr{transition:background .15s ease;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+@media(max-width:680px){.machine-card{min-width:0;}.main-container{padding:16px;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important;}}
+/* Compatibilidade dos componentes do cockpit Massey. */
+#mapContainer{flex:1;min-height:240px;position:relative;background:#090e17;}
+#attrPanel{height:290px;min-height:38px;overflow:hidden;}
+#attrPanel .dock-body{flex:1;min-height:0;overflow:auto;}
+#attrPanel .table-scroll{height:100%;}
+#attrPanel .dock-header{flex-wrap:wrap;gap:8px;}
+#attrPanel .panel-filters{flex-wrap:wrap;}
+#attrPanel .dock-actions{display:flex;gap:6px;}
+#mapContainer .map-controls{position:absolute;top:12px;left:60px;z-index:900;display:flex;gap:6px;}
+.map-ctrl-btn,.btn-collapse-top{background:#131d2e;color:#94a3b8;border:1px solid #2c3f58;border-radius:6px;padding:7px;cursor:pointer;}
+.map-ctrl-btn.active{color:#38bdf8;border-color:#38bdf8;}
+.btn-collapse-top{position:absolute;top:12px;left:260px;z-index:900;}
+#topSection header{flex-wrap:wrap;gap:10px;}
+#topSection .nav-actions{flex-wrap:wrap;}
+#topSection.top-section{max-height:250px;}
+#resizer{height:5px;background:#2c3f58;cursor:row-resize;flex-shrink:0;}
+#mapContainer .leaflet-container{background:#090e17;}
+@media(max-width:780px){#topSection.top-section{max-height:350px;}#attrPanel{height:250px;}.map-hud{left:12px;}header .brand{flex:1 1 100%;}}
+@media(max-width:680px){.top-bar{flex-wrap:wrap;gap:12px;padding:16px 20px;}.brand-top{min-width:0;}.brand-top-text{min-width:0;}.sys-badges{flex-wrap:wrap;gap:8px;}.hero-title h2{font-size:1.85rem;}.portal-container{padding:24px 20px;}.cards-grid{grid-template-columns:minmax(0,1fr);}.badge-brand{max-width:100%;}}

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R1255671831</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>T100 daniel</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC255G00216GV</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 282600</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>15.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>10.384</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>20.0</value>
+          </Data>
+          <Data name="Task Area">
+            <value>2.11200001056</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>21422</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-45.738265028416905,-17.05393934362374,0 -45.73832543673325,-17.053886161158434,0 -45.738768027402486,-17.05277407241096,0 -45.73877216523004,-17.052769560418405,0 -45.746565952253,-17.05349732813217,0 -45.74662702485003,-17.053512110697298,0 -45.74667478065255,-17.053541826721908,0 -45.74733771578814,-17.054123715424407,0 -45.74733728536676,-17.054125965944237,0 -45.74077159408747,-17.05350595936199,0 -45.74077003959816,-17.053503781792728,0 -45.740768703971064,-17.05347208489659,0 -45.74109912720532,-17.05250301034855,0 -45.74112540416493,-17.052445848037344,0 -45.74113964200498,-17.052433504499298,0 -45.741161502559585,-17.052427256493825,0 -45.74573323148588,-17.052851884335155,0 -45.74437142303924,-17.052397801085224,0 -45.7439777156498,-17.052223356498445,0 -45.74336160098164,-17.051893551340285,0 -45.74298469425026,-17.051850843009955,0 -45.738262297414344,-17.053939035237157,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

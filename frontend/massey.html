@@ -6,14 +6,14 @@
   <title>Massey Ferguson 7318 • Trimble TMX-2050 - Mapa de Operações & Atributos</title>
   
   <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
 
   <!-- Shapefile Parser (shp.js) -->
-  <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+  <script src="/shp.js"></script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,6 +87,7 @@
       background: rgba(168, 85, 247, 0.15) !important;
     }
   </style>
+  <link rel="stylesheet" href="/css/refinements.css">
 </head>
 <body>
 
@@ -96,8 +97,8 @@
   <!-- DRAG & DROP OVERLAY -->
   <div id="dropZone">
     <i data-lucide="upload-cloud" style="width: 56px; height: 56px;"></i>
-    <h2 style="margin-top: 10px;">Solte arquivos Trimble (.agf, .zip, .rar) ou Shapefile (.zip) aqui</h2>
-    <p>As tarefas do monitor TMX-2050 e os talhões serão lidos e mapeados automaticamente.</p>
+    <h2 style="margin-top: 10px;">Solte KML, GeoJSON ou um ZIP com Shapefiles aqui</h2>
+    <p>Importe as exportações abertas do monitor Trimble para visualizar operações e talhões.</p>
   </div>
 
   <!-- TOP COLLAPSIBLE CONTAINER (HEADER + KPIS) -->
@@ -113,7 +114,7 @@
             <h1 style="font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: -0.3px;">Massey Ferguson 7318 • Trimble TMX-2050</h1>
             <span class="badge-brand-mf">MF Autopilot</span>
           </div>
-          <p>Usina G5 • Piloto NAV-900 (S/N: 6250440300) • Monitor TMX (S/N: 6251225841) • Contêineres .AGF & manifest.xml</p>
+          <p>Operações e talhões dos arquivos importados • Trimble TMX-2050</p>
         </div>
       </div>
 
@@ -127,22 +128,18 @@
           <i data-lucide="spray-can" style="width: 14px; height: 14px;"></i> Jacto Uniport
         </a>
 
-        <a href="/drone" class="btn-nav-switch btn-drone" title="Alternar para Drones Agrícolas">
-          <i data-lucide="plane" style="width: 14px; height: 14px;"></i> Drones
-        </a>
+        
 
-        <a href="/studio" class="btn-nav-switch" style="color: #cbd5e1;" title="Precision Ag Studio">
-          <i data-lucide="terminal" style="width: 14px; height: 14px;"></i> Studio
-        </a>
+        
 
         <a href="/" class="btn-nav-switch btn-portal" title="Portal Hub Principal">
           <i data-lucide="home" style="width: 14px; height: 14px;"></i> Portal
         </a>
 
         <!-- Inputs Ocultos de Arquivo -->
-        <input type="file" id="fileInput" multiple accept=".agf,.zip,.rar" style="display: none;">
+        <input type="file" id="fileInput" multiple accept=".agf,.zip,.kml,.geojson,.json" style="display: none;">
         <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
-        <input type="file" id="shpFileInput" multiple accept=".zip,.shp,.dbf,.kml,.geojson" style="display: none;">
+        <input type="file" id="shpFileInput" multiple accept=".zip,.shp,.dbf,.shx,.prj,.cpg,.kml,.geojson" style="display: none;">
 
         <button class="btn btn-primary" id="btnImportTractor" style="background:linear-gradient(135deg, #dc2626, #b91c1c); color:white; font-weight:700; border: 1px solid rgba(220,38,38,0.5);" title="Carregar diretamente a pasta do Trator Massey Ferguson 7318 (Usina G5)">
           <i data-lucide="tractor"></i> Sincronizar Trator Massey
@@ -153,7 +150,7 @@
         </button>
 
         <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()" title="Carregar pacotes .agf, .zip ou .db exportados">
-          <i data-lucide="file-plus"></i> Importar .AGF/.ZIP
+          <i data-lucide="file-plus"></i> Importar Arquivos
         </button>
 
         <button class="btn btn-success" onclick="exportMergedGeoJSON()" title="Exportar todas as camadas mapeadas para GeoJSON / KML">
@@ -167,7 +164,7 @@
         <!-- BADGE STATUS DRIVER TRIMBLE -->
         <div class="driver-badge" title="Driver de leitura AGF e AES Trimble TMX ativo" style="border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.12);">
           <span class="pulse-dot" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
-          <span style="color: #fca5a5;">TMX-2050 Online</span>
+          <span style="color: #fca5a5;">Dados importados</span>
         </div>
       </div>
     </header>
@@ -178,7 +175,7 @@
         <i data-lucide="layers" style="color: #ef4444;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Operações / Tarefas</span>
-          <span class="kpi-num" id="kpiOperations" style="color: #ef4444;">25 Operações</span>
+          <span class="kpi-num" id="kpiOperations" style="color: #ef4444;">—</span>
         </div>
       </div>
 
@@ -186,7 +183,7 @@
         <i data-lucide="maximize" style="color: var(--accent);"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Área Mapeada (Swaths)</span>
-          <span class="kpi-num" id="kpiArea">310,12 ha</span>
+          <span class="kpi-num" id="kpiArea">—</span>
         </div>
       </div>
 
@@ -194,7 +191,7 @@
         <i data-lucide="map" style="color: #38bdf8;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Talhões Mapeados (SIG)</span>
-          <span class="kpi-num" id="kpiSigCount" style="color: #38bdf8;">857 Talhões</span>
+          <span class="kpi-num" id="kpiSigCount" style="color: #38bdf8;">—</span>
         </div>
       </div>
 
@@ -202,7 +199,7 @@
         <i data-lucide="pie-chart" style="color: #a855f7;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Área Total do SIG</span>
-          <span class="kpi-num" id="kpiSigArea" style="color: #a855f7;">10.000,45 ha</span>
+          <span class="kpi-num" id="kpiSigArea" style="color: #a855f7;">—</span>
         </div>
       </div>
 
@@ -210,7 +207,7 @@
         <i data-lucide="cpu" style="color: var(--warning);"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Monitor / Controlador</span>
-          <span class="kpi-num" id="kpiMonitor">TMX 6251225841</span>
+          <span class="kpi-num" id="kpiMonitor">—</span>
         </div>
       </div>
 
@@ -218,7 +215,7 @@
         <i data-lucide="tractor" style="color: #f87171;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Veículo & Piloto</span>
-          <span class="kpi-num" id="kpiVehicle">MF 7318 • NAV-900</span>
+          <span class="kpi-num" id="kpiVehicle">—</span>
         </div>
       </div>
 
@@ -226,7 +223,7 @@
         <i data-lucide="package" style="color: #38bdf8;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Insumo Principal</span>
-          <span class="kpi-num" id="kpiInput">Calagem / Calcário</span>
+          <span class="kpi-num" id="kpiInput">—</span>
         </div>
       </div>
 
@@ -234,14 +231,14 @@
         <i data-lucide="building-2" style="color: var(--accent);"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Fazendas Ativas</span>
-          <span class="kpi-num" id="kpiFarmsCount">20 Fazendas</span>
+          <span class="kpi-num" id="kpiFarmsCount">—</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- MIDDLE SECTION: MAP VIEWPORT -->
-  <div id="mapContainer">
+  <div id="mapContainer" class="map-wrapper">
     <div id="map"></div>
 
     <!-- HUD FLUTUANTE DE COORDENADAS E ZOOM -->
@@ -286,16 +283,16 @@
   <div id="resizer"></div>
 
   <!-- BOTTOM SECTION: ATTRIBUTE TABLE DOCK -->
-  <div id="dockContainer" class="dock">
+  <div id="attrPanel" class="dock attribute-panel">
     <!-- DOCK TABS E HEADER -->
-    <div class="dock-header">
-      <div class="dock-tabs">
-        <button class="dock-tab active" id="tabOperations" onclick="switchDockTab('operations')">
+    <div class="dock-header panel-header">
+      <div class="tab-btn dock-tabs panel-tabs">
+        <button class="tab-btn dock-tab active" id="tabBtnOperations" onclick="switchDockTab('operations')">
           <i data-lucide="layers" style="width:14px; height:14px;"></i>
           <span>Operações de Máquina</span>
           <span class="badge" id="badgeOpsCount">25</span>
         </button>
-        <button class="dock-tab" id="tabFarmFields" onclick="switchDockTab('farmFields')">
+        <button class="tab-btn dock-tab" id="tabBtnFields" onclick="switchDockTab('farmFields')">
           <i data-lucide="map" style="width:14px; height:14px;"></i>
           <span>Talhões Cadastrais do SIG</span>
           <span class="badge" id="badgeFieldsCount">857</span>
@@ -303,21 +300,21 @@
       </div>
 
       <!-- FILTROS RÁPIDOS DA TABELA -->
-      <div class="dock-filters">
+      <div class="dock-filters panel-filters" id="panelFiltersOperations">
         <!-- BUSCA TEXTUAL GERAL -->
         <div class="search-box">
           <i data-lucide="search" style="color:var(--text-muted); width:14px; height:14px;"></i>
-          <input type="text" id="searchInput" placeholder="Filtrar por nome, talhão ou UUID..." oninput="onSearchChange()">
+          <input type="text" id="txtSearch" placeholder="Filtrar por nome, talhão ou UUID..." oninput="onSearchChange()">
         </div>
 
         <!-- FILTRO POR MONITOR / SERIAL -->
-        <select class="filter-select" id="filterMonitor" onchange="onMonitorFilterChange()">
-          <option value="all">Todos os Monitores TMX</option>
+        <select class="filter-select" id="selMonitor" onchange="onMonitorFilterChange()">
+          <option value="">Todos os Monitores TMX</option>
         </select>
 
         <!-- FILTRO POR TIPO DE OPERAÇÃO -->
-        <select class="filter-select" id="filterType" onchange="onTypeFilterChange()">
-          <option value="all">Todas as Operações</option>
+        <select class="filter-select" id="selOpType" onchange="onTypeFilterChange()">
+          <option value="">Todas as Operações</option>
           <option value="Calagem">Calagem</option>
           <option value="Gessagem">Gessagem</option>
           <option value="Adubação">Adubação</option>
@@ -326,10 +323,11 @@
         </select>
 
         <!-- FILTRO POR FAZENDA -->
-        <select class="filter-select" id="filterFarm" onchange="onFarmFilterChange()">
-          <option value="all">Todas as Fazendas</option>
+        <select class="filter-select" id="selFarm" onchange="onFarmFilterChange()">
+          <option value="">Todas as Fazendas</option>
         </select>
 
+        <select id="selTalhao" onchange="applyFilters()"><option value="">Todos os talhões</option></select>
         <!-- AÇÕES DO DOCK -->
         <div class="dock-actions">
           <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="resetAllFilters()" title="Limpar todos os filtros">
@@ -344,13 +342,15 @@
 
     <!-- DOCK BODY: TABELAS DINÂMICAS -->
     <div class="dock-body">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <!-- TABELA 1: OPERAÇÕES DO MONITOR TRIMBLE -->
         <table class="attr-table" id="operationsTable">
           <thead>
             <tr>
-              <th data-col="idx" style="width: 44px; text-align: center;">#</th>
-              <th data-col="status" style="width: 48px; text-align: center;">GIS</th>
+              <th data-col="select"><input id="headerChkAll" type="checkbox" checked onchange="toggleSelectAll(this.checked)"></th>
+              <th data-col="delete">Excluir</th>
+              <th data-col="date">Data</th>
+              
               <th data-col="farm">Fazenda</th>
               <th data-col="field">Talhão</th>
               <th data-col="op">Operação / Insumo</th>
@@ -366,9 +366,9 @@
               <th data-col="actions" style="text-align: center;">Ações</th>
             </tr>
             <!-- LINHA DE FILTRO INDIVIDUAL POR COLUNA -->
-            <tr class="col-filter-row" id="colFilterRow">
-              <th data-col="idx"></th>
-              <th data-col="status"></th>
+            <tr class="col-filter-row" id="filterRow">
+              <th data-col="select"></th><th data-col="delete"></th><th data-col="date"></th>
+              
               <th data-col="farm"><input type="text" class="col-filter-input" data-filter="farm" placeholder="Filtrar fazenda..." oninput="onColumnFilterChange('farm', this.value)"></th>
               <th data-col="field"><input type="text" class="col-filter-input" data-filter="field" placeholder="Talhão..." oninput="onColumnFilterChange('field', this.value)"></th>
               <th data-col="op"><input type="text" class="col-filter-input" data-filter="op" placeholder="Filtrar operação..." oninput="onColumnFilterChange('op', this.value)"></th>

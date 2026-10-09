@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R5607585020</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>t70brabo</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZXW256200170PS</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 26300</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>7.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>10.158</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>15.300000190734863</value>
+          </Data>
+          <Data name="Task Area">
+            <value>0.24533333456</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>7759</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-45.81784428032179,-17.662943932239173,0 -45.81699179264519,-17.662660582588078,0 -45.816951730990624,-17.66263078210474,0 -45.81695314530641,-17.662584319325966,0 -45.817001390186,-17.662564138587214,0 -45.8182324157016,-17.66297781610855,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

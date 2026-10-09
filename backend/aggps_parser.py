@@ -14,7 +14,7 @@ import glob
 import json
 import xml.etree.ElementTree as ET
 from typing import Dict, Any, List, Optional
-from osgeo import ogr
+from . import vector_reader as ogr
 
 try:
     ogr.UseExceptions()
@@ -26,6 +26,14 @@ DEFAULT_AGGPS_PATH = os.environ.get(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "AgGPS_Data")
 )
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aggps_settings.json")
+
+def date_key(value):
+    from datetime import datetime
+    value=str(value or '').split(' ')[0]
+    for fmt in ('%Y-%m-%d','%Y/%m/%d','%d/%m/%Y','%d-%m-%Y','%Y%m%d'):
+        try: return datetime.strptime(value,fmt).date().isoformat()
+        except ValueError: pass
+    return ''
 
 def get_active_aggps_path() -> str:
     """Retorna o caminho ativo configurado ou autodetectado para dados AgGPS."""
@@ -202,7 +210,7 @@ def get_aggps_kpis(
         return {
             "has_data": False,
             "summary": {"total_area_ha": 0, "total_polygons": 0, "total_events": 0, "total_swaths": 0},
-            "operation": {"largura_m": 21.7, "avg_rate": 0, "avg_speed": 0, "total_volume": 0},
+            "operation": {"largura_m": 0.0, "avg_rate": 0, "avg_speed": 0, "total_volume": 0},
             "operator": "Nenhum"
         }
 
@@ -242,7 +250,7 @@ def get_aggps_kpis(
             for feat in layer:
                 d_open = feat.GetField("Date_Open") or ""
                 # Filtro de data
-                d_clean = d_open.replace("/", "-")
+                d_clean = date_key(d_open)
                 if data_inicio and d_clean < data_inicio:
                     continue
                 if data_fim and d_clean > data_fim:
@@ -285,8 +293,11 @@ def get_aggps_kpis(
         ds = ogr.Open(cov_path)
         if ds:
             layer = ds.GetLayer()
-            total_polygons += layer.GetFeatureCount()
             for feat in layer:
+                day=date_key(feat.GetField('DateClosed'))
+                if data_inicio and (not day or day < data_inicio): continue
+                if data_fim and (not day or day > data_fim): continue
+                total_polygons += 1
                 s = feat.GetField("Speed")
                 r = feat.GetField("AppldRate")
                 if s is not None and s > 0: speeds.append(s)
@@ -299,12 +310,12 @@ def get_aggps_kpis(
         if ds:
             total_swaths += ds.GetLayer().GetFeatureCount()
 
-    avg_speed = (sum(speeds) / len(speeds)) if speeds else 3.5
-    avg_rate = (sum(rates) / len(rates)) if rates else 120.0
-    largura_m = implement_widths[0] if implement_widths else 21.7
+    avg_speed = (sum(speeds) / len(speeds)) if speeds else 0.0
+    avg_rate = (sum(rates) / len(rates)) if rates else 0.0
+    largura_m = implement_widths[0] if implement_widths else 0.0
 
     return {
-        "has_data": True,
+        "has_data": total_events > 0 or total_polygons > 0,
         "summary": {
             "total_area_ha": round(total_area_ha, 2),
             "total_polygons": total_polygons,
@@ -320,8 +331,8 @@ def get_aggps_kpis(
             "avg_speed_kmh": round(avg_speed, 1),
             "tipo_operacao": "Pulverização / Distribuição de Calda"
         },
-        "operators": sorted(list(operators)) if operators else ["SIUMAR", "Operador Padrão"],
-        "client": "usina G5"
+        "operators": sorted(list(operators)) if operators else [],
+        "client": "Não informado"
     }
 
 def get_aggps_events_list(
@@ -353,7 +364,7 @@ def get_aggps_events_list(
             continue
 
         # Largura do implemento no XML
-        width = 21.7
+        width = 0.0
         for xml_path in glob.glob(os.path.join(field_dir, "**", "implements_CFX.xml"), recursive=True):
             try:
                 tree = ET.parse(xml_path)
@@ -371,7 +382,7 @@ def get_aggps_events_list(
                 d_close = feat.GetField("Date_Close") or ""
                 t_close = feat.GetField("Time_Close") or ""
 
-                d_clean = d_open.replace("/", "-")
+                d_clean = date_key(d_open)
                 if data_inicio and d_clean < data_inicio: continue
                 if data_fim and d_clean > data_fim: continue
 

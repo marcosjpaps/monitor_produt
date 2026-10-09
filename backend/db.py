@@ -5,7 +5,7 @@ Database Management Layer for Telemetry Dashboard (SQLite)
 Otimizado para séries temporais agrícolas, filtragem por Talhão/Atividade e importação de pastas JD-Data.
 """
 
-import sqlite3
+import sqlite3; from .pg_adapter import connect as pg_connect
 import os
 import uuid
 import re
@@ -13,12 +13,12 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone, timedelta
 
 BRT_TZ = timezone(timedelta(hours=-3))
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "telemetria.db")
+DEFAULT_DB_PATH = os.environ.get("TELEMETRY_DB_PATH") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "telemetria.db")
 
 def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
-    conn = sqlite3.connect(db_path, timeout=30.0)
-    conn.row_factory = sqlite3.Row
+    conn = pg_connect()
+    
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA synchronous = NORMAL;")
     conn.execute("PRAGMA cache_size = -64000;")  # 64MB cache
@@ -271,7 +271,7 @@ def save_parsed_session(session_data: Dict[str, Any], db_path: str = DEFAULT_DB_
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, (
             str(uuid.uuid4()), arquivo_id, maquina_id, dur, t_desloc, t_parado,
-            ops.get("engine_speed_rpm"), spd, spd * 1.15, ops.get("engine_load_percent")
+            ops.get("engine_speed_rpm"), spd, max((r.get("speed") or 0 for r in records), default=0), ops.get("engine_load_percent")
         ))
         return arquivo_id
 

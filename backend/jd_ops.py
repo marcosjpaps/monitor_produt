@@ -12,7 +12,7 @@ import glob
 import json
 import math
 from typing import Dict, Any, List, Optional
-from osgeo import ogr
+from . import vector_reader as ogr
 
 SAMPLES_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "samples"))
 

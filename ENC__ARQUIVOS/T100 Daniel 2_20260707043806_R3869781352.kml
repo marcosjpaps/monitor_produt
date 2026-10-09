@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R3869781352</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>T100 Daniel 2</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC255H0020L3P</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 219300</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>8.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>14.998</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>16.399999618530273</value>
+          </Data>
+          <Data name="Task Area">
+            <value>2.39933334533</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>47167</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-45.424696055960766,-16.83593142858399,0 -45.424697831289336,-16.835908632094352,0 -45.424697781556205,-16.83590865900842,0 -45.421767719410994,-16.83590564595654,0 -45.42164562990648,-16.835902873640716,0 -45.42091562289886,-16.83587995630374,0 -45.42029957478225,-16.835902640160626,0 -45.42029671522017,-16.835903745558063,0 -45.41915493927313,-16.835901370922937,0 -45.4190911629403,-16.83588992796595,0 -45.41908140795151,-16.83588279277745,0 -45.4190526664909,-16.83578735061991,0 -45.419057594641835,-16.835774044268767,0 -45.41909084325491,-16.83576564531098,0 -45.424654674261824,-16.835773223439165,0 -45.42469017849096,-16.835762264646874,0 -45.42470164122277,-16.83573082939465,0 -45.42469010907278,-16.8356557144401,0 -45.42468089687533,-16.83564716697325,0 -45.424651043668895,-16.835636924761815,0 -45.41953434901781,-16.83563272183725,0 -45.41934977782845,-16.835631669726364,0 -45.42469369635349,-16.83593594698989,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

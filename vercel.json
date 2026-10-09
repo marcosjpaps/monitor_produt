@@ -3,53 +3,25 @@
   "name": "agrotelemetry-monitor",
   "buildCommand": "echo 'Static frontend - no build step required'",
   "outputDirectory": "frontend",
-  "installCommand": "pip install -r requirements.txt",
+  "installCommand": "pip install -r backend/requirements.txt",
   "framework": null,
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/johndeere",
-      "dest": "/frontend/index.html"
-    },
-    {
-      "src": "/jacto",
-      "dest": "/frontend/jacto.html"
-    },
-    {
-      "src": "/massey",
-      "dest": "/frontend/massey.html"
-    },
-    {
-      "src": "/massei",
-      "dest": "/frontend/massey.html"
-    },
-    {
-      "src": "/drone",
-      "dest": "/frontend/drone.html"
-    },
-    {
-      "src": "/studio",
-      "dest": "/frontend/studio.html"
-    },
-    {
-      "src": "/css/(.*)",
-      "dest": "/frontend/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/frontend/js/$1"
-    },
-    {
-      "src": "/shp.js",
-      "dest": "/frontend/shp.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/portal.html"
-    }
+    { "src": "/api/voos", "dest": "/api/voos.js" },
+    { "src": "/api/talhoes", "dest": "/api/talhoes.js" },
+    { "src": "/api/import", "dest": "/api/import.js" },
+    { "src": "/api/importacoes", "dest": "/api/importacoes.js" },
+    { "src": "/api/preview", "dest": "/api/preview.js" },
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/johndeere", "dest": "/frontend/index.html" },
+    { "src": "/jacto", "dest": "/frontend/jacto.html" },
+    { "src": "/massey", "dest": "/frontend/massey.html" },
+    { "src": "/massei", "dest": "/frontend/massey.html" },
+    { "src": "/drone", "dest": "/frontend/drone.html" },
+    { "src": "/studio", "dest": "/frontend/studio.html" },
+    { "src": "/css/(.*)", "dest": "/frontend/css/$1" },
+    { "src": "/js/(.*)", "dest": "/frontend/js/$1" },
+    { "src": "/shp.js", "dest": "/frontend/shp.js" },
+    { "src": "/(.*)", "dest": "/frontend/portal.html" }
   ],
   "env": {
     "APP_ENV": "production",
@@ -69,8 +41,7 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" }
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     },
     {

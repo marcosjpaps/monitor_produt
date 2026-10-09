@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: agro-monitor
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: PORT
+        value: 3000
+

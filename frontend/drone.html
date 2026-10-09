@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -6,11 +6,11 @@
   <title>VeredasDrone - Mapa de Aplicação & Atributos</title>
   
   <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
 
   <!-- Shapefile Parser (shp.js) -->
   <script src="shp.js"></script>
@@ -461,6 +461,7 @@
     }
     #dropZone.active { display: flex; }
   </style>
+  <link rel="stylesheet" href="/css/refinements.css">
 </head>
 <body>
 
@@ -542,19 +543,6 @@
       </div>
 
       <div class="nav-actions">
-        <!-- Switcher Buttons -->
-        <a href="/johndeere" class="btn btn-outline" style="background: rgba(54, 124, 43, 0.2); border-color: rgba(255, 222, 0, 0.4); color: #ffde00;" title="Alternar para o Módulo John Deere G5 (.JDL)">
-          <i data-lucide="tractor" style="width:14px; height:14px;"></i> John Deere G5
-        </a>
-
-        <a href="/jacto" class="btn btn-outline" style="background: rgba(234, 88, 12, 0.2); border-color: rgba(251, 146, 60, 0.4); color: #fb923c;" title="Alternar para o Módulo Jacto / Trimble AgGPS">
-          <i data-lucide="spray-can" style="width:14px; height:14px;"></i> Jacto / Trimble
-        </a>
-
-        <a href="/" class="btn btn-outline" title="Voltar ao Portal de Escolha de Máquinas">
-          <i data-lucide="home" style="width:14px; height:14px;"></i> Portal
-        </a>
-
         <input type="file" id="fileInput" multiple accept=".kml" style="display: none;">
         <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
         <input type="file" id="farmFileInput" multiple accept=".zip,.shp,.dbf,.prj,.kml,.csv" style="display: none;">
@@ -593,14 +581,14 @@
           <i data-lucide="trash"></i> Limpar Mapa
         </button>
 
-        <button class="btn btn-outline" style="color:#10b981; border-color:rgba(168,185,129,0.5);" onclick="restoreAll()" title="Restaura rotas excluídas">
-          <i data-lucide="rotate-ccw"></i> Restaurar Rotas
+        <button class="btn btn-outline" style="color:#10b981; border-color:rgba(168,185,129,0.5);" onclick="openLixeiraModal()" title="Acessar rotas na Lixeira">
+          <i data-lucide="rotate-ccw"></i> Lixeira
         </button>
 
-        <!-- BADGE DE SINCRONIZAÇÃO NEON -->
-        <button class="btn btn-outline" id="neonSyncBadge" onclick="NeonSync.syncAll(true)" title="Status de conexão com o banco Neon PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
-          <span id="neonSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
-          <span id="neonSyncText">Nuvem Neon</span>
+        <!-- BADGE DE SINCRONIZAÇÃO BANCO DE DADOS -->
+        <button class="btn btn-outline" id="DbSyncBadge" onclick="DbSync.syncAll(true)" title="Status de conexão com o Banco de Dados PostgreSQL. Clique para sincronizar agora." style="padding:3px 10px; font-size:0.72rem; color:#10b981; border-color:rgba(16,185,129,0.4); display:flex; align-items:center; gap:6px;">
+          <span id="DbSyncDot" style="width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          <span id="DbSyncText">Banco de Dados</span>
         </button>
 
         <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:3px 8px; border-radius:6px;">
@@ -898,6 +886,53 @@
     </div>
   </div>
 
+  <!-- LIXEIRA MODAL -->
+  <div id="lixeiraModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; max-width:800px; width:100%; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+      <div style="padding:15px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+          <i data-lucide="trash-2"></i> Lixeira de Voos
+        </h3>
+        <button class="btn btn-outline" style="padding:4px;" onclick="closeLixeiraModal()"><i data-lucide="x"></i></button>
+      </div>
+      
+      <div style="padding:10px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); background:#0d1522;">
+        <span style="font-size:0.85rem; color:#94a3b8;" id="lixeiraCount">0 voos na lixeira</span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.5);" onclick="deleteSelectedLixeira()">
+            <i data-lucide="trash-2"></i> Excluir Permanente
+          </button>
+          <button class="btn btn-outline" style="color:#10b981; border-color:rgba(16,185,129,0.5);" onclick="restoreSelectedLixeira()">
+            <i data-lucide="rotate-ccw"></i> Restaurar Selecionados
+          </button>
+        </div>
+      </div>
+
+      <div style="flex:1; overflow:auto; padding:0;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:2;">
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="padding:8px 12px; text-align:left; width:40px;">
+                <input type="checkbox" id="chkLixeiraAll" onchange="toggleAllLixeira(this.checked)">
+              </th>
+              <th style="padding:8px 12px; text-align:left;">Data</th>
+              <th style="padding:8px 12px; text-align:left;">Piloto</th>
+              <th style="padding:8px 12px; text-align:left;">Fazenda</th>
+              <th style="padding:8px 12px; text-align:left;">Talhão</th>
+            </tr>
+          </thead>
+          <tbody id="lixeiraTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="padding:10px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; background:#0d1522;">
+        <button class="btn btn-outline" onclick="closeLixeiraModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCRIPT DE DADOS PRÉ-CARREGADOS -->
   <script src="dados_voos.js"></script>
 
@@ -909,12 +944,6 @@
     };
 
     function checkAuth() {
-      // Auto-autentica se estiver rodando localmente (127.0.0.1 ou localhost)
-      if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-        localStorage.setItem('agrodrone_auth', 'true');
-        localStorage.setItem('agrodrone_user', AUTH_CONFIG.email);
-      }
-
       const isAuth = localStorage.getItem('agrodrone_auth') || sessionStorage.getItem('agrodrone_auth');
       const overlay = document.getElementById('loginOverlay');
       const userBadge = document.getElementById('userBadgeContainer');
@@ -953,7 +982,7 @@
         if (userBadge) userBadge.style.display = 'flex';
         showToast("Login realizado com sucesso! Bem-vindo ao VeredasDrone.");
         if (window.lucide) lucide.createIcons();
-        if (window.NeonSync) NeonSync.syncAll(true);
+        if (window.DbSync) DbSync.syncAll(true);
       } else {
         if (errorBox) {
           errorBox.style.display = 'block';
@@ -1042,12 +1071,12 @@
     let showFarms = true;
 
     // ==============================================================
-    // INTEGRAÇÃO NUVEM COM NEON POSTGRESQL (VIA VERCEL API /api/...)
+    // INTEGRAÇÃO COM BANCO DE DADOS POSTGRESQL (API /api/...)
     // ==============================================================
-    function setNeonBadge(status, text) {
-      const badge = document.getElementById('neonSyncBadge');
-      const dot = document.getElementById('neonSyncDot');
-      const label = document.getElementById('neonSyncText');
+    function setDbBadge(status, text) {
+      const badge = document.getElementById('DbSyncBadge');
+      const dot = document.getElementById('DbSyncDot');
+      const label = document.getElementById('DbSyncText');
       if (!badge || !dot || !label) return;
 
       if (status === 'syncing') {
@@ -1059,7 +1088,7 @@
         dot.style.background = '#10b981';
         badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
         badge.style.color = '#10b981';
-        label.innerText = text || 'Nuvem Conectada';
+        label.innerText = text || 'Banco Conectado';
       } else {
         dot.style.background = '#ef4444';
         badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
@@ -1096,7 +1125,7 @@
 
     async function apiDeleteFlights(ids) {
       if (!ids || ids.length === 0) return;
-      setNeonBadge('syncing', 'Salvando exclusão...');
+      setDbBadge('syncing', 'Salvando exclusão...');
       try {
         for (let i = 0; i < ids.length; i += 100) {
           const slice = ids.slice(i, i + 100);
@@ -1106,16 +1135,16 @@
             body: JSON.stringify({ ids: slice })
           });
         }
-        setNeonBadge('synced', 'Nuvem Conectada');
+        setDbBadge('synced', 'Banco Conectado');
       } catch (e) {
         console.error("Erro ao salvar exclusão:", e);
-        setNeonBadge('error', 'Erro Sync');
+        setDbBadge('error', 'Erro Sync');
       }
     }
 
     async function apiRestoreFlights(ids) {
       if (!ids || ids.length === 0) return;
-      setNeonBadge('syncing', 'Restaurando...');
+      setDbBadge('syncing', 'Restaurando...');
       try {
         for (let i = 0; i < ids.length; i += 100) {
           const slice = ids.slice(i, i + 100);
@@ -1125,30 +1154,52 @@
             body: JSON.stringify({ ids: slice })
           });
         }
-        setNeonBadge('synced', 'Nuvem Conectada');
+        setDbBadge('synced', 'Banco Conectado');
       } catch (e) {
         console.error("Erro ao restaurar voos:", e);
-        setNeonBadge('error', 'Erro Sync');
+        setDbBadge('error', 'Erro Sync');
       }
     }
 
     async function apiSaveFarms(farmsList) {
-      if (!farmsList || farmsList.length === 0) return;
-      setNeonBadge('syncing', 'Salvando talhões...');
+      if (!farmsList || farmsList.length === 0) return { saved: [], failed: [] };
+      setDbBadge('syncing', 'Salvando talhões...');
+      const saved = [];
+      const failed = [];
       try {
         for (let i = 0; i < farmsList.length; i += 15) {
           const slice = farmsList.slice(i, i + 15);
-          await fetch('/api/talhoes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ farms: slice })
-          });
+          try {
+            const resp = await fetch('/api/talhoes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ farms: slice })
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              // Adiciona os talhões confirmados
+              saved.push(...slice.slice(0, data.savedCount ?? slice.length));
+            } else {
+              const errText = await resp.text();
+              console.error(`Lote talhões [${i}–${i + slice.length - 1}] falhou (${resp.status}):`, errText);
+              failed.push(...slice);
+            }
+          } catch (batchErr) {
+            console.error(`Erro de rede no lote talhões [${i}–${i + slice.length - 1}]:`, batchErr);
+            failed.push(...slice);
+          }
         }
-        setNeonBadge('synced', 'Nuvem Conectada');
+        if (failed.length === 0) {
+          setDbBadge('synced', 'Banco Conectado');
+        } else {
+          console.warn(`⚠️ ${failed.length} talhões NÃO foram salvos no banco.`);
+          setDbBadge('error', `Erro Sync (${failed.length} perdidos)`);
+        }
       } catch (e) {
-        console.error("Erro ao salvar talhões:", e);
-        setNeonBadge('error', 'Erro Sync');
+        console.error("Erro geral ao salvar talhões:", e);
+        setDbBadge('error', 'Erro Sync');
       }
+      return { saved, failed };
     }
 
     async function apiDeleteFarm(id) {
@@ -1161,29 +1212,54 @@
     }
 
     async function apiSaveFlights(flightsList) {
-      if (!flightsList || flightsList.length === 0) return;
-      setNeonBadge('syncing', 'Salvando voos...');
+      if (!flightsList || flightsList.length === 0) return { saved: [], failed: [] };
+      setDbBadge('syncing', 'Salvando voos...');
+      const saved = [];
+      const failed = [];
       try {
+        // Processa em lotes de 10, aguardando cada lote antes do próximo
         for (let i = 0; i < flightsList.length; i += 10) {
           const slice = flightsList.slice(i, i + 10);
-          await fetch('/api/voos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ flights: slice })
-          });
+          try {
+            const resp = await fetch('/api/voos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ flights: slice })
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              // Considera salvos apenas os que a API confirmou
+              const confirmed=new Set(data.savedIds || []);
+              saved.push(...slice.filter(f=>confirmed.has(f.id)).map(f=>f.id));
+              failed.push(...slice.filter(f=>!confirmed.has(f.id)).map(f=>f.id));
+            } else {
+              const errText = await resp.text();
+              console.error(`Lote voos [${i}–${i + slice.length - 1}] falhou (${resp.status}):`, errText);
+              failed.push(...slice.map(f => f.id));
+            }
+          } catch (batchErr) {
+            console.error(`Erro de rede no lote voos [${i}–${i + slice.length - 1}]:`, batchErr);
+            failed.push(...slice.map(f => f.id));
+          }
         }
-        setNeonBadge('synced', 'Nuvem Conectada');
+        if (failed.length === 0) {
+          setDbBadge('synced', 'Banco Conectado');
+        } else {
+          console.warn(`⚠️ ${failed.length} voos NÃO foram salvos no banco:`, failed);
+          setDbBadge('error', `Erro Sync (${failed.length} perdidos)`);
+        }
       } catch (e) {
-        console.error("Erro ao salvar novos voos:", e);
-        setNeonBadge('error', 'Erro Sync');
+        console.error("Erro geral ao salvar voos:", e);
+        setDbBadge('error', 'Erro Sync');
       }
+      return { saved, failed };
     }
 
-    let isSyncingNeon = false;
-    async function syncWithNeon(showFeedback = false) {
-      if (isSyncingNeon) return;
-      isSyncingNeon = true;
-      setNeonBadge('syncing', 'Conectando...');
+    let isSyncingDb = false;
+    async function syncWithDb(showFeedback = false) {
+      if (isSyncingDb) return;
+      isSyncingDb = true;
+      setDbBadge('syncing', 'Conectando...');
 
       try {
         // 1. Sincroniza voos excluídos da nuvem
@@ -1235,24 +1311,24 @@
           await apiSaveFarms(savedFarms);
         }
 
-        setNeonBadge('synced', 'Nuvem Conectada');
+        setDbBadge('synced', 'Banco Conectado');
         if (showFeedback && typeof showToast === 'function') {
-          showToast("Nuvem Neon conectada e sincronizada!");
+          showToast("Banco de Dados conectado e sincronizado!");
         }
       } catch (err) {
-        console.error("Erro na sincronização Neon:", err);
-        setNeonBadge('error', 'Offline');
+        console.error("Erro na sincronização:", err);
+        setDbBadge('error', 'Offline');
         if (showFeedback && typeof showToast === 'function') {
-          showToast("Aviso: Falha ao sincronizar com Neon. Verifique conexão.");
+          showToast("Aviso: Falha ao sincronizar com o banco. Verifique conexão.");
         }
       } finally {
-        isSyncingNeon = false;
+        isSyncingDb = false;
       }
     }
 
-    // Compatibilidade com chamadas NeonSync
-    window.NeonSync = {
-      syncAll: syncWithNeon,
+    // Compatibilidade com chamadas DbSync
+    window.DbSync = {
+      syncAll: syncWithDb,
       saveDeletedIds: apiDeleteFlights,
       restoreDeletedIds: apiRestoreFlights,
       saveFarms: apiSaveFarms,
@@ -1328,14 +1404,14 @@
       setupFileInputs();
       updateFarmUI();
 
-      // Sincronização inicial com o banco Neon na Nuvem
-      if (window.NeonSync) {
-        NeonSync.syncAll();
+      // Sincronização inicial com o banco de dados na Nuvem
+      if (window.DbSync) {
+        DbSync.syncAll();
       }
 
       // Re-sincronizar periodicamente ao retornar para a aba
       window.addEventListener('focus', () => {
-        if (window.NeonSync) NeonSync.syncAll();
+        if (window.DbSync) DbSync.syncAll();
       });
     });
 
@@ -1677,7 +1753,7 @@
       if (!confirm(`Deseja realmente excluir a rota:\n${id}?`)) return;
       deletedIds.add(id);
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-      if (window.NeonSync) NeonSync.saveDeletedIds([id]);
+      if (window.DbSync) DbSync.saveDeletedIds([id]);
 
       if (mapLayers[id]) {
         if (mapLayers[id].line) map.removeLayer(mapLayers[id].line);
@@ -1709,7 +1785,7 @@
       });
 
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-      if (window.NeonSync) NeonSync.saveDeletedIds(toDelete);
+      if (window.DbSync) DbSync.saveDeletedIds(toDelete);
       flights = flights.filter(f => !deletedIds.has(f.id));
       applyFilters();
       showToast(`${toDelete.length} rotas excluídas e sincronizadas na nuvem!`);
@@ -1723,7 +1799,7 @@
       const allIds = flights.map(f => f.id);
       allIds.forEach(id => deletedIds.add(id));
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-      if (window.NeonSync) NeonSync.saveDeletedIds(allIds);
+      if (window.DbSync) DbSync.saveDeletedIds(allIds);
 
       Object.values(mapLayers).forEach(l => {
         if (l.line) map.removeLayer(l.line);
@@ -1740,24 +1816,130 @@
     }
 
     // RESTAURAR ROTAS EXCLUÍDAS
-    function restoreAll() {
-      if (deletedIds.size === 0) {
-        showToast("Nenhuma rota foi excluída.");
+    let lixeiraFlights = [];
+    let lixeiraSelectedIds = new Set();
+
+    function openLixeiraModal() {
+      document.getElementById('lixeiraModal').style.display = 'flex';
+      loadLixeira();
+    }
+
+    function closeLixeiraModal() {
+      document.getElementById('lixeiraModal').style.display = 'none';
+    }
+
+    async function loadLixeira() {
+      const tbody = document.getElementById('lixeiraTableBody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">Carregando...</td></tr>';
+      lixeiraSelectedIds.clear();
+      document.getElementById('chkLixeiraAll').checked = false;
+
+      try {
+        const res = await fetch('api/voos?type=lixeira');
+        const data = await res.json();
+        if (data.success) {
+          lixeiraFlights = data.flights;
+          renderLixeiraTable();
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:red;">Erro ao carregar lixeira.</td></tr>';
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:red;">Erro de conexão.</td></tr>';
+      }
+    }
+
+    function renderLixeiraTable() {
+      const tbody = document.getElementById('lixeiraTableBody');
+      document.getElementById('lixeiraCount').innerText = `${lixeiraFlights.length} voos na lixeira`;
+      
+      if (lixeiraFlights.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">Lixeira vazia.</td></tr>';
         return;
       }
-      if (!confirm(`Deseja restaurar as ${deletedIds.size} rotas que foram excluídas?`)) return;
 
-      const restored = Array.from(deletedIds);
-      localStorage.removeItem('agrodrone_deleted_ids');
-      deletedIds.clear();
-      if (window.NeonSync) NeonSync.restoreDeletedIds(restored);
+      let html = '';
+      lixeiraFlights.forEach(f => {
+        const checked = lixeiraSelectedIds.has(f.id) ? 'checked' : '';
+        html += `
+          <tr style="border-bottom:1px solid var(--border); background:var(--bg-panel);">
+            <td style="padding:8px 12px;"><input type="checkbox" class="chkLixeiraRow" value="${f.id}" ${checked} onchange="toggleLixeiraRow(this)"></td>
+            <td style="padding:8px 12px;">${f.dateFormatted || f.rawDate || '-'}</td>
+            <td style="padding:8px 12px;">${f.pilot || '-'}</td>
+            <td style="padding:8px 12px;">${f.farm || '-'}</td>
+            <td style="padding:8px 12px;">${f.talhao || '-'}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
 
-      if (rawLoadedFlights && rawLoadedFlights.length > 0) {
-        initFlights(rawLoadedFlights);
-      } else if (window.PRELOADED_FLIGHTS) {
-        initFlights(window.PRELOADED_FLIGHTS);
+    function toggleLixeiraRow(chk) {
+      if (chk.checked) lixeiraSelectedIds.add(chk.value);
+      else lixeiraSelectedIds.delete(chk.value);
+    }
+
+    function toggleAllLixeira(checked) {
+      if (checked) {
+        lixeiraFlights.forEach(f => lixeiraSelectedIds.add(f.id));
+      } else {
+        lixeiraSelectedIds.clear();
       }
-      showToast("Todas as rotas foram restauradas com sucesso!");
+      renderLixeiraTable();
+    }
+
+    async function restoreSelectedLixeira() {
+      if (lixeiraSelectedIds.size === 0) {
+        alert("Selecione pelo menos um voo para restaurar.");
+        return;
+      }
+      
+      if (!confirm(`Deseja restaurar os ${lixeiraSelectedIds.size} voos selecionados?`)) return;
+
+      const idsArray = Array.from(lixeiraSelectedIds);
+      try {
+        const res = await fetch('api/voos?action=restaurar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: idsArray })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`${idsArray.length} voos restaurados com sucesso!`);
+          closeLixeiraModal();
+          // Remove restored from deletedIds so they appear on map
+          idsArray.forEach(id => deletedIds.delete(id));
+          localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+          if (window.DbSync) {
+             DbSync.syncAll(true); // force resync from server to get restored flights
+          }
+        }
+      } catch (err) {
+        alert('Erro ao restaurar: ' + err.message);
+      }
+    }
+
+    async function deleteSelectedLixeira() {
+      if (lixeiraSelectedIds.size === 0) {
+        alert("Selecione pelo menos um voo para excluir permanentemente.");
+        return;
+      }
+      if (!confirm(`Tem certeza absoluta que deseja excluir PERMANENTEMENTE os ${lixeiraSelectedIds.size} voos selecionados da lixeira? Isso não pode ser desfeito.`)) return;
+
+      const idsArray = Array.from(lixeiraSelectedIds);
+      try {
+        const res = await fetch('api/voos?action=excluir_permanente', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: idsArray })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`${idsArray.length} voos excluídos permanentemente!`);
+          loadLixeira(); // Recarrega a lixeira
+        }
+      } catch (err) {
+        alert('Erro ao excluir: ' + err.message);
+      }
     }
 
     function toggleSingle(id, isChecked) {
@@ -2025,7 +2207,7 @@
       });
 
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-      if (window.NeonSync) NeonSync.saveDeletedIds(ids);
+      if (window.DbSync) DbSync.saveDeletedIds(ids);
       flights = flights.filter(f => !deletedIds.has(f.id));
 
       dismissAreaBox();
@@ -2397,28 +2579,22 @@
 
       showToast(`Processando ${kmls.length} arquivos...`);
       const newItems = [];
-      let newFarmsCount = 0;
+      const newFarms = [];
 
       for (const file of kmls) {
         try {
           const text = await file.text();
 
-          // Verifica se o arquivo é um KML de Fazendas/Talhões (possui Polygon)
+          // Verifica se o arquivo é um KML de Fazendas/Talhões (possui Polygon em qualquer formato)
           const dom = new DOMParser().parseFromString(text, "text/xml");
-          const hasPolygon = dom.querySelector("Polygon");
-          const hasLineString = dom.querySelector("LineString");
+          const hasPolygon = dom.querySelector("Polygon, polygon, linearRing, LinearRing");
 
-          if (hasPolygon && !hasLineString) {
+          if (hasPolygon) {
             const farms = parseFarmKml(text, file.name);
             if (farms.length > 0) {
-              farms.forEach(ef => {
-                const idx = savedFarms.findIndex(sf => sf.nomeFaz === ef.nomeFaz && sf.talhao === ef.talhao && sf.zona === ef.zona);
-                if (idx >= 0) savedFarms[idx] = ef;
-                else savedFarms.push(ef);
-              });
-              newFarmsCount += farms.length;
+              newFarms.push(...farms);
+              continue;
             }
-            continue;
           }
 
           const item = parseSingleKml(text, file.name);
@@ -2433,36 +2609,69 @@
 
       localStorage.setItem('agrodrone_deleted_ids', JSON.stringify(Array.from(deletedIds)));
 
-      if (newFarmsCount > 0) {
+      // 1. Processar Talhões novos
+      if (newFarms.length > 0) {
+        newFarms.forEach(ef => {
+          const idx = savedFarms.findIndex(sf => sf.nomeFaz === ef.nomeFaz && sf.talhao === ef.talhao && sf.zona === ef.zona);
+          if (idx >= 0) savedFarms[idx] = ef;
+          else savedFarms.push(ef);
+        });
+        
         localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
-        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+        if (window.DbSync) DbSync.saveFarms(newFarms);
+        showFarms = true;
+        const chk = document.getElementById('chkShowFarms');
+        if (chk) chk.checked = true;
         linkFlightsToFarms();
         populateFarmFilterOptions();
         renderFarmsOnMap();
         updateFarmUI();
-        showToast(`${newFarmsCount} talhões importados e salvos na nuvem!`);
+        zoomToFarms();
+        showToast(`${newFarms.length} talhões importados e exibidos no mapa!`);
       }
 
+      // 2. Processar Voos novos
       if (newItems.length > 0) {
-        const mapById = new Map();
-        flights.forEach(f => mapById.set(f.id, f));
-        newItems.forEach(f => mapById.set(f.id, f));
+        let savedFlightIds = new Set(newItems.map(f => f.id));
+        
+        // Tenta salvar no banco e aguarda a conclusão
+        if (window.DbSync) {
+          const result = await DbSync.saveFlights(newItems);
+          // Se o servidor retornou IDs com sucesso, filtra por eles
+          if (result && result.saved && result.saved.length > 0) {
+            savedFlightIds = new Set(result.saved);
+          } else if (result && result.failed && result.failed.length === newItems.length) {
+            // Se tudo falhou, não adiciona nenhum
+            savedFlightIds = new Set();
+          }
+        }
 
-        flights = Array.from(mapById.values());
-        linkFlightsToFarms();
-        filteredFlights = [...flights];
-        selectedIds = new Set(flights.map(f => f.id));
+        // Filtra mantendo apenas os voos que foram persistidos com sucesso
+        const validNewItems = newItems.filter(f => savedFlightIds.has(f.id));
 
-        populateFilterOptions();
-        populateFarmFilterOptions();
-        renderFarmsOnMap();
-        renderMap();
-        renderTable();
-        updateStats();
-        zoomToAll();
+        if (validNewItems.length > 0) {
+          const mapById = new Map();
+          flights.forEach(f => mapById.set(f.id, f));
+          validNewItems.forEach(f => mapById.set(f.id, f));
 
-        if (window.NeonSync) NeonSync.saveFlights(newItems);
-        showToast(`${newItems.length} voos carregados e sincronizados na nuvem! Total: ${flights.length}`);
+          flights = Array.from(mapById.values());
+          linkFlightsToFarms();
+          filteredFlights = [...flights];
+          selectedIds = new Set(flights.map(f => f.id));
+
+          // Somente atualiza a UI APÓS o processamento e salvamento completo
+          populateFilterOptions();
+          populateFarmFilterOptions();
+          renderFarmsOnMap();
+          renderMap();
+          renderTable();
+          updateStats();
+          zoomToAll();
+
+          showToast(`${validNewItems.length} voos carregados e salvos! Total: ${flights.length}`);
+        } else {
+          showToast("Nenhum voo novo pôde ser salvo na nuvem.", "error");
+        }
       }
     }
 
@@ -2708,9 +2917,18 @@
       if (!showFarms || !savedFarms || savedFarms.length === 0) return;
 
       savedFarms.forEach(farm => {
-        if (!farm.coords || farm.coords.length < 3) return;
+        let coords = farm.coords;
+        if (typeof coords === 'string') {
+          try { coords = JSON.parse(coords); } catch (e) { coords = []; }
+        }
+        if (!coords || !Array.isArray(coords) || coords.length < 3) return;
 
-        const poly = L.polygon(farm.coords, {
+        // Se coords tiver múltiplos anéis ou profundidade extra, normaliza para o anel externo
+        if (Array.isArray(coords[0]) && Array.isArray(coords[0][0])) {
+          coords = coords[0];
+        }
+
+        const poly = L.polygon(coords, {
           color: '#f59e0b',
           weight: 2,
           dashArray: '5, 5',
@@ -3079,7 +3297,7 @@
         }
       }
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
-      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+      if (window.DbSync) DbSync.saveFarms(savedFarms);
       linkFlightsToFarms();
       populateFilterOptions();
       populateFarmFilterOptions();
@@ -3104,7 +3322,7 @@
         if (r.areaTotal > 0) savedFarms[i].areaTotal = r.areaTotal;
       }
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
-      if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+      if (window.DbSync) DbSync.saveFarms(savedFarms);
       linkFlightsToFarms();
       populateFilterOptions();
       populateFarmFilterOptions();
@@ -3219,9 +3437,17 @@
       }
 
       if (newFarms.length > 0) {
-        savedFarms = [...newFarms];
+        newFarms.forEach(nf => {
+          const idx = savedFarms.findIndex(sf => sf.nomeFaz === nf.nomeFaz && sf.talhao === nf.talhao && sf.zona === nf.zona);
+          if (idx >= 0) savedFarms[idx] = nf;
+          else savedFarms.push(nf);
+        });
+
         localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
-        if (window.NeonSync) NeonSync.saveFarms(savedFarms);
+        if (window.DbSync) DbSync.saveFarms(savedFarms);
+        showFarms = true;
+        const chk = document.getElementById('chkShowFarms');
+        if (chk) chk.checked = true;
         linkFlightsToFarms();
         populateFilterOptions();
         populateFarmFilterOptions();
@@ -3235,7 +3461,7 @@
         if (missingDbfWarn) {
           showFarmNoticeModal(savedFarms.length);
         } else {
-          showToast(`🌾 ${savedFarms.length} talhões importados e vinculados com sucesso!`);
+          showToast(`🌾 ${newFarms.length} talhões importados e vinculados com sucesso!`);
         }
       } else if (dbfOnlyFiles.length === 0 && csvFiles.length === 0) {
         showToast("Nenhum polígono de talhão encontrado nos arquivos selecionados.");
@@ -3366,7 +3592,7 @@
     function removeSingleFarm(index) {
       const f = savedFarms[index];
       if (!confirm(`Deseja remover o talhão ${f.nomeFaz} - ${f.talhao}?`)) return;
-      if (window.NeonSync && f && f.id) NeonSync.deleteFarm(f.id);
+      if (window.DbSync && f && f.id) DbSync.deleteFarm(f.id);
       savedFarms.splice(index, 1);
       localStorage.setItem('agrodrone_saved_farms', JSON.stringify(savedFarms));
       linkFlightsToFarms();
@@ -3383,7 +3609,7 @@
       if (!confirm("Deseja realmente remover TODOS os talhões cadastrados?")) return;
       savedFarms = [];
       localStorage.removeItem('agrodrone_saved_farms');
-      if (window.NeonSync) NeonSync.clearAllFarms();
+      if (window.DbSync) DbSync.clearAllFarms();
       linkFlightsToFarms();
       populateFarmFilterOptions();
       renderFarmsOnMap();

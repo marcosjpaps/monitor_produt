@@ -1,7 +1,7 @@
 # Esta pasta armazena bases de dados locais de desenvolvimento.
-# Em produção, utilize a variável de ambiente DATABASE_URL (Neon PostgreSQL).
+# Em produção, utilize a variável de ambiente DATABASE_URL (PostgreSQL).
 #
-# Ficheiros esperados (não versionados):
+# Ficheiros esperados:
 #   - trimble_data.db  (Massey Ferguson / Trimble TMX-2050)
 #
 # Configure via .env:

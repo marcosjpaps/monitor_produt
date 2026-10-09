@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R5607037483</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>T100 daniel</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC255G00216GV</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 426600</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>15.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>10.612</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>19.399999618530273</value>
+          </Data>
+          <Data name="Task Area">
+            <value>5.57733336122</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>55780</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-45.758257707945894,-17.04480613942095,0 -45.75963884936119,-17.04283927018199,0 -45.759638299162134,-17.04283650754928,0 -45.75382735024604,-17.039380729159344,0 -45.75379700748391,-17.039347288430807,0 -45.75381566296616,-17.03931411926654,0 -45.75385470223258,-17.039297387063737,0 -45.7538822604258,-17.03930416927544,0 -45.76595787154113,-17.046478595049553,0 -45.766019339675395,-17.046500107593765,0 -45.76602246850662,-17.046499535203765,0 -45.76605659050837,-17.0464546940653,0 -45.76605572574332,-17.046434394590012,0 -45.76602921644732,-17.046408037286856,0 -45.75390985810533,-17.039205521387103,0 -45.753861173658436,-17.039165733161365,0 -45.753849870411514,-17.039147203577734,0 -45.75383794679995,-17.039060212220708,0 -45.76556593342747,-17.046022364377425,0 -45.76577096389372,-17.046139741778546,0 -45.7582591528109,-17.04480553977875,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

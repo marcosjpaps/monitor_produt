@@ -6,14 +6,14 @@
   <title>Jacto Uniport • Trimble AgGPS Cobertura & Aplicação</title>
 
   <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
 
   <!-- Apache ECharts -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="/static/vendor/echarts.min.js"></script>
 
   <style>
     :root {
@@ -797,6 +797,7 @@
       to { transform: translateX(0); opacity: 1; }
     }
   </style>
+  <link rel="stylesheet" href="/css/refinements.css">
 </head>
 <body>
 
@@ -818,7 +819,7 @@
             <span>Jacto Uniport • Trimble AgGPS Cobertura & Aplicação</span>
             <span class="badge-engine">CFX-750 • Live Engine</span>
           </h1>
-          <p id="subHeaderDesc">Usina G5 • Cascalho Rico / Default_Farm • Operador: SIUMAR • Fonte: <span id="displayAgGPSPath" style="color: #fb923c; font-family: monospace;">Carregando...</span></p>
+          <p id="subHeaderDesc">Cobertura e telemetria dos arquivos importados • Fonte: <span id="displayAgGPSPath" style="color: #fb923c; font-family: monospace;">Carregando...</span></p>
         </div>
       </div>
 
@@ -828,9 +829,7 @@
           <i data-lucide="tractor" style="width:14px; height:14px;"></i> John Deere G5
         </a>
 
-        <a href="/drone" class="btn btn-outline" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Alternar para o Módulo Drones Agrícolas">
-          <i data-lucide="plane" style="width:14px; height:14px;"></i> Drones Agrícolas
-        </a>
+        
 
         <a href="/" class="btn btn-outline" title="Voltar ao Portal de Escolha de Máquinas">
           <i data-lucide="home" style="width:14px; height:14px;"></i> Portal
@@ -875,7 +874,7 @@
         <i data-lucide="layers" style="color: #fb923c; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Área Aplicada</span>
-          <span class="kpi-num" id="kpiArea" style="color: #fb923c;">409,65 ha</span>
+          <span class="kpi-num" id="kpiArea" style="color: #fb923c;">—</span>
         </div>
       </div>
 
@@ -883,7 +882,7 @@
         <i data-lucide="grid" style="color: #06b6d4; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Polígonos Cobertura</span>
-          <span class="kpi-num" id="kpiPolygons">28.765</span>
+          <span class="kpi-num" id="kpiPolygons">—</span>
         </div>
       </div>
 
@@ -891,7 +890,7 @@
         <i data-lucide="maximize-2" style="color: #10b981; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Largura de Barra</span>
-          <span class="kpi-num" id="kpiWidth">21,70 m</span>
+          <span class="kpi-num" id="kpiWidth">—</span>
         </div>
       </div>
 
@@ -899,7 +898,7 @@
         <i data-lucide="droplet" style="color: #38bdf8; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Taxa Média</span>
-          <span class="kpi-num" id="kpiRate">120,0 kg/ha</span>
+          <span class="kpi-num" id="kpiRate">—</span>
         </div>
       </div>
 
@@ -907,7 +906,7 @@
         <i data-lucide="crosshair" style="color: #a855f7; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Linhas Guia AB</span>
-          <span class="kpi-num" id="kpiSwaths">6 Linhas</span>
+          <span class="kpi-num" id="kpiSwaths">—</span>
         </div>
       </div>
 
@@ -915,7 +914,7 @@
         <i data-lucide="gauge" style="color: #f59e0b; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Velocidade Média</span>
-          <span class="kpi-num" id="kpiSpeed">3,5 km/h</span>
+          <span class="kpi-num" id="kpiSpeed">—</span>
         </div>
       </div>
 
@@ -923,7 +922,7 @@
         <i data-lucide="user-check" style="color: #10b981; width: 16px; height: 16px;"></i>
         <div class="kpi-meta">
           <span class="kpi-lbl">Operador Ativo</span>
-          <span class="kpi-num" id="kpiOperator">SIUMAR</span>
+          <span class="kpi-num" id="kpiOperator">—</span>
         </div>
       </div>
     </div>
@@ -1408,7 +1407,7 @@
     // RENDERIZAÇÃO DE KPIS
     // ==========================================
     function renderKPIs(data) {
-      if (!data || !data.has_data) return;
+      if (!data || !data.has_data) {document.querySelectorAll('[id^=kpi]').forEach(el=>el.textContent='—');return;}
       const s = data.summary;
       const op = data.operation;
 
@@ -1419,7 +1418,7 @@
       document.getElementById("kpiSwaths").textContent = `${s.total_swaths} Linhas`;
       document.getElementById("kpiSpeed").textContent = `${op.avg_speed_kmh.toFixed(1).replace(".", ",")} km/h`;
 
-      const opName = (data.operators && data.operators.length > 0) ? data.operators[0] : "SIUMAR";
+      const opName = (data.operators && data.operators.length > 0) ? data.operators[0] : "Não informado";
       document.getElementById("kpiOperator").textContent = opName;
 
       document.getElementById("hudPolyCount").textContent = s.total_polygons.toLocaleString("pt-BR");

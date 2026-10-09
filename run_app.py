@@ -1,40 +1,24 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Inicializador da Aplicação Telemetria John Deere G5
-Inicia o servidor FastAPI/Uvicorn e abre automaticamente o Dashboard no navegador.
-"""
+"""Inicializa todos os módulos e abre o portal no navegador."""
+import os, sys, subprocess, threading, webbrowser, urllib.request, time
+from pathlib import Path
+BASE=Path(__file__).resolve().parent
 
-import os
-import sys
-import time
-import threading
-import webbrowser
-
-# Garante que o diretório raiz esteja no sys.path
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-
-import uvicorn
-
-def open_browser():
-    time.sleep(1.2)
-    url = "http://127.0.0.1:8000"
-    print(f"\n[INFO] Abrindo Dashboard de Telemetria no navegador: {url}")
-    webbrowser.open(url)
+def open_browser(port):
+    for _ in range(120):
+        try:
+            with urllib.request.urlopen(f'http://127.0.0.1:{port}/',timeout=1) as r:
+                if r.status==200: webbrowser.open(f'http://127.0.0.1:{port}/');return
+        except Exception: pass
+        time.sleep(.5)
 
 def main():
-    print("=" * 80)
-    print(" INICIANDO MONITOR DE TELEMETRIA JOHN DEERE G5")
-    print(" Servidor: http://127.0.0.1:8000")
-    print("=" * 80)
-
-    # Inicia abertura do navegador em segundo plano
-    threading.Thread(target=open_browser, daemon=True).start()
-
-    # Executa o servidor FastAPI com Uvicorn
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, log_level="info")
-
-if __name__ == "__main__":
-    main()
+    env=os.environ.copy();env['PYTHON_EXECUTABLE']=sys.executable
+    port=env.get('PORT','3000')
+    print(f'Monitor Agrícola — http://127.0.0.1:{port}')
+    threading.Thread(target=open_browser,args=(port,),daemon=True).start()
+    try: subprocess.run(['node','server.js'],cwd=BASE,env=env,check=True)
+    except FileNotFoundError: print('Instale Node.js 22.13 ou superior.');return 1
+    except subprocess.CalledProcessError as e: return e.returncode
+    except KeyboardInterrupt: return 0
+    return 0
+if __name__=='__main__': sys.exit(main())

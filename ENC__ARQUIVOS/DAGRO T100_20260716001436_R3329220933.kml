@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml>
+  <Document>
+    <Placemark>
+      <name>R3329220933</name>
+      <ExtendedData>
+        
+          <Data name="Aircraft Name">
+            <value>DAGRO T100</value>
+          </Data>
+          <Data name="Flight Controller ID">
+            <value>1581F8ZLC258L002T7DJ</value>
+          </Data>
+          <Data name="Pilot Name">
+            <value>daniel henrique</value>
+          </Data>
+          <Data name="Flight Time">
+            <value> 279300</value>
+          </Data>
+          <Data name="Mode Selection">
+            <value>Auto</value>
+          </Data>
+          <Data name="Height">
+            <value>15.0</value>
+          </Data>
+          <Data name="Route Spacing">
+            <value>15.094</value>
+          </Data>
+          <Data name="Task Flight Speed">
+            <value>18.100000381469727</value>
+          </Data>
+          <Data name="Task Area">
+            <value>3.1733333492</value>
+          </Data>
+          <Data name="Spray amount">
+            <value>54417</value>
+          </Data>
+        
+      </ExtendedData>
+      <Style>
+        <LineStyle>
+          <color>#FF0000FF</color>
+          <width>1</width>
+          </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>-46.006717122277415,-18.030006693323774,0 -46.00914369725195,-18.030166834922557,0 -46.00914627505847,-18.030166933577572,0 -46.012728543523636,-18.028663641697364,0 -46.01277599715983,-18.02865580430179,0 -46.01279895502754,-18.028662667751288,0 -46.01286628476133,-18.028730609223206,0 -46.01286498928753,-18.02874852341725,0 -46.01285751400202,-18.02875757587473,0 -46.012771560741555,-18.028795295479988,0 -46.00542700278718,-18.031878961377636,0 -46.00540006009627,-18.03190280118348,0 -46.005397435812526,-18.031923315102304,0 -46.005446435728494,-18.032004255500865,0 -46.00545218581683,-18.032007098305122,0 -46.005504858816124,-18.03199950881444,0 -46.01251989747334,-18.02904686139794,0 -46.01293010123197,-18.028876359855783,0 -46.0067197389991,-18.030007885541096,0</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

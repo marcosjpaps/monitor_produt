@@ -582,8 +582,8 @@ export const useFlightStore = create<FlightState>((set, get) => ({
         } else if (result.message.toLowerCase().includes('already been imported')) {
           skipped += 1;
         }
-      } catch {
-        // Skip failed imports in batch mode (errors handled by caller)
+      } catch (err) {
+        console.error('Falha ao importar arquivo no lote:', item, err);
       }
     }
 

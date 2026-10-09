@@ -142,6 +142,8 @@ class JDLParser:
 
     def parse(self) -> Dict[str, Any]:
         self._inspect_framing()
+        if not self.blocks:
+            raise ValueError("JDL inválido ou formato não reconhecido: nenhum bloco de telemetria encontrado")
         self._parse_metadata()
         self._decode_telemetry()
         return {

@@ -1,0 +1,61 @@
+[
+  {
+    "route": "/",
+    "title": "Hub Operacional • AgroTelemetry Multi-Máquinas",
+    "errors": [],
+    "failures": [],
+    "overflow": false
+  },
+  {
+    "route": "/johndeere",
+    "title": "Telemetria John Deere G5 • Cockpit GIS de Produtividade & Aplicação",
+    "errors": [],
+    "failures": [],
+    "overflow": false
+  },
+  {
+    "route": "/jacto",
+    "title": "Jacto Uniport • Trimble AgGPS Cobertura & Aplicação",
+    "errors": [],
+    "failures": [],
+    "overflow": false
+  },
+  {
+    "route": "/massey",
+    "title": "Massey Ferguson 7318 • Trimble TMX-2050 - Mapa de Operações & Atributos",
+    "errors": [],
+    "failures": [],
+    "overflow": false
+  },
+  {
+    "route": "/drone",
+    "title": "VeredasDrone - Mapa de Aplicação & Atributos",
+    "errors": [],
+    "failures": [],
+    "overflow": false
+  },
+  {
+    "route": "/",
+    "mobile": true,
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "route": "/johndeere",
+    "mobile": true,
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "route": "/jacto",
+    "mobile": true,
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "route": "/massey",
+    "mobile": true,
+    "errors": [],
+    "overflow": false
+  }
+]

@@ -1,6 +1,6 @@
 /**
  * Trimble TMX-2050 - Precision Agriculture GIS & Operations Management Hub
- * Interface Dark Navy GIS compatível com drone-ivory-ten.vercel.app
+ * Interface Dark Navy GIS
  * Visualização de Satélite, Faixas Reais de Aplicação (Swaths), Rastros de Passadas e Linha AB
  */
 
@@ -664,7 +664,7 @@ function renderMap() {
               <span style="color:#f59e0b;">Fazenda: <b>${escapeHtml(op.farm_name)}</b></span><br>
               <span>Talhões: <b>${escapeHtml(fieldsListStr)}</b></span><br>
               <span>Área: <b>${escapeHtml(op.area_ha)} ha</b> | Taxa: <b>${escapeHtml(op.applied_rate)}</b></span><br>
-              <span style="font-size:10px; color:#94a3b8;">Monitor Trimble TMX: ${escapeHtml(op.device_serial || '6251225841')}</span>
+              <span style="font-size:10px; color:#94a3b8;">Monitor Trimble TMX: ${escapeHtml(op.device_serial || 'Não informado')}</span>
             </div>
           `, { sticky: true, opacity: 0.95 });
 
@@ -913,11 +913,11 @@ function renderTable() {
       <td data-col="type"><span class="tag-type ${getTypeClass(op.operation_type)}">${escapeHtml(op.operation_type)}</span></td>
       <td data-col="vehicle"><span style="color:#38bdf8; font-weight:600;"><i data-lucide="tractor" style="width:12px; height:12px; vertical-align:middle;"></i> ${escapeHtml(op.vehicle_name || 'Massey Ferguson 7318')}</span></td>
       <td data-col="controller"><span style="color:#ec4899; font-weight:600;"><i data-lucide="navigation" style="width:12px; height:12px; vertical-align:middle;"></i> ${escapeHtml(op.controller_name || 'Trimble NAV-900')}</span></td>
-      <td data-col="implement"><span style="color:#a855f7;"><i data-lucide="split" style="width:12px; height:12px; vertical-align:middle;"></i> ${escapeHtml(op.implement_name || 'Espalhadeira')} (${op.swath_width_m || '12.0'}m)</span></td>
+      <td data-col="implement"><span style="color:#a855f7;"><i data-lucide="split" style="width:12px; height:12px; vertical-align:middle;"></i> ${escapeHtml(op.implement_name || 'Espalhadeira')} (${op.swath_width_m || '—'}m)</span></td>
       <td data-col="area" style="font-weight:600; color:#10b981;">${escapeHtml(op.area_ha)} ha</td>
       <td data-col="rate" style="color:#f59e0b; font-weight:600;">${escapeHtml(op.applied_rate)}</td>
       <td data-col="total" style="color:#38bdf8;">${escapeHtml(op.total_applied)}</td>
-      <td data-col="monitor"><span style="font-family:var(--font-mono); font-size:0.75rem; color:#94a3b8;">${escapeHtml(op.device_serial || '6251225841')}</span></td>
+      <td data-col="monitor"><span style="font-family:var(--font-mono); font-size:0.75rem; color:#94a3b8;">${escapeHtml(op.device_serial || 'Não informado')}</span></td>
       <td data-col="uuid" style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-dim);">${op.uuid.substring(0, 13)}...</td>
       <td data-col="actions">
         <div style="display:flex; gap:6px;">
@@ -978,7 +978,7 @@ function updateStats() {
   if (kArea) kArea.innerText = `${totalArea.toFixed(2)} ha`;
 
   const kApplied = document.getElementById('kpiTotalApplied');
-  if (kApplied) kApplied.innerText = `${(totalArea * 1500).toLocaleString('pt-BR')} kg`;
+  if (kApplied) kApplied.innerText = `${(selectedOps.reduce((sum,op)=>sum+(parseFloat(op.total_applied)||0),0)).toLocaleString('pt-BR')} kg`;
 
   const kRate = document.getElementById('kpiRate');
   if (kRate) kRate.innerText = selectedOps.length ? selectedOps[0].applied_rate : '-';
@@ -1054,7 +1054,9 @@ async function uploadFilesToServer(fileList, label = 'Arquivos') {
     const res = await fetch('/api/upload-multi', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Falha no processamento');
-    showToast(data.message || 'Dados importados e mapeados com sucesso!');
+    const failed=(data.results||[]).filter(r=>r.status==='error');
+    showToast(data.message || 'Importação concluída', failed.length?'error':'success');
+    if(failed.length) console.warn('Arquivos rejeitados:',failed);
     await loadData();
   } catch (err) {
     showToast('Erro no upload: ' + err.message, 'error');
@@ -1253,7 +1255,7 @@ async function openDetailModal(uuid) {
     document.getElementById('modalProduct').innerText = `${op.device_product || 'TMX-2050'} | ${op.vehicle_name || 'Massey Ferguson 7318'}`;
     document.getElementById('modalSerial').innerText = `S/N: ${op.device_serial} | Piloto: ${op.controller_name || 'NAV-900'}`;
     document.getElementById('modalKeyVer').innerText = op.crypto_key_version || '0';
-    document.getElementById('modalIv').innerText = op.crypto_iv || '5D786F35119632100E2DD39044A809BA';
+    document.getElementById('modalIv').innerText = op.crypto_iv || 'Não informado';
 
     const entriesBox = document.getElementById('modalEntries');
     if (entriesBox) {
@@ -1433,6 +1435,13 @@ async function loadFarmFields() {
     }
 
     renderFarmFieldsTable();
+    const statsRes=await fetch('/api/massey/stats');
+    const stats=await statsRes.json();
+    const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+    text('kpiSigCount',stats.total_fields+' talhões');text('kpiSigArea',stats.total_sig_ha.toLocaleString('pt-BR')+' ha');
+    text('kpiFarmsCount',stats.total_farms+' fazendas');
+    text('kpiMonitor',(stats.monitors_list||[]).join(', ')||'Não informado');
+    text('kpiVehicle',stats.machine_info?.vehicle_name||'Não informado');text('kpiInput',Object.keys(stats.operation_types_distribution||{}).join(', ')||'Não informado');
   } catch (err) {
     console.error('Erro ao carregar talhões:', err);
   }
@@ -1680,3 +1689,21 @@ function filterOpsForField(farmName, talhaoNumber) {
   applyFilters();
   showToast(`Filtrando operações da ${farmName} para o Talhão ${talhaoNumber}`);
 }
+
+// Controles do cockpit Massey, compartilhando o estado já utilizado pelo mapa.
+function onSearchChange(){applyFilters();}
+function onMonitorFilterChange(){applyFilters();}
+function onTypeFilterChange(){applyFilters();}
+function onFarmFilterChange(){applyFilters();}
+function resetAllFilters(){clearAllFilters();}
+function switchDockTab(name){switchTableTab(name==='farmFields'?'fields':'operations');}
+function toggleDockCollapse(){togglePanelSize();}
+function toggleTopSection(){toggleTopPanel();}
+function toggleSwathsLayer(){showSwath=!showSwath;document.getElementById('btnToggleSwaths').classList.toggle('active',showSwath);renderMap();}
+function togglePolygonsLayer(){showFields=!showFields;document.getElementById('btnTogglePolygons').classList.toggle('active',showFields);if(showFields)cadastralFieldsLayerGroup.addTo(map);else map.removeLayer(cadastralFieldsLayerGroup);renderMap();}
+let basemapIndex=0;
+function cycleBasemap(){const bases=[googleHybrid,esriSat,osm];bases.forEach(b=>map.removeLayer(b));map.removeLayer(googleSat);basemapIndex=(basemapIndex+1)%bases.length;bases[basemapIndex].addTo(map);}
+window.addEventListener('DOMContentLoaded',()=>{
+ const resizer=document.getElementById('resizer');if(!resizer)return;
+ resizer.addEventListener('pointerdown',event=>{resizer.setPointerCapture(event.pointerId);const move=e=>{document.getElementById('attrPanel').style.height=Math.max(120,Math.min(innerHeight*.65,innerHeight-e.clientY))+'px';map.invalidateSize();};const end=()=>{resizer.removeEventListener('pointermove',move);resizer.removeEventListener('pointerup',end);};resizer.addEventListener('pointermove',move);resizer.addEventListener('pointerup',end);});
+});
