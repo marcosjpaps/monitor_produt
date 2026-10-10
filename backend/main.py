@@ -1050,8 +1050,9 @@ def api_import_tractor_folder():
     from .massey_import import import_folder
     return import_folder()
 
-# Monta pasta static
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+# Monta pasta static apenas se o diretório existir localmente (na Vercel o CDN entrega arquivos estáticos)
+if os.path.exists(FRONTEND_DIR):
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 @app.get('/api/health')
