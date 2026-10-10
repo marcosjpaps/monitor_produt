@@ -28,79 +28,7 @@ CREATE TABLE IF NOT EXISTS talhoes (
 CREATE INDEX IF NOT EXISTS idx_talhoes_fazenda ON talhoes(nome_faz);
 CREATE INDEX IF NOT EXISTS idx_talhoes_talhao  ON talhoes(talhao);
 
--- Missões / Voos de Drones (DJI Agras / KML / Telemetria)
-CREATE TABLE IF NOT EXISTS voos (
-    id              TEXT PRIMARY KEY,
-    nome_arquivo    TEXT,
-    drone           TEXT,
-    piloto          TEXT,
-    data_voo        TEXT,
-    raw_date        TEXT,
-    area_ha         DOUBLE PRECISION,
-    calda_l         DOUBLE PRECISION,
-    taxa_l_ha       DOUBLE PRECISION,
-    tempo_voo_s     DOUBLE PRECISION,
-    tempo_voo_fmt   TEXT,
-    vel_media_kmh   DOUBLE PRECISION,
-    altura_media_m  DOUBLE PRECISION,
-    faixa_media_m   DOUBLE PRECISION,
-    num_pontos      INTEGER,
-    farm            TEXT,
-    talhao          TEXT,
-    coords          JSONB,
-    criado_em       TIMESTAMPTZ DEFAULT NOW()
-);
 
-CREATE INDEX IF NOT EXISTS idx_voos_data   ON voos(data_voo);
-CREATE INDEX IF NOT EXISTS idx_voos_farm   ON voos(farm);
-CREATE INDEX IF NOT EXISTS idx_voos_drone  ON voos(drone);
-CREATE INDEX IF NOT EXISTS idx_voos_piloto ON voos(piloto);
-
--- Voos excluídos (para sincronização entre múltiplos clientes)
-CREATE TABLE IF NOT EXISTS voos_deletados (
-    id              TEXT PRIMARY KEY,
-    deletado_em     TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Lixeira de voos excluídos (com histórico completo para restauração)
-CREATE TABLE IF NOT EXISTS voos_lixeira (
-    id              VARCHAR PRIMARY KEY,
-    nome_arquivo    VARCHAR,
-    drone           VARCHAR,
-    piloto          VARCHAR,
-    data_voo        VARCHAR,
-    raw_date        TEXT,
-    area_ha         NUMERIC,
-    calda_l         NUMERIC,
-    taxa_l_ha       NUMERIC,
-    tempo_voo_s     NUMERIC,
-    tempo_voo_fmt   VARCHAR,
-    vel_media_kmh   NUMERIC,
-    altura_media_m  NUMERIC,
-    faixa_media_m   NUMERIC,
-    num_pontos      INTEGER,
-    farm            VARCHAR,
-    talhao          VARCHAR,
-    coords          JSONB,
-    criado_em       TIMESTAMPTZ,
-    deletado_em     TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Relacionamento N:N (Um voo pode cruzar múltiplos talhões)
-CREATE TABLE IF NOT EXISTS voo_talhoes (
-    id               BIGSERIAL PRIMARY KEY,
-    voo_id           TEXT NOT NULL,
-    talhao_id        TEXT NOT NULL,
-    nome_faz         TEXT,
-    talhao           TEXT,
-    coverage_percent NUMERIC(5, 2) DEFAULT 0,
-    match_status     TEXT DEFAULT 'matched',
-    criado_em        TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT uq_voo_talhao UNIQUE (voo_id, talhao_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_voo_talhoes_voo    ON voo_talhoes(voo_id);
-CREATE INDEX IF NOT EXISTS idx_voo_talhoes_talhao ON voo_talhoes(talhao_id);
 
 -- =============================================================
 -- 1. MÁQUINAS / EQUIPAMENTOS
@@ -263,7 +191,3 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS importacoes (id SERIAL PRIMARY KEY, arquivo TEXT, registros INTEGER DEFAULT 0, status TEXT, criado_em TIMESTAMP DEFAULT NOW());
-
-ALTER TABLE voos ADD COLUMN IF NOT EXISTS kml_url TEXT;
-ALTER TABLE voos_lixeira ADD COLUMN IF NOT EXISTS kml_url TEXT;

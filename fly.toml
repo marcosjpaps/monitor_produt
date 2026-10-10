@@ -7,7 +7,7 @@ primary_region = "gru" # São Paulo, Brasil (pode alterar se quiser)
 [env]
   PORT = "3000"
   START_PYTHON = "true"
-  DRONE_DB_PATH = "/data/drone.sqlite"
+  DB_PATH = "/data/database.sqlite"
   TELEMETRY_DB_PATH = "/data/telemetria.db"
 
 [mounts]

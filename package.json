@@ -1,7 +1,7 @@
 {
-  "name": "agrodrone-map",
+  "name": "agrotelemetry-monitor",
   "version": "1.0.0",
-  "description": "Sistema de Gestão de Voos e Talhões com Drone",
+  "description": "Sistema de Gestão de Telemetria e Operações Agrícolas",
   "main": "index.html",
   "scripts": {
     "start": "node server.js",

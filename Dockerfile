@@ -19,7 +19,7 @@ COPY . .
 # Variáveis de ambiente para usar o banco de dados persistente na pasta /data
 ENV PORT=3000
 ENV START_PYTHON=true
-ENV DRONE_DB_PATH=/data/drone.sqlite
+ENV DB_PATH=/data/database.sqlite
 ENV TELEMETRY_DB_PATH=/data/telemetria.db
 
 # Expor a porta que o Node vai usar

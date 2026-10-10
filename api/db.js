@@ -5,7 +5,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 const context = new AsyncLocalStorage();
 const DATABASE_URL = process.env.DATABASE_URL;
 let pool, local;
-if (process.env.DRONE_DB_MODE === 'pglite') {
+if (process.env.DB_MODE === 'pglite') {
   const {PGlite}=require('@electric-sql/pglite');
   const db=new PGlite(process.env.PGLITE_DB_PATH);
   pool={query:(...args)=>db.query(...args),connect:async()=>({query:(...args)=>db.query(...args),release(){}}),end:()=>db.close()};
@@ -15,7 +15,7 @@ if (process.env.DRONE_DB_MODE === 'pglite') {
     ssl: process.env.PG_SSL === 'true' ? {rejectUnauthorized:true} : false });
 } else {
   const { DatabaseSync } = require('node:sqlite');
-  const file = process.env.DRONE_DB_PATH || path.join(__dirname, '../data/drone.sqlite');
+  const file = process.env.DB_PATH || path.join(__dirname, '../data/database.sqlite');
   fs.mkdirSync(path.dirname(file), {recursive:true});
   local = new DatabaseSync(file);
   local.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');

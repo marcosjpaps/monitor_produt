@@ -945,15 +945,6 @@ def serve_jacto():
             return f.read()
     return "<h1>Frontend Jacto não encontrado. Verifique frontend/jacto.html</h1>"
 
-@app.get("/drone", response_class=HTMLResponse)
-def serve_drone():
-    """Módulo Drones Agrícolas (DJI Agras & Veredas Drone)."""
-    drone_path = os.path.join(FRONTEND_DIR, "drone.html")
-    if os.path.exists(drone_path):
-        with open(drone_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>Frontend Drone não encontrado. Verifique frontend/drone.html</h1>"
-
 @app.get("/studio", response_class=HTMLResponse)
 @app.get("/isoxml", response_class=HTMLResponse)
 def serve_studio():
@@ -965,7 +956,7 @@ def serve_studio():
     return "<h1>Studio não encontrado. Verifique frontend/studio.html</h1>"
 
 
-# Arquivos estáticos diretos para suporte ao shp.js e dados_voos.js
+# Arquivos estáticos diretos para suporte ao shp.js
 from fastapi.responses import FileResponse
 
 @app.get("/shp.js")
@@ -974,13 +965,6 @@ def serve_shp_js():
     if os.path.exists(shp_path):
         return FileResponse(shp_path, media_type="application/javascript")
     raise HTTPException(status_code=404, detail="shp.js not found")
-
-@app.get("/dados_voos.js")
-def serve_dados_voos_js():
-    dv_path = os.path.join(FRONTEND_DIR, "dados_voos.js")
-    if os.path.exists(dv_path):
-        return FileResponse(dv_path, media_type="application/javascript")
-    raise HTTPException(status_code=404, detail="dados_voos.js not found")
 
 # ==========================================
 # ROTAS MASSEY FERGUSON 7318 • TRIMBLE TMX-2050
