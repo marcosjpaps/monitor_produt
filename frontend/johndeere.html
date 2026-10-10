@@ -1220,6 +1220,11 @@
             style="width: 100%; background: #090e17; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #f8fafc; font-family: monospace; font-size: 0.8rem; outline: none;"
           />
         </div>
+        <div style="margin-bottom: 14px;">
+          <button type="button" class="btn btn-outline" style="width: 100%; color: #ffde00; border-color: rgba(255, 222, 0, 0.4); justify-content: center; padding: 10px; font-weight: 600;" onclick="closeFolderModal(); document.getElementById('folderInput').click();">
+            <i data-lucide="folder-open" style="width: 16px; height: 16px;"></i> Selecionar Pasta no Computador (Nuvem / Web)
+          </button>
+        </div>
         <div style="font-size: 0.75rem; color: #94a3b8; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 8px 12px; border-radius: 6px;">
           💡 <strong>Dica:</strong> Você também pode simplesmente arrastar qualquer pasta ou arquivo <code>.JDL</code> diretamente sobre a tela a qualquer momento!
         </div>
@@ -3879,7 +3884,7 @@
       const folderPath = folderInput.value.trim();
 
       if (!folderPath) {
-        showToast("Digite o caminho da pasta JD-Data.", "error");
+        showToast("Digite o caminho da pasta JD-Data ou use o botão Selecionar Pasta.", "error");
         return;
       }
 
@@ -3894,17 +3899,27 @@
           body: JSON.stringify({ folder_path: folderPath })
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Pasta não encontrada");
+        const data = await res.json();
+        if (data.status === 'not_found' || data.is_cloud) {
+          closeFolderModal();
+          showToast("Nuvem conectada: Selecione a pasta no seu computador para sincronizar.", "info");
+          const localInput = document.getElementById('folderInput');
+          if (localInput) localInput.click();
+          return;
         }
 
-        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Pasta não encontrada");
+        }
+
         showToast(`Varredura concluída: ${data.importados} novos, ${data.duplicados_ignorados} já indexados.`);
         closeFolderModal();
         loadDashboardData();
       } catch (e) {
-        showToast(`Erro ao varrer pasta: ${e.message}`, "error");
+        closeFolderModal();
+        showToast("Selecione sua pasta de dados no computador.", "info");
+        const localInput = document.getElementById('folderInput');
+        if (localInput) localInput.click();
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="play" style="width:14px; height:14px;"></i> Iniciar Importação`;
@@ -3921,10 +3936,27 @@
       try {
         const res = await fetch('/api/sync-local', { method: 'POST' });
         const data = await res.json();
-        showToast("Arquivos locais sincronizados com sucesso!");
+        
+        // Se estiver na nuvem e o servidor não tiver os arquivos locais da máquina
+        if (data.synced === 0 && (!data.kpis || !data.kpis.has_data)) {
+          const folderInput = document.getElementById('folderInput');
+          if (folderInput) {
+            showToast("Nuvem conectada: Selecione sua pasta de dados no computador para sincronizar com o banco.", "info");
+            folderInput.click();
+            return;
+          }
+        }
+
+        showToast(data.message || "Arquivos locais sincronizados com sucesso!");
         loadDashboardData();
       } catch (e) {
-        showToast("Erro ao sincronizar pasta local.", "error");
+        const folderInput = document.getElementById('folderInput');
+        if (folderInput) {
+          showToast("Selecione a pasta no seu computador para sincronizar com o banco.", "info");
+          folderInput.click();
+        } else {
+          showToast("Erro ao sincronizar pasta local.", "error");
+        }
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Sincronizar`;

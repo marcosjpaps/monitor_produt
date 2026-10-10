@@ -90,7 +90,6 @@ module.exports = async (req, res) => {
       `;
 
       await query(sql, params);
-      await require('./voos').linkFlights((await query('SELECT id FROM voos')).map(r=>r.id));
       return res.status(200).json({ success: true, savedCount: valuesList.length });
     }
 
@@ -98,7 +97,6 @@ module.exports = async (req, res) => {
     if (req.method === 'DELETE') {
       const action = req.query.action;
       if (action === 'clear_all') {
-        await query('DELETE FROM voo_talhoes');
         await query('DELETE FROM talhoes;');
         return res.status(200).json({ success: true, message: 'Todos os talhões foram removidos do banco.' });
       }
@@ -113,7 +111,6 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: "ID do talhão não informado para exclusão" });
       }
 
-      await query('DELETE FROM voo_talhoes WHERE talhao_id=$1',[id]);
       await query('DELETE FROM talhoes WHERE id = $1;', [id]);
       return res.status(200).json({ success: true, deletedId: id });
     }

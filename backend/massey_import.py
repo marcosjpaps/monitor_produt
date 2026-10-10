@@ -99,7 +99,7 @@ def import_file(conn,file,source=None):
 
 def import_folder(folder=None):
     folder=Path(folder or DEFAULT_TRACTOR_FOLDER)
-    if not folder.is_dir(): return {'status':'empty','imported':0,'message':'Pasta do Massey não encontrada. Envie ZIP, KML, SHP ou GeoJSON.'}
+    if not folder.is_dir(): return {'status':'empty','imported':0,'is_cloud':True,'message':'Pasta do Massey não encontrada no servidor em nuvem. Selecione a pasta pelo navegador.'}
     results=[];count=0
     with connect() as conn:
         for p in folder.rglob('*'):

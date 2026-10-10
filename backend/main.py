@@ -73,6 +73,7 @@ def sync_default_local_files():
         "JD_DATA_PATH",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "samples")
     )
+    count = 0
     if os.path.exists(default_dir):
         jdl_files = glob.glob(os.path.join(default_dir, "**", "*.jdl"), recursive=True) + \
                     glob.glob(os.path.join(default_dir, "**", "*.JDL"), recursive=True)
@@ -85,9 +86,11 @@ def sync_default_local_files():
                         parsed = parser.parse()
                         save_parsed_session(parsed, conn_external=conn)
                         processed_set.add(parser.md5)
+                        count += 1
                 except Exception as e:
                     print(f"[AVISO] Falha ao sincronizar {fpath}: {e}")
             conn.commit()
+    return count
 
 
 @app.get("/api/dashboard/kpis")
@@ -468,7 +471,17 @@ def api_scan_folder(payload: Optional[dict] = None):
     folder_path = os.path.normpath(folder_path.strip('"').strip("'"))
 
     if not os.path.exists(folder_path):
-        raise HTTPException(status_code=404, detail=f"Diretório não encontrado: {folder_path}")
+        return {
+            "status": "not_found",
+            "folder": folder_path,
+            "total_encontrados": 0,
+            "importados": 0,
+            "duplicados_ignorados": 0,
+            "erros": 0,
+            "is_cloud": True,
+            "message": f"Diretório local '{folder_path}' não está acessível no servidor em nuvem. Selecione a pasta pelo navegador.",
+            "kpis": get_dashboard_kpis()
+        }
 
     # Encontra todos os arquivos .JDL recursivamente
     jdl_files = []
@@ -526,10 +539,19 @@ def api_scan_folder(payload: Optional[dict] = None):
     }
 
 @app.post("/api/sync-local")
+@app.post("/api/sync-folder")
+@app.post("/api/sync")
+@app.get("/api/sync")
+@app.get("/api/sync-local")
 def api_sync_local():
     """Varre e sincroniza novamente a pasta local de logs."""
-    sync_default_local_files()
-    return {"message": "Sincronização concluída", "kpis": get_dashboard_kpis()}
+    synced = sync_default_local_files()
+    kpis = get_dashboard_kpis()
+    return {
+        "message": f"Sincronização concluída ({synced} novos arquivos)",
+        "synced": synced,
+        "kpis": kpis
+    }
 
 # ==========================================
 # ROTAS JOHN DEERE OPERATIONS CENTER & AMOSTRAS OFICIAIS
@@ -1045,6 +1067,9 @@ def api_massey_farm_fields_geojson(
 
 @app.post("/api/import-tractor-folder")
 @app.post("/api/massey/import-tractor-folder")
+@app.post("/api/massey/sync")
+@app.get("/api/massey/sync")
+@app.get("/api/import-tractor-folder")
 def api_import_tractor_folder():
     """Sincroniza e recarrega os dados do trator Massey Ferguson."""
     from .massey_import import import_folder

@@ -1126,15 +1126,32 @@ function setupActionButtons() {
   const btnTractor = document.getElementById('btnImportTractor');
   if (btnTractor) {
     btnTractor.addEventListener('click', async () => {
-      showToast('Importando dados da pasta do Trator Massey (Usina G5)...');
+      showToast('Sincronizando dados do Trator Massey (Usina G5)...');
       try {
         const res = await fetch('/api/import-tractor-folder', { method: 'POST' });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Falha ao importar pasta do trator');
+        if (!res.ok) throw new Error(data.detail || 'Falha ao sincronizar trator');
+        
+        // Se a pasta não estiver no servidor (ambiente Vercel em nuvem), aciona o seletor do computador
+        if (data.status === 'empty' || data.is_cloud || data.imported === 0) {
+          const folderInput = document.getElementById('folderInput');
+          if (folderInput) {
+            showToast('Nuvem conectada: Selecione a pasta do trator no seu computador.', 'info');
+            folderInput.click();
+            return;
+          }
+        }
+
         showToast(data.message);
         await loadData();
       } catch (err) {
-        showToast('Erro: ' + err.message, 'error');
+        const folderInput = document.getElementById('folderInput');
+        if (folderInput) {
+          showToast('Selecione a pasta do trator no seu computador para sincronizar.', 'info');
+          folderInput.click();
+        } else {
+          showToast('Erro: ' + err.message, 'error');
+        }
       }
     });
   }
