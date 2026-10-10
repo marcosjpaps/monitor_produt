@@ -718,13 +718,15 @@ def get_segmentacao_filtros(
             db_path=db_path
         )
         sql_tratores = f"""
-            SELECT COALESCE(NULLIF(a.modelo_trator, ''), m.modelo, 'John Deere') as modelo,
-                   COUNT(*) as count
-            FROM arquivos_processados a
-            LEFT JOIN maquinas m ON m.id = a.maquina_id
-            WHERE {w_trator}
+            SELECT modelo, COUNT(*) as count
+            FROM (
+                SELECT COALESCE(NULLIF(a.modelo_trator, ''), m.modelo, 'John Deere') as modelo
+                FROM arquivos_processados a
+                LEFT JOIN maquinas m ON m.id = a.maquina_id
+                WHERE {w_trator}
+            ) sub
+            WHERE modelo IS NOT NULL AND modelo != ''
             GROUP BY modelo
-            HAVING modelo IS NOT NULL AND modelo != ''
             ORDER BY count DESC, modelo ASC;
         """
         tratores = [{"nome": r["modelo"], "count": r["count"]} for r in conn.execute(sql_tratores, p_trator).fetchall()]
@@ -765,9 +767,12 @@ def get_segmentacao_filtros(
             db_path=db_path
         )
         sql_faixa = f"""
-            SELECT ROUND(a.largura_trabalho_m, 2) as largura, COUNT(*) as count
-            FROM arquivos_processados a
-            WHERE {w_faixa} AND a.largura_trabalho_m > 0
+            SELECT largura, COUNT(*) as count
+            FROM (
+                SELECT CAST(ROUND(CAST(a.largura_trabalho_m AS numeric), 2) AS float) as largura
+                FROM arquivos_processados a
+                WHERE {w_faixa} AND a.largura_trabalho_m > 0
+            ) sub
             GROUP BY largura
             ORDER BY largura ASC;
         """
