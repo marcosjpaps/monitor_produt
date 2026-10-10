@@ -4,7 +4,7 @@ const base=__dirname;
 if(fs.existsSync(path.join(base,'.env')) && process.loadEnvFile)process.loadEnvFile(path.join(base,'.env'));
 const {transaction}=require('./api/db');
 const routes=Object.fromEntries(['voos','talhoes','import','importacoes','preview'].map(n=>['/api/'+n,require('./api/'+n)]));
-const pages={'/':'frontend/portal.html','/johndeere':'frontend/index.html','/dashboard':'frontend/index.html','/jdl':'frontend/index.html','/jacto':'frontend/jacto.html','/massey':'frontend/massey.html','/massei':'frontend/massey.html','/drone':'frontend/drone.html','/studio':'frontend/studio.html','/isoxml':'frontend/studio.html','/index.html':'frontend/portal.html','/Mapa_Aplicacao_Drones.html':'frontend/drone.html','/admin/importacao.html':'admin/importacao.html'};
+const pages={'/':'frontend/portal.html','/johndeere':'frontend/johndeere.html','/dashboard':'frontend/johndeere.html','/jdl':'frontend/johndeere.html','/jacto':'frontend/jacto.html','/massey':'frontend/massey.html','/massei':'frontend/massey.html','/drone':'frontend/drone.html','/studio':'frontend/studio.html','/isoxml':'frontend/studio.html','/index.html':'frontend/portal.html','/portal.html':'frontend/portal.html','/portal':'frontend/portal.html','/Mapa_Aplicacao_Drones.html':'frontend/drone.html','/admin/importacao.html':'admin/importacao.html'};
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'application/javascript','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2'};
 const backendPort=Number(process.env.PYTHON_PORT||8000);
 function json(res,code,data){if(res.writableEnded)return;res.writeHead(code,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}

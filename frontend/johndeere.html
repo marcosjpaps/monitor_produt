@@ -1,0 +1,3960 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telemetria John Deere G5 • Cockpit GIS de Produtividade & Aplicação</title>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="/static/vendor/lucide.min.js"></script>
+
+  <!-- Apache ECharts -->
+  <script src="/static/vendor/echarts.min.js"></script>
+
+  <!-- Shapefile Parser (shp.js) -->
+  <script src="shp.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #090e17;
+      --bg-panel: #131d2e;
+      --bg-card: #1c2a3f;
+      --bg-hover: #263852;
+      --border: #2c3f58;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --warning: #f59e0b;
+      --jd-green: #367c2b;
+      --jd-yellow: #ffde00;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* SCROLLBAR CUSTOMIZATION */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1320; }
+    ::-webkit-scrollbar-thumb { background: #263852; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+    /* =========================================================================
+       1. TOP SECTION (HEADER + KPI BAR) - COLLAPSIBLE
+       ========================================================================= */
+    .top-section {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+      max-height: 220px;
+      overflow: hidden;
+      z-index: 1000;
+      background: var(--bg-panel);
+    }
+    .top-section.collapsed {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* TOP HEADER */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      background: linear-gradient(135deg, #1b4d13 0%, #367c2b 60%, #ffde00 100%);
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(54, 124, 43, 0.4);
+      border: 1px solid rgba(255, 222, 0, 0.4);
+      flex-shrink: 0;
+    }
+    .brand-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title h1 .badge-engine {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      text-transform: uppercase;
+    }
+    .brand-title p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #090e17; font-weight: 700; }
+    .btn-primary:hover { background: var(--primary-hover); color: white; }
+    .btn-success { background: var(--accent); color: white; }
+    .btn-success:hover { background: var(--accent-hover); }
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--text-muted);
+    }
+
+    /* KPI BAR */
+    .kpi-bar {
+      background: #0d1522;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-panel);
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      min-width: 140px;
+      flex-shrink: 0;
+    }
+    .kpi-card i { flex-shrink: 0; }
+    .kpi-meta { display: flex; flex-direction: column; }
+    .kpi-lbl { font-size: 0.63rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
+    .kpi-num { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+
+    /* TOP RESTORE TAB (WHEN TOP IS COLLAPSED) */
+    .top-restore-tab {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 4px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      cursor: pointer;
+      z-index: 1200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .top-restore-tab:hover {
+      background: #0284c7;
+      color: #ffffff;
+      padding-top: 6px;
+    }
+    body.top-collapsed .top-restore-tab {
+      display: inline-flex;
+    }
+
+    /* =========================================================================
+       2. WORKSPACE (MAP + HUD + FLOATING TOOLBAR)
+       ========================================================================= */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      min-height: 0;
+    }
+
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      min-height: 180px;
+      width: 100%;
+      height: 100%;
+    }
+    #map { width: 100%; height: 100%; background: #090e17; }
+
+    /* FLOATING CONTROLS */
+    .floating-bar {
+      position: absolute;
+      top: 12px;
+      left: 60px;
+      z-index: 900;
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      padding: 5px 12px;
+      border-radius: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.76rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: all 0.25s ease;
+    }
+    .floating-bar:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.75);
+    }
+    .floating-bar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .floating-bar select {
+      background: rgba(9, 14, 23, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #f8fafc;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* MAP HUD BAR (LIVE COORDINATES & SCALE) */
+    .map-hud {
+      position: absolute;
+      bottom: 12px;
+      left: 80px;
+      z-index: 800;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      user-select: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    }
+    .map-hud .hud-sep { color: rgba(255,255,255,0.2); }
+    .map-hud #hudCoords { color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .map-hud #hudZoom { color: #f59e0b; font-weight: 600; }
+    .map-hud #hudRoutes { color: #10b981; font-weight: 600; }
+    .map-hud #hudPoints { color: #a855f7; font-weight: 600; }
+
+    /* FLOATING LEGEND */
+    .map-legend {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 850;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      font-size: 0.72rem;
+      max-width: 250px;
+    }
+
+    /* LEAFLET CONTROLS MODERN DARK THEME */
+    .leaflet-bar {
+      border: 1px solid rgba(56, 189, 248, 0.25) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+    }
+    .leaflet-bar a {
+      background-color: rgba(15, 23, 42, 0.92) !important;
+      color: #38bdf8 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+    }
+    .leaflet-bar a:hover {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+    }
+
+    /* =========================================================================
+       3. ATTRIBUTE & TELEMETRY DOCK PANEL (BOTTOM)
+       ========================================================================= */
+    .attribute-panel {
+      height: 290px;
+      background: var(--bg-panel);
+      border-top: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: height 0.25s ease;
+      z-index: 850;
+      min-height: 38px;
+      position: relative;
+    }
+    .attribute-panel.collapsed { height: 38px !important; }
+    .attribute-panel.expanded { height: 500px !important; }
+
+    .panel-header {
+      background: #101927;
+      padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .panel-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .panel-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+    .panel-tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .panel-tab-btn.active {
+      color: var(--primary);
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .panel-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .panel-filters select, .panel-filters input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .panel-filters select:focus, .panel-filters input:focus {
+      border-color: var(--primary);
+    }
+
+    /* TABLE VIEW */
+    .table-scroll {
+      flex: 1;
+      overflow: auto;
+      background: #090e17;
+    }
+    table.attr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    table.attr-table thead {
+      position: sticky;
+      top: 0;
+      background: #141f31;
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    table.attr-table th {
+      padding: 7px 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 0.67rem;
+      letter-spacing: 0.5px;
+    }
+    table.attr-table td {
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(44, 63, 88, 0.45);
+    }
+    table.attr-table tr {
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    table.attr-table tr:hover {
+      background: var(--bg-hover);
+    }
+    table.attr-table tr.active {
+      background: #1c3553;
+    }
+
+    /* BADGES */
+    .tag-farm {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.70rem;
+    }
+    .tag-op {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.70rem;
+    }
+    .val-rate { color: #f59e0b; font-weight: 700; }
+    .val-area { color: #10b981; font-weight: 700; }
+    .val-width { color: #38bdf8; font-weight: 700; }
+
+    /* CHART VIEW */
+    .chart-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #090e17;
+      padding: 8px 12px;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .chart-metric-btn {
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: #131d2e;
+      color: #94a3b8;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chart-metric-btn:hover {
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+    .chart-metric-btn.active {
+      background: #38bdf8;
+      color: #090e17;
+      font-weight: 700;
+      border-color: #38bdf8;
+    }
+
+    /* BATCH SELECTION HUD & STYLES */
+    .map-batch-hud {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1500;
+      background: rgba(13, 21, 34, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      border-radius: 10px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
+    .attr-table tbody tr.selected-row {
+      background: rgba(245, 158, 11, 0.14) !important;
+    }
+    .attr-table tbody tr.selected-row:hover {
+      background: rgba(245, 158, 11, 0.22) !important;
+    }
+    .attr-table tbody tr.active-focus-row {
+      background: rgba(56, 189, 248, 0.28) !important;
+      box-shadow: inset 4px 0 0 #38bdf8 !important;
+    }
+    .attr-table tbody tr.active-focus-row:hover {
+      background: rgba(56, 189, 248, 0.36) !important;
+    }
+    .tag-gps-yes {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.67rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .tag-gps-no {
+      background: rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 0.67rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* FULLSCREEN DRAG & DROP OVERLAY */
+    #dropZone {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(2, 132, 199, 0.90);
+      backdrop-filter: blur(8px);
+      z-index: 5000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    #dropZone.active { display: flex; }
+
+    /* TOAST NOTIFICATION */
+    #toast {
+      position: fixed;
+      bottom: 305px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      z-index: 4000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(-5px); }
+    #toast.error { background: rgba(239, 68, 68, 0.95); }
+
+    /* MODAL ESTILO VEREDAS DRONE */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(5px);
+      z-index: 4500;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0d1522;
+    }
+    .modal-header h3 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-body { padding: 18px; font-size: 0.82rem; line-height: 1.5; color: #cbd5e1; }
+    .modal-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #0d1522;
+    }
+
+    /* UPLOAD PROGRESS STRIP */
+    #uploadProgressStrip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      z-index: 2000;
+      overflow: hidden;
+    }
+    #uploadProgressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #10b981, #ffde00);
+      transition: width 0.2s ease;
+    }
+  </style>
+  <link rel="stylesheet" href="/css/refinements.css">
+</head>
+<body>
+
+  <!-- PROGRESS STRIP -->
+  <div id="uploadProgressStrip">
+    <div id="uploadProgressBar"></div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast">
+    <i data-lucide="check-circle" id="toastIcon" style="width:16px; height:16px;"></i>
+    <span id="toastMsg">Operação realizada com sucesso.</span>
+  </div>
+
+  <!-- DRAG & DROP OVERLAY FULLSCREEN -->
+  <div id="dropZone">
+    <div style="width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+      <i data-lucide="upload-cloud" style="width: 44px; height: 44px;"></i>
+    </div>
+    <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 6px;">Solte arquivos .JDL, .ZIP ou .RAR aqui (João Pinheiro - MG)</h2>
+    <p style="font-size: 0.85rem; opacity: 0.9; max-width: 500px;">Descompactação automática de pacotes .ZIP/.RAR, telemetria CAN/J1939 e rastros dos tratores John Deere em João Pinheiro - MG.</p>
+  </div>
+
+  <!-- TOP RESTORE TAB (WHEN TOP IS HIDDEN) -->
+  <div id="topRestoreTab" class="top-restore-tab" onclick="toggleTopPanel()" title="Clique para expandir o cabeçalho e estatísticas">
+    <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
+    <span>Mostrar Topo</span>
+  </div>
+
+  <!-- =======================================================================
+       1. TOP SECTION (HEADER + KPIS)
+       ======================================================================= -->
+  <div id="topSection" class="top-section">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="tractor" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-title">
+          <h1>
+            <span>Monitor John Deere G5 • Telemetria & Produtividade</span>
+            <span class="badge-engine">G5 Live Engine</span>
+          </h1>
+          <p>Telemetria dos arquivos importados • John Deere G5</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Switcher Buttons -->
+        <a href="/jacto" class="btn btn-outline" style="background: rgba(234, 88, 12, 0.2); border-color: rgba(251, 146, 60, 0.4); color: #fb923c;" title="Alternar para o Módulo Jacto / Trimble AgGPS">
+          <i data-lucide="spray-can" style="width:14px; height:14px;"></i> Jacto / Trimble
+        </a>
+
+        <a href="/drone" class="btn btn-outline" style="background: rgba(2, 132, 199, 0.2); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Alternar para o Módulo VeredasDrone">
+          <i data-lucide="plane" style="width:14px; height:14px;"></i> Drones
+        </a>
+
+        <a href="/massey" class="btn btn-outline" style="background: rgba(220, 38, 38, 0.2); border-color: rgba(248, 113, 113, 0.4); color: #f87171;" title="Alternar para o Módulo Massey Ferguson">
+          <i data-lucide="tractor" style="width:14px; height:14px;"></i> Massey
+        </a>
+
+        <a href="/" class="btn btn-outline" title="Voltar ao Portal de Escolha de Máquinas">
+          <i data-lucide="home" style="width:14px; height:14px;"></i> Portal
+        </a>
+
+        <!-- Hidden file and folder inputs -->
+        <input type="file" id="fileInput" multiple accept=".jdl,.JDL,.zip,.ZIP,.rar,.RAR" style="display: none;" onchange="handleFileSelect(event)" />
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderSelect(event)" />
+        <input type="file" id="farmBoundaryInput" multiple accept=".zip,.shp,.dbf,.prj,.kml" style="display: none;" onchange="handleFarmBoundaryFiles(event)" />
+
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()" title="Importar arquivos .JDL, .ZIP ou .RAR">
+          <i data-lucide="file-plus" style="width:14px; height:14px;"></i> Importar Arquivos / ZIP
+        </button>
+
+        <button class="btn btn-outline" onclick="document.getElementById('folderInput').click()" title="Selecionar uma pasta inteira no computador">
+          <i data-lucide="folder-open" style="width:14px; height:14px;"></i> Carregar Pasta
+        </button>
+
+        <button class="btn btn-outline" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.5);" onclick="document.getElementById('farmBoundaryInput').click()" title="Importar contornos de Talhões (Shapefile .zip/.shp ou KML) no mapa">
+          <i data-lucide="map-pin" style="width:14px; height:14px;"></i> Importar Talhões (SHP/KML)
+        </button>
+
+        <button class="btn btn-outline" style="color: #10b981; border-color: rgba(16, 185, 129, 0.5); background: rgba(16, 185, 129, 0.1);" onclick="openJDSamplesModal()" title="Explorar e Carregar Amostras Oficiais John Deere (Gen4 & Operations Center)">
+          <i data-lucide="flask-conical" style="width:14px; height:14px;"></i> Amostras Oficiais JD
+        </button>
+
+        <button class="btn btn-outline" style="color: #ffde00; border-color: rgba(255, 222, 0, 0.4);" onclick="openFolderModal()" title="Especificar o caminho da pasta JD-Data ou pendrive">
+          <i data-lucide="hard-drive" style="width:14px; height:14px;"></i> Pasta JD-Data
+        </button>
+
+        <button class="btn btn-outline" id="btnSyncLocal" onclick="syncLocalFiles()" title="Sincronizar arquivos presentes na pasta local">
+          <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Sincronizar
+        </button>
+
+        <button class="btn btn-primary" onclick="exportCSV()" title="Exportar tabela de sessões e telemetria para CSV">
+          <i data-lucide="sheet" style="width:14px; height:14px;"></i> Exportar CSV
+        </button>
+
+        <button class="btn btn-outline" style="color: #10b981; border-color: rgba(16, 185, 129, 0.5); background: rgba(16, 185, 129, 0.1);" onclick="exportKML()" title="Exportar rastros para Google Earth Pro 3D (KML)">
+          <i data-lucide="download" style="width:14px; height:14px;"></i> Exportar KML
+        </button>
+
+        <div style="padding: 3px 10px; font-size: 0.72rem; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08); border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          <span>SQLite WAL • Ativo</span>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- KPI BAR -->
+    <div class="kpi-bar">
+      <!-- KPI 1: Horímetro -->
+      <div class="kpi-card">
+        <i data-lucide="clock" style="color: #10b981; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Horímetro Total</span>
+          <span class="kpi-num" id="kpiCurrentHorimeter">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 2: Horas Trabalhadas -->
+      <div class="kpi-card">
+        <i data-lucide="activity" style="color: #38bdf8; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Horas Trabalhadas</span>
+          <span class="kpi-num" id="kpiDeltaHours" style="color: #38bdf8;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 3: Área Total -->
+      <div class="kpi-card">
+        <i data-lucide="maximize-2" style="color: #10b981; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Área Coberta</span>
+          <span class="kpi-num" id="kpiTotalArea" style="color: #10b981;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 4: Taxa Média -->
+      <div class="kpi-card">
+        <i data-lucide="droplets" style="color: #f59e0b; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Taxa Média</span>
+          <span class="kpi-num" id="kpiAvgRate" style="color: #f59e0b;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 5: Faixa de Trabalho Real -->
+      <div class="kpi-card">
+        <i data-lucide="split" style="color: #06b6d4; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Faixa de Trabalho</span>
+          <span class="kpi-num" id="kpiWorkingWidth" style="color: #06b6d4;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 6: Velocidade Média -->
+      <div class="kpi-card">
+        <i data-lucide="gauge" style="color: #f97316; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Velocidade Média</span>
+          <span class="kpi-num" id="kpiAvgSpeed" style="color: #f97316;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 7: RPM Motor -->
+      <div class="kpi-card">
+        <i data-lucide="zap" style="color: #a855f7; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">RPM Motor Médio</span>
+          <span class="kpi-num" id="kpiAvgRpm" style="color: #a855f7;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 8: Carga Motor -->
+      <div class="kpi-card">
+        <i data-lucide="percent" style="color: #eab308; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Carga Motor Média</span>
+          <span class="kpi-num" id="kpiAvgLoad" style="color: #eab308;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 9: Total Arquivos -->
+      <div class="kpi-card">
+        <i data-lucide="layers" style="color: #ec4899; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Arquivos Indexados</span>
+          <span class="kpi-num" id="kpiFilesCount">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 10: Consumo Diesel (J1939 TractorHacking) -->
+      <div class="kpi-card" title="Estimativa de consumo de diesel baseado na telemetria J1939 EEC1/EEC2 (L/h e L/ha)">
+        <i data-lucide="fuel" style="color: #ef4444; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Consumo Diesel (Estimado)</span>
+          <span class="kpi-num" id="kpiDieselCons" style="color: #ef4444;">—</span>
+        </div>
+      </div>
+
+      <!-- KPI 11: Capacidade de Campo (ha/h) -->
+      <div class="kpi-card" title="Rendimento operacional horário medido em campo">
+        <i data-lucide="trending-up" style="color: #38bdf8; width: 16px; height: 16px;"></i>
+        <div class="kpi-meta">
+          <span class="kpi-lbl">Rendimento Operacional</span>
+          <span class="kpi-num" id="kpiFieldCapacity" style="color: #38bdf8;">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       2. WORKSPACE (MAP + HUD + FLOATING BAR)
+       ======================================================================= -->
+  <div class="workspace">
+    <div class="map-wrapper" id="mapWrapper">
+      <div id="map"></div>
+
+      <!-- FLOATING BATCH SELECTION HUD -->
+      <div id="mapBatchHud" class="map-batch-hud" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(245, 158, 11, 0.25); color: #f59e0b;">
+            <i data-lucide="scan" style="width: 13px; height: 13px;"></i>
+          </span>
+          <div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.78rem;">
+              <span id="lblBatchCount">0</span> rastros selecionados
+            </div>
+            <div style="font-size: 0.68rem; color: #94a3b8;" id="lblBatchMeta">
+              Área: 0,00 ha • 0,00 h
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button type="button" class="btn" style="background: #0284c7; color: white; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border-radius: 5px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);" onclick="keepOnlySelectedBatch()" title="Isolar e exibir apenas estes rastros no mapa e na tabela">
+            <i data-lucide="target" style="width: 12px; height: 12px;"></i> Manter Apenas
+          </button>
+          <button type="button" class="btn" style="background: #10b981; color: white; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border-radius: 5px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);" onclick="exportKML(true)" title="Exportar apenas estes rastros selecionados para Google Earth KML">
+            <i data-lucide="download" style="width: 12px; height: 12px;"></i> KML
+          </button>
+          <button type="button" class="btn" style="background: #ef4444; color: white; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border-radius: 5px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);" onclick="deleteSelectedBatch()">
+            <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Excluir
+          </button>
+          <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.72rem;" onclick="clearAllSelections()" title="Cancelar seleção">
+            <i data-lucide="x" style="width: 12px; height: 12px;"></i> Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- FLOATING MYJOHNDEERE TANK MIX / PRESCRIPTION RECIPE HUD -->
+      <div id="tankMixHud" style="display: none; position: absolute; top: 14px; right: 14px; z-index: 1500; background: rgba(13, 21, 34, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 10px; padding: 12px 16px; width: 330px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="flask-conical" style="width: 16px; height: 16px; color: #38bdf8;"></i>
+            <span style="font-weight: 700; color: #ffffff; font-size: 0.82rem;" id="tankMixTitle">Receituário de Tanque</span>
+          </div>
+          <button type="button" onclick="closeTankMixHud()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 8px;" id="tankMixMeta">
+          Fazenda: JT • Talhão: 01 • Aplicação
+        </div>
+        <div style="max-height: 170px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;" id="tankMixComponents">
+          <!-- Populated dynamically -->
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #cbd5e1;">
+          <span id="tankMixSections">18 Seções Ativas</span>
+          <span style="color: #10b981; font-weight: 600;" id="tankMixSavings">98,4% Eficiência</span>
+        </div>
+      </div>
+
+      <!-- MAP TELEMETRY HUD -->
+      <div id="mapHud" class="map-hud">
+        <span id="hudCoords"><i data-lucide="crosshair" style="width:11px; height:11px;"></i> Lat: -17.80700°, Lon: -46.00400°</span>
+        <span class="hud-sep">|</span>
+        <span>Zoom: <span id="hudZoom">13</span></span>
+        <span class="hud-sep">|</span>
+        <span>Sessões: <span id="hudRoutes">0</span></span>
+        <span class="hud-sep">|</span>
+        <span>Pontos GPS: <span id="hudPoints">0</span></span>
+      </div>
+
+      <!-- FLOATING CONTROLS BAR -->
+      <div class="floating-bar">
+        <!-- Ocultar Topo -->
+        <button class="btn btn-outline" id="btnToggleTop" onclick="toggleTopPanel()" title="Recolher / Expandir cabeçalho e estatísticas" style="padding: 2px 8px; font-size: 0.72rem; color: #94a3b8; border-color: rgba(148,163,184,0.35);">
+          <i data-lucide="chevrons-up" id="iconToggleTop" style="width:12px; height:12px;"></i> <span id="lblToggleTop">Ocultar Topo</span>
+        </button>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Ferramenta de Seleção em Lote por Área -->
+        <button class="btn btn-outline" id="btnBoxSelect" onclick="toggleBoxSelectMode()" title="Desenhar retângulo no mapa para selecionar múltiplos rastros" style="padding: 2px 8px; font-size: 0.72rem; color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08);">
+          <i data-lucide="scan" id="iconBoxSelect" style="width:12px; height:12px;"></i> <span id="lblBoxSelect">Selecionar Área</span>
+        </button>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Tela Cheia -->
+        <button class="btn btn-outline" id="btnFullscreen" onclick="toggleFullscreenMap()" title="Alternar visualização em tela cheia do mapa" style="padding: 2px 8px; font-size: 0.72rem; color: #38bdf8; border-color: rgba(56,189,248,0.45);">
+          <i data-lucide="maximize" id="iconFullscreen" style="width:12px; height:12px;"></i> <span id="lblFullscreen">Tela Cheia</span>
+        </button>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Seletor de Tema de Cores do Rastro -->
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <i data-lucide="palette" style="width: 13px; height: 13px; color: #f59e0b;"></i>
+          <select id="selectColorMode" onchange="onChangeColorMode(this.value)">
+            <option value="status">Cor: Status Operacional</option>
+            <option value="taxa">Cor: Taxa (kg/ha)</option>
+            <option value="velocidade">Cor: Velocidade (km/h)</option>
+          </select>
+        </div>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Checkbox Faixa Real Buffer -->
+        <label title="Exibir a faixa de trabalho real proporcional à largura do implemento em metros">
+          <input type="checkbox" id="chkSwath" checked onchange="toggleSwathMode()">
+          <span><b>Faixa Real (Metros)</b></span>
+        </label>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Checkbox Talhões Importados -->
+        <label id="lblShowFarms" style="display:none; align-items:center; gap:5px; cursor:pointer;" title="Exibir / ocultar contornos de talhões importados (SHP/KML)">
+          <input type="checkbox" id="chkShowFarms" checked onchange="toggleFarmBoundariesVisibility()">
+          <span style="color:#f59e0b;"><b>🌾 Talhões</b></span>
+        </label>
+
+        <!-- Botão Mostrar Todos (visível quando filtro Manter Apenas está ativo) -->
+        <button class="btn btn-outline" id="btnResetKeepOnly" style="display:none; padding: 2px 8px; font-size: 0.72rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.1);" onclick="resetKeepOnlyFilter()" title="Restaurar visualização de todos os rastros">
+          <i data-lucide="layers" style="width:12px; height:12px;"></i> Mostrar Todos
+        </button>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Botões de Camadas Satélite / Estradas -->
+        <button class="btn btn-outline" id="btnMapSat" onclick="switchMapLayer('sat')" style="padding: 2px 8px; font-size: 0.72rem; background:#367c2b; color:white;">Satélite</button>
+        <button class="btn btn-outline" id="btnMapOsm" onclick="switchMapLayer('osm')" style="padding: 2px 8px; font-size: 0.72rem;">Estradas</button>
+
+        <span style="color: var(--border);">|</span>
+
+        <!-- Enquadrar / Centralizar -->
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem;" onclick="resetMapView()" title="Enquadrar todos os talhões no mapa">
+          <i data-lucide="locate" style="width:12px; height:12px;"></i> Centralizar
+        </button>
+      </div>
+
+      <!-- FLOATING THEMATIC LEGEND -->
+      <div id="mapLegendContainer" class="map-legend">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         3. ATTRIBUTE & TELEMETRY DOCK PANEL (BOTTOM)
+         ======================================================================= -->
+    <div class="attribute-panel" id="attrPanel">
+      <div class="panel-header">
+        <!-- ABAS: TABELA DE ATRIBUTOS vs SÉRIES TEMPORAIS -->
+        <div class="panel-tabs">
+          <button class="panel-tab-btn active" id="tabBtnTable" onclick="switchDockTab('table')">
+            <i data-lucide="table" style="width:14px; height:14px;"></i>
+            <span>TABELA DE ATRIBUTOS DAS SESSÕES</span>
+            <span id="lblTableCount" style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">(0 sessões)</span>
+          </button>
+
+          <button class="panel-tab-btn" id="tabBtnChart" onclick="switchDockTab('chart')">
+            <i data-lucide="line-chart" style="width:14px; height:14px;"></i>
+            <span>SÉRIES TEMPORAIS (ECHARTS)</span>
+          </button>
+
+          <!-- BATCH ACTIONS IN DOCK TABS -->
+          <div id="tableBatchActions" style="display: none; align-items: center; gap: 8px; margin-left: 14px; padding: 2px 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px;">
+            <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;"><span id="lblTableSelectedCount">0</span> selecionados</span>
+            <button type="button" class="btn" style="background: #0284c7; color: white; border: none; padding: 3px 8px; font-size: 0.70rem; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="keepOnlySelectedBatch()" title="Manter apenas estes rastros">
+              <i data-lucide="target" style="width: 11px; height: 11px;"></i> Manter Apenas
+            </button>
+            <button type="button" class="btn" style="background: #10b981; color: white; border: none; padding: 3px 8px; font-size: 0.70rem; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="exportKML(true)" title="Exportar KML dos selecionados">
+              <i data-lucide="download" style="width: 11px; height: 11px;"></i> KML
+            </button>
+            <button type="button" class="btn" style="background: #ef4444; color: white; border: none; padding: 3px 8px; font-size: 0.70rem; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);" onclick="deleteSelectedBatch()">
+              <i data-lucide="trash-2" style="width: 11px; height: 11px;"></i> Excluir
+            </button>
+            <button type="button" class="btn btn-outline" style="padding: 2px 6px; font-size: 0.68rem;" onclick="clearAllSelections()" title="Limpar seleção">
+              <i data-lucide="x" style="width: 11px; height: 11px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTROS EMBUTIDOS NO DOCK (FAZENDA, TALHÃO, OPERAÇÃO, DATAS, BUSCA) -->
+        <div class="panel-filters">
+          <!-- Fazenda -->
+          <select id="selectFazenda" onchange="onFazendaChange()" style="max-width: 180px;" title="Filtrar por Fazenda">
+            <option value="all">Todas as Fazendas</option>
+          </select>
+
+          <!-- Talhão -->
+          <select id="selectAtividade" onchange="onAtividadeChange()" style="max-width: 170px;" title="Filtrar por Talhão">
+            <option value="all">Todos os Talhões</option>
+          </select>
+
+          <!-- Operação -->
+          <select id="selectOperacao" onchange="onOperacaoChange()" style="max-width: 160px;" title="Filtrar por Operação">
+            <option value="all">Todas as Operações</option>
+          </select>
+
+          <!-- Trator -->
+          <select id="selectTrator" onchange="onEquipmentFilterChange('trator')" style="max-width: 160px; color: #ffde00; border-color: rgba(255, 222, 0, 0.4);" title="Filtrar por Modelo do Trator">
+            <option value="all">Todos Tratores</option>
+          </select>
+
+          <!-- Implemento -->
+          <select id="selectImplemento" onchange="onEquipmentFilterChange('implemento')" style="max-width: 180px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Filtrar por Implemento">
+            <option value="all">Todos Implementos</option>
+          </select>
+
+          <!-- Faixa Real -->
+          <select id="selectFaixa" onchange="onEquipmentFilterChange('faixa')" style="max-width: 145px; color: #10b981; border-color: rgba(16, 185, 129, 0.4);" title="Filtrar por Faixa Real de Trabalho (Metros)">
+            <option value="all">Todas Faixas</option>
+          </select>
+
+          <!-- Filtro de Rastro GPS / Log -->
+          <select id="selectGpsFilter" onchange="onGpsFilterChange()" style="max-width: 155px; color: #10b981; border-color: rgba(16, 185, 129, 0.4);" title="Filtrar por disponibilidade de rastro GPS">
+            <option value="all">Todos os Arquivos</option>
+            <option value="gps_only">📍 Somente com Rastro</option>
+            <option value="no_gps">⚡ Logs sem GPS</option>
+          </select>
+
+          <!-- Data Início -->
+          <input type="date" id="inputDataInicio" onchange="onDateChange()" title="Data Inicial" style="width: 110px;" />
+
+          <!-- Data Fim -->
+          <input type="date" id="inputDataFim" onchange="onDateChange()" title="Data Final" style="width: 110px;" />
+
+          <!-- Busca Rápida de Arquivo -->
+          <input type="text" id="txtSearch" placeholder="Buscar arquivo..." oninput="onSearchChange()" style="width: 130px;" />
+
+          <!-- Limpar Filtros -->
+          <button class="btn btn-outline" onclick="resetAllFilters()" style="padding: 2px 8px; font-size: 0.72rem;" title="Limpar todos os filtros">
+            <i data-lucide="rotate-ccw" style="width:11px; height:11px;"></i> Limpar
+          </button>
+
+          <!-- Toggle Altura do Dock (Expandir / Minimizar) -->
+          <button class="btn btn-outline" style="padding: 2px 6px;" onclick="togglePanelSize()" title="Minimizar / Expandir Painel Inferior">
+            <i data-lucide="chevron-up" id="btnToggleIcon" style="width:14px; height:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: TABELA DE ATRIBUTOS -->
+      <div class="table-scroll" id="tabViewTable">
+        <table class="attr-table">
+          <thead>
+            <tr>
+              <th style="width: 34px; text-align: center;">
+                <input type="checkbox" id="chkSelectAllRows" onchange="toggleSelectAllRows(this.checked)" title="Selecionar/Desmarcar todos visíveis" style="cursor: pointer;" />
+              </th>
+              <th>Data / Início</th>
+              <th style="color:#10b981; text-align:center;">GPS / Rastro</th>
+              <th style="color:#f59e0b;">Fazenda</th>
+              <th style="color:#ffde00;">Talhão / Atividade</th>
+              <th style="color:#ffde00;">Trator</th>
+              <th style="color:#38bdf8;">Implemento</th>
+              <th style="color:#10b981;">Faixa Real</th>
+              <th style="color:#f59e0b;">Taxa Média</th>
+              <th style="color:#10b981;">Área Coberta</th>
+              <th>Horímetro Final</th>
+              <th>Horas (+h)</th>
+              <th>Velocidade / RPM</th>
+              <th style="text-align: center; color:#ef4444;">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="attrTableBody">
+            <!-- Gerado via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 2: GRÁFICOS DE TELEMETRIA ECHARTS -->
+      <div class="chart-container" id="tabViewChart" style="display: none;">
+        <div class="chart-header">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="gauge" style="width:13px; height:13px;"></i>
+            <span>Comportamento Operacional do Trator John Deere 6150M</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;" id="chartMetricGroup">
+            <button class="chart-metric-btn active" onclick="setChartMetric('all')" id="btnMetric_all">Todas as Curvas</button>
+            <button class="chart-metric-btn" onclick="setChartMetric('speed')" id="btnMetric_speed">Velocidade (km/h)</button>
+            <button class="chart-metric-btn" onclick="setChartMetric('rpm')" id="btnMetric_rpm">RPM Motor</button>
+            <button class="chart-metric-btn" onclick="setChartMetric('load')" id="btnMetric_load">Carga (%)</button>
+            <button class="chart-metric-btn" onclick="setChartMetric('rate')" id="btnMetric_rate">Taxa (kg/ha)</button>
+          </div>
+        </div>
+        <div style="flex: 1; min-height: 180px; width: 100%;">
+          <div id="echartsTimeline" style="width: 100%; height: 100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       4. MODAL: CAMINHO DA PASTA JD-DATA
+       ======================================================================= -->
+  <div class="modal-overlay" id="folderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i data-lucide="hard-drive"></i> Importar Pasta JD-Data do Computador ou Pendrive</h3>
+        <button onclick="closeFolderModal()" style="background:transparent; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px;">
+          Digite ou cole o caminho absoluto onde a pasta <strong style="color: #ffde00;">JD-Data</strong> está gravada no seu disco rígido ou pendrive. O sistema varrerá recursivamente todos os arquivos de telemetria <code style="color: #38bdf8;">.JDL</code>.
+        </p>
+        <div style="margin-bottom: 14px;">
+          <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:700; text-transform:uppercase;">Caminho da Pasta no Sistema:</label>
+          <input 
+            type="text" 
+            id="inputCustomFolder" 
+            placeholder="Ex: C:\Users\Topologia\Desktop\ORGANO MINERAL\JD-Data ou E:\JD-Data" 
+            value="C:\Users\Topologia\Desktop\ORGANO MINERAL\JD-Data"
+            style="width: 100%; background: #090e17; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #f8fafc; font-family: monospace; font-size: 0.8rem; outline: none;"
+          />
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 8px 12px; border-radius: 6px;">
+          💡 <strong>Dica:</strong> Você também pode simplesmente arrastar qualquer pasta ou arquivo <code>.JDL</code> diretamente sobre a tela a qualquer momento!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeFolderModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnScanCustomFolder" onclick="scanCustomFolder()">
+          <i data-lucide="play" style="width:14px; height:14px;"></i> Iniciar Importação
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       MODAL: AMOSTRAS OFICIAIS JOHN DEERE (GEN4 & OPERATIONS CENTER)
+       ======================================================================= -->
+  <div class="modal-overlay" id="jdSamplesModal">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3><i data-lucide="flask-conical"></i> Amostras Oficiais John Deere (Gen4 & Operations Center)</h3>
+        <button onclick="closeJDSamplesModal()" style="background:transparent; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 480px; overflow-y: auto;">
+        <p style="margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1;">
+          Selecione um cenário oficial da John Deere para carregar telemetria real no mapa, com taxas variáveis, corte de seções e receituário agronômico (Tank Mix):
+        </p>
+        <div id="jdSamplesList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Carregado dinamicamente via API -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeJDSamplesModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       5. JAVASCRIPT PRINCIPAL DA APLICAÇÃO
+       ======================================================================= -->
+  <script>
+    // Inicialização de Ícones
+    lucide.createIcons();
+
+    // Instâncias Globais
+    let leafletMap = null;
+    let mapMarkersLayer = null;
+    let satLayer = null;
+    let osmLayer = null;
+    let currentMapBounds = null;
+    let chartInstance = null;
+
+    // Estado dos Filtros
+    let currentFazenda = 'all';
+    let currentAtividade = 'all';
+    let currentOperacao = 'all';
+    let currentDataInicio = '';
+    let currentDataFim = '';
+    let currentSearchText = '';
+    let allFazendasData = [];
+
+    // Estado do Mapa e Visualização
+    let currentColorMode = 'status'; // 'status', 'taxa', 'velocidade'
+    let currentMapMode = 'swath';     // 'swath' (largura real buffer) ou 'line'
+    let isMapFullscreen = false;
+    let activeSwathLayers = [];
+    let cachedRoutes = [];
+    let cachedSessions = [];
+    let cachedSeriesData = [];
+    let currentFocusedSessionId = null;
+    let selectedPolyline = null;
+    window.focusedSwathLayers = [];
+
+    // Estado de Seleção Múltipla e Área
+    let selectedTrackIds = new Set();
+    let isBoxSelectActive = false;
+    let boxSelectRect = null;
+    let boxStartLatLng = null;
+
+    // Estado do Painel Inferior (Dock)
+    let activeDockTab = 'table'; // 'table' ou 'chart'
+    let dockSize = 'normal';     // 'normal' (290px), 'expanded' (500px), 'collapsed' (38px)
+    let currentChartMetric = 'all'; // 'all', 'speed', 'rpm', 'load', 'rate'
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initMap();
+      initChart();
+      await updateFilterSegmentation('init');
+    });
+
+    // =========================================================================
+    // MAPA LEAFLET COM SATÉLITE ESRI & HUD AO VIVO
+    // =========================================================================
+    function initMap() {
+      // Coordenadas padrão da fazenda em Minas Gerais (-17.807, -46.004)
+      leafletMap = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([-17.807, -46.004], 14);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+
+      // Camada de Satélite Esri World Imagery
+      satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      });
+
+      // Camada OSM Estradas
+      osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}.png', {
+        maxZoom: 19
+      });
+
+      satLayer.addTo(leafletMap);
+      mapMarkersLayer = L.featureGroup().addTo(leafletMap);
+
+      // Atualiza largura visual das barras ao alterar zoom
+      leafletMap.on('zoomend', () => {
+        updateSwathWeights();
+        const hudZoom = document.getElementById('hudZoom');
+        if (hudZoom) hudZoom.textContent = leafletMap.getZoom();
+      });
+
+      // HUD de coordenadas em tempo real sob o cursor
+      leafletMap.on('mousemove', (e) => {
+        const hudCoords = document.getElementById('hudCoords');
+        if (hudCoords) {
+          hudCoords.innerHTML = `<i data-lucide="crosshair" style="width:11px; height:11px;"></i> Lat: ${e.latlng.lat.toFixed(5)}°, Lon: ${e.latlng.lng.toFixed(5)}°`;
+          lucide.createIcons();
+        }
+      });
+
+      // Eventos de seleção retangular / área no mapa
+      leafletMap.on('mousedown', (e) => {
+        if (!isBoxSelectActive) return;
+        boxStartLatLng = e.latlng;
+        if (boxSelectRect) {
+          leafletMap.removeLayer(boxSelectRect);
+          boxSelectRect = null;
+        }
+        const bounds = L.latLngBounds(boxStartLatLng, boxStartLatLng);
+        boxSelectRect = L.rectangle(bounds, {
+          color: '#f59e0b',
+          weight: 2,
+          dashArray: '5, 5',
+          fillColor: '#f59e0b',
+          fillOpacity: 0.15,
+          interactive: false
+        }).addTo(leafletMap);
+      });
+
+      leafletMap.on('mousemove', (e) => {
+        if (!isBoxSelectActive || !boxStartLatLng || !boxSelectRect) return;
+        const bounds = L.latLngBounds(boxStartLatLng, e.latlng);
+        boxSelectRect.setBounds(bounds);
+      });
+
+      leafletMap.on('mouseup', (e) => {
+        if (!isBoxSelectActive || !boxStartLatLng) return;
+        const boxEndLatLng = e.latlng;
+        const bounds = L.latLngBounds(boxStartLatLng, boxEndLatLng);
+        boxStartLatLng = null;
+
+        toggleBoxSelectMode(false);
+        selectTracksInBounds(bounds);
+      });
+
+      renderFarmBoundariesOnMap();
+    }
+
+    function switchMapLayer(type) {
+      const btnSat = document.getElementById('btnMapSat');
+      const btnOsm = document.getElementById('btnMapOsm');
+      if (type === 'sat') {
+        leafletMap.removeLayer(osmLayer);
+        satLayer.addTo(leafletMap);
+        btnSat.style.background = '#367c2b';
+        btnSat.style.color = '#ffffff';
+        btnOsm.style.background = 'rgba(255,255,255,0.05)';
+        btnOsm.style.color = '#f8fafc';
+      } else {
+        leafletMap.removeLayer(satLayer);
+        osmLayer.addTo(leafletMap);
+        btnOsm.style.background = '#367c2b';
+        btnOsm.style.color = '#ffffff';
+        btnSat.style.background = 'rgba(255,255,255,0.05)';
+        btnSat.style.color = '#f8fafc';
+      }
+    }
+
+    function resetMapView() {
+      if (currentMapBounds && leafletMap) {
+        leafletMap.fitBounds(currentMapBounds, { padding: [30, 30] });
+      }
+    }
+
+    // =========================================================================
+    // CONTROLES DE LAYOUT: TOPO RECOLHÍVEL & PAINEL INFERIOR (DOCK)
+    // =========================================================================
+    function toggleTopPanel() {
+      const topSection = document.getElementById('topSection');
+      const icon = document.getElementById('iconToggleTop');
+      const lbl = document.getElementById('lblToggleTop');
+      const body = document.body;
+
+      if (!topSection) return;
+
+      if (topSection.classList.contains('collapsed')) {
+        topSection.classList.remove('collapsed');
+        body.classList.remove('top-collapsed');
+        if (icon) icon.setAttribute('data-lucide', 'chevrons-up');
+        if (lbl) lbl.textContent = 'Ocultar Topo';
+      } else {
+        topSection.classList.add('collapsed');
+        body.classList.add('top-collapsed');
+        if (icon) icon.setAttribute('data-lucide', 'chevrons-down');
+        if (lbl) lbl.textContent = 'Mostrar Topo';
+      }
+      lucide.createIcons();
+      setTimeout(() => {
+        if (leafletMap) leafletMap.invalidateSize();
+      }, 300);
+    }
+
+    function toggleFullscreenMap() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        document.getElementById('lblFullscreen').textContent = 'Sair da Tela Cheia';
+        document.getElementById('iconFullscreen').setAttribute('data-lucide', 'minimize');
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        document.getElementById('lblFullscreen').textContent = 'Tela Cheia';
+        document.getElementById('iconFullscreen').setAttribute('data-lucide', 'maximize');
+      }
+      lucide.createIcons();
+      setTimeout(() => {
+        if (leafletMap) leafletMap.invalidateSize();
+      }, 150);
+    }
+
+    function togglePanelSize() {
+      const panel = document.getElementById('attrPanel');
+      const icon = document.getElementById('btnToggleIcon');
+      if (!panel) return;
+
+      if (dockSize === 'normal') {
+        dockSize = 'collapsed';
+        panel.classList.remove('expanded');
+        panel.classList.add('collapsed');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+      } else if (dockSize === 'collapsed') {
+        dockSize = 'expanded';
+        panel.classList.remove('collapsed');
+        panel.classList.add('expanded');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-down');
+      } else {
+        dockSize = 'normal';
+        panel.classList.remove('collapsed', 'expanded');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+      }
+      lucide.createIcons();
+      setTimeout(() => {
+        if (leafletMap) leafletMap.invalidateSize();
+        if (chartInstance) chartInstance.resize();
+      }, 260);
+    }
+
+    function switchDockTab(tab) {
+      activeDockTab = tab;
+      const tabTable = document.getElementById('tabViewTable');
+      const tabChart = document.getElementById('tabViewChart');
+      const btnTable = document.getElementById('tabBtnTable');
+      const btnChart = document.getElementById('tabBtnChart');
+
+      if (tab === 'table') {
+        tabTable.style.display = 'block';
+        tabChart.style.display = 'none';
+        btnTable.classList.add('active');
+        btnChart.classList.remove('active');
+      } else {
+        tabTable.style.display = 'none';
+        tabChart.style.display = 'flex';
+        btnChart.classList.add('active');
+        btnTable.classList.remove('active');
+        setTimeout(() => {
+          if (chartInstance) chartInstance.resize();
+        }, 50);
+      }
+      // Se estava minimizado, expande para modo normal ao trocar de aba
+      const panel = document.getElementById('attrPanel');
+      if (panel && panel.classList.contains('collapsed')) {
+        togglePanelSize();
+      }
+    }
+
+    // =========================================================================
+    // MODAL DA PASTA JD-DATA
+    // =========================================================================
+    function openFolderModal() {
+      const modal = document.getElementById('folderModal');
+      if (modal) modal.classList.add('active');
+    }
+    function closeFolderModal() {
+      const modal = document.getElementById('folderModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    // =========================================================================
+    // SEGMENTAÇÃO DE DADOS DINÂMICA CRUZADA (POWER BI SLICERS)
+    // =========================================================================
+    let currentTrator = 'all';
+    let currentImplemento = 'all';
+    let currentFaixa = 'all';
+    let isUpdatingSegmentation = false;
+
+    async function updateFilterSegmentation(triggerSource = null) {
+      if (isUpdatingSegmentation) return;
+      isUpdatingSegmentation = true;
+      try {
+        const q = buildQueryParams();
+        const qStr = q ? `?${q}` : '';
+        const res = await fetch(`/api/filtros/segmentacao${qStr}`);
+        const data = await res.json();
+
+        // 1. Tratores
+        const selTrator = document.getElementById('selectTrator');
+        if (selTrator && data.tratores) {
+          const isValid = data.tratores.some(t => t.nome === currentTrator);
+          if (currentTrator !== 'all' && !isValid) {
+            currentTrator = 'all';
+          }
+          let html = `<option value="all">Todos Tratores (${data.tratores.length})</option>`;
+          data.tratores.forEach(t => {
+            html += `<option value="${t.nome}">🚜 ${t.nome} (${t.count.toLocaleString('pt-BR')})</option>`;
+          });
+          selTrator.innerHTML = html;
+          selTrator.value = currentTrator;
+        }
+
+        // 2. Implementos
+        const selImpl = document.getElementById('selectImplemento');
+        if (selImpl && data.implementos) {
+          const isValid = data.implementos.some(i => i.nome === currentImplemento);
+          if (currentImplemento !== 'all' && !isValid) {
+            currentImplemento = 'all';
+          }
+          let html = `<option value="all">Todos Implementos (${data.implementos.length})</option>`;
+          data.implementos.forEach(i => {
+            html += `<option value="${i.nome}">🔧 ${i.nome} (${i.count.toLocaleString('pt-BR')})</option>`;
+          });
+          selImpl.innerHTML = html;
+          selImpl.value = currentImplemento;
+        }
+
+        // 3. Faixas
+        const selFaixa = document.getElementById('selectFaixa');
+        if (selFaixa && data.faixas) {
+          const isValid = data.faixas.some(f => Math.abs(f.largura - parseFloat(currentFaixa)) < 0.08);
+          if (currentFaixa !== 'all' && !isValid) {
+            currentFaixa = 'all';
+          }
+          let html = `<option value="all">Todas Faixas (${data.faixas.length})</option>`;
+          data.faixas.forEach(f => {
+            html += `<option value="${f.largura}">📏 ${f.largura.toFixed(2).replace('.', ',')} m (${f.count.toLocaleString('pt-BR')})</option>`;
+          });
+          selFaixa.innerHTML = html;
+          selFaixa.value = currentFaixa;
+        }
+
+        // 4. Operações
+        const selOp = document.getElementById('selectOperacao');
+        if (selOp && data.operacoes) {
+          const isValid = data.operacoes.some(o => o.nome === currentOperacao);
+          if (currentOperacao !== 'all' && !isValid) {
+            currentOperacao = 'all';
+          }
+          let html = `<option value="all">Todas Operações (${data.operacoes.length})</option>`;
+          data.operacoes.forEach(o => {
+            html += `<option value="${o.nome}">${o.nome} (${o.count.toLocaleString('pt-BR')})</option>`;
+          });
+          selOp.innerHTML = html;
+          selOp.value = currentOperacao;
+        }
+
+        // 5. Fazendas
+        const selFaz = document.getElementById('selectFazenda');
+        if (selFaz && data.fazendas) {
+          const isValid = data.fazendas.some(f => f.nome === currentFazenda);
+          if (currentFazenda !== 'all' && !isValid) {
+            currentFazenda = 'all';
+          }
+          let html = `<option value="all">Todas as Fazendas (${data.fazendas.length})</option>`;
+          data.fazendas.forEach(f => {
+            html += `<option value="${f.nome}">${f.nome} (${f.count.toLocaleString('pt-BR')} arqs)</option>`;
+          });
+          selFaz.innerHTML = html;
+          selFaz.value = currentFazenda;
+        }
+
+        // 6. Talhões
+        const selAtv = document.getElementById('selectAtividade');
+        if (selAtv && data.talhoes) {
+          const isValid = data.talhoes.some(t => t.nome === currentAtividade);
+          if (currentAtividade !== 'all' && !isValid) {
+            currentAtividade = 'all';
+          }
+          let html = `<option value="all">Todos os Talhões (${data.talhoes.length})</option>`;
+          data.talhoes.forEach(t => {
+            html += `<option value="${t.nome}">${t.nome} (${t.count.toLocaleString('pt-BR')})</option>`;
+          });
+          selAtv.innerHTML = html;
+          selAtv.value = currentAtividade;
+        }
+
+        // 7. Período sugerido
+        if (data.periodo && data.periodo.min_data && data.periodo.max_data) {
+          const inStart = document.getElementById('inputDataInicio');
+          const inEnd = document.getElementById('inputDataFim');
+          if (inStart && !inStart.value) inStart.min = data.periodo.min_data;
+          if (inEnd && !inEnd.value) inEnd.max = data.periodo.max_data;
+        }
+
+      } catch (err) {
+        console.error("Erro na segmentação de filtros:", err);
+      } finally {
+        isUpdatingSegmentation = false;
+      }
+
+      await loadDashboardData();
+    }
+
+    function onFazendaChange() {
+      const sel = document.getElementById('selectFazenda');
+      currentFazenda = sel ? sel.value : 'all';
+      currentAtividade = 'all';
+      updateFilterSegmentation('fazenda');
+    }
+
+    function onAtividadeChange() {
+      const sel = document.getElementById('selectAtividade');
+      currentAtividade = sel ? sel.value : 'all';
+      updateFilterSegmentation('atividade');
+    }
+
+    function onOperacaoChange() {
+      const sel = document.getElementById('selectOperacao');
+      currentOperacao = sel ? sel.value : 'all';
+      updateFilterSegmentation('operacao');
+    }
+
+    function onEquipmentFilterChange(src) {
+      currentTrator = document.getElementById('selectTrator')?.value || 'all';
+      currentImplemento = document.getElementById('selectImplemento')?.value || 'all';
+      currentFaixa = document.getElementById('selectFaixa')?.value || 'all';
+      updateFilterSegmentation(src || 'equipamento');
+    }
+
+    function onDateChange() {
+      currentDataInicio = document.getElementById('inputDataInicio')?.value || '';
+      currentDataFim = document.getElementById('inputDataFim')?.value || '';
+      updateFilterSegmentation('data');
+    }
+
+    function onSearchChange() {
+      currentSearchText = document.getElementById('txtSearch')?.value.toLowerCase().trim() || '';
+      applyTableFilter();
+    }
+
+    function onGpsFilterChange() {
+      applyTableFilter();
+    }
+
+    function resetAllFilters() {
+      currentFazenda = 'all';
+      currentAtividade = 'all';
+      currentOperacao = 'all';
+      currentTrator = 'all';
+      currentImplemento = 'all';
+      currentFaixa = 'all';
+      currentDataInicio = '';
+      currentDataFim = '';
+      currentSearchText = '';
+
+      if (document.getElementById('selectFazenda')) document.getElementById('selectFazenda').value = 'all';
+      if (document.getElementById('selectAtividade')) document.getElementById('selectAtividade').value = 'all';
+      if (document.getElementById('selectOperacao')) document.getElementById('selectOperacao').value = 'all';
+      if (document.getElementById('selectTrator')) document.getElementById('selectTrator').value = 'all';
+      if (document.getElementById('selectImplemento')) document.getElementById('selectImplemento').value = 'all';
+      if (document.getElementById('selectFaixa')) document.getElementById('selectFaixa').value = 'all';
+      if (document.getElementById('selectGpsFilter')) document.getElementById('selectGpsFilter').value = 'all';
+      if (document.getElementById('inputDataInicio')) document.getElementById('inputDataInicio').value = '';
+      if (document.getElementById('inputDataFim')) document.getElementById('inputDataFim').value = '';
+      if (document.getElementById('txtSearch')) document.getElementById('txtSearch').value = '';
+
+      updateFilterSegmentation('reset');
+    }
+
+    function buildQueryParams() {
+      const params = new URLSearchParams();
+      if (currentFazenda && currentFazenda !== 'all') params.append('fazenda', currentFazenda);
+      if (currentAtividade && currentAtividade !== 'all') params.append('atividade', currentAtividade);
+      if (currentOperacao && currentOperacao !== 'all') params.append('operacao', currentOperacao);
+      if (currentTrator && currentTrator !== 'all') params.append('trator', currentTrator);
+      if (currentImplemento && currentImplemento !== 'all') params.append('implemento', currentImplemento);
+      if (currentFaixa && currentFaixa !== 'all') params.append('faixa_real', currentFaixa);
+      if (currentDataInicio) params.append('data_inicio', currentDataInicio);
+      if (currentDataFim) params.append('data_fim', currentDataFim);
+      return params.toString();
+    }
+
+    // =========================================================================
+    // CARREGAMENTO CENTRAL DE DADOS DO BACKEND
+    // =========================================================================
+    async function loadDashboardData() {
+      try {
+        const q = buildQueryParams();
+        const qStr = q ? `?${q}` : '';
+        const qSeries = q ? `?limit=2500&${q}` : '?limit=2500';
+
+        // Carrega KPIs
+        const resKpis = await fetch(`/api/dashboard/kpis${qStr}`);
+        const kpiData = await resKpis.json();
+        if (kpiData.has_data) updateKpisUI(kpiData);
+        else document.querySelectorAll('[id^=kpi]').forEach(el=>el.textContent='—');
+
+        // Carrega Trajetórias do Mapa
+        const resMap = await fetch(`/api/dashboard/mapa${qStr}`);
+        cachedRoutes = await resMap.json();
+        renderMapRoutes(cachedRoutes);
+
+        // Carrega Séries Temporais ECharts
+        const resSeries = await fetch(`/api/dashboard/series${qSeries}`);
+        cachedSeriesData = await resSeries.json();
+        renderChartData(cachedSeriesData);
+
+        // Carrega Tabela de Sessões
+        const resSessions = await fetch(`/api/arquivos${qStr}`);
+        cachedSessions = await resSessions.json();
+        renderSessionsTable(cachedSessions);
+
+      } catch (err) {
+        console.error("Erro ao carregar dados do dashboard:", err);
+      }
+    }
+
+    function updateKpisUI(data) {
+      document.getElementById('kpiCurrentHorimeter').textContent = data.horimeter.final_hours.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' h';
+      document.getElementById('kpiDeltaHours').textContent = `+${data.horimeter.worked_hours.toFixed(2)} h`;
+
+      if (data.operation) {
+        document.getElementById('kpiWorkingWidth').textContent = `${data.operation.largura_trabalho_m.toFixed(2)} m`;
+        document.getElementById('kpiTotalArea').textContent = `${data.operation.total_area_ha.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha`;
+        document.getElementById('kpiAvgRate').textContent = `${Math.round(data.operation.avg_rate_kg_ha)} kg/ha`;
+
+        const kpiDiesel = document.getElementById('kpiDieselCons');
+        if (kpiDiesel) {
+          const lh = data.operation.consumo_estimado_lh || 8.1;
+          const lha = data.operation.consumo_estimado_lha || 1.14;
+          kpiDiesel.textContent = `~${lh.toFixed(1)} L/h • ${lha.toFixed(2)} L/ha`;
+        }
+        const kpiCap = document.getElementById('kpiFieldCapacity');
+        if (kpiCap) {
+          const cap = data.operation.capacidade_campo_hah || 7.11;
+          kpiCap.textContent = `~${cap.toFixed(2)} ha/h`;
+        }
+      }
+
+      document.getElementById('kpiAvgRpm').textContent = `${Math.round(data.summary.avg_rpm)} RPM`;
+      document.getElementById('kpiAvgLoad').textContent = `~${Math.round(data.summary.avg_load_pct)}%`;
+      document.getElementById('kpiAvgSpeed').textContent = `${data.summary.avg_speed_kmh.toFixed(1)} km/h`;
+      document.getElementById('kpiFilesCount').textContent = `${data.summary.total_files}`;
+    }
+
+    // =========================================================================
+    // TEMAS DE COR, FAIXA BUFFER E RENDERIZAÇÃO DO MAPA
+    // =========================================================================
+    function toggleSwathMode() {
+      const chk = document.getElementById('chkSwath');
+      currentMapMode = chk && chk.checked ? 'swath' : 'line';
+      updateSwathWeights();
+    }
+
+    function onChangeColorMode(mode) {
+      currentColorMode = mode;
+      updateLegendUI();
+      if (cachedRoutes && cachedRoutes.length > 0) {
+        renderMapRoutes(cachedRoutes);
+      }
+    }
+
+    function updateLegendUI() {
+      const container = document.getElementById('mapLegendContainer');
+      if (!container) return;
+
+      if (currentColorMode === 'taxa') {
+        container.innerHTML = `
+          <div style="font-weight:700; color:#f8fafc; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span>Taxa de Aplicação (kg/ha)</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#38bdf8; display:inline-block;"></span><span>&lt; 600 kg/ha</span></div>
+              <span style="color:#64748b; font-family:monospace;">Baixa</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#22c55e; display:inline-block;"></span><span>600 - 1.000</span></div>
+              <span style="color:#64748b; font-family:monospace;">Normal</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#eab308; display:inline-block;"></span><span>1.000 - 1.500</span></div>
+              <span style="color:#64748b; font-family:monospace;">Média</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#f97316; display:inline-block;"></span><span>1.500 - 2.200</span></div>
+              <span style="color:#64748b; font-family:monospace;">Alta</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#ef4444; display:inline-block;"></span><span>&gt; 2.200 kg/ha</span></div>
+              <span style="color:#ef4444; font-family:monospace;">Muito Alta</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:3px; padding-top:3px; border-top:1px solid rgba(255,255,255,0.08); color:#64748b;">
+              <span style="width:12px; height:7px; border-radius:2px; background:#71717a; display:inline-block;"></span><span>Deslocamento (0 kg/ha)</span>
+            </div>
+          </div>
+        `;
+      } else if (currentColorMode === 'velocidade') {
+        container.innerHTML = `
+          <div style="font-weight:700; color:#f8fafc; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+            <span>Velocidade de Trabalho (km/h)</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#3b82f6; display:inline-block;"></span><span>&lt; 4.0 km/h</span></div>
+              <span style="color:#64748b; font-family:monospace;">Manobra</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#10b981; display:inline-block;"></span><span>4.0 - 7.5 km/h</span></div>
+              <span style="color:#10b981; font-weight:700; font-family:monospace;">Ideal</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#f59e0b; display:inline-block;"></span><span>7.5 - 10.0 km/h</span></div>
+              <span style="color:#64748b; font-family:monospace;">Rápido</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:7px; border-radius:2px; background:#ef4444; display:inline-block;"></span><span>&gt; 10.0 km/h</span></div>
+              <span style="color:#ef4444; font-family:monospace;">Transporte</span>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div style="font-weight:700; color:#f8fafc; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+            <span>Status da Operação</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:7px; border-radius:2px; background:#10b981; display:inline-block;"></span>
+              <span style="color:#e2e8f0;">Aplicação Ativa (Adubação)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:7px; border-radius:2px; background:#f59e0b; display:inline-block;"></span>
+              <span style="color:#e2e8f0;">Deslocamento / Manobra</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function getPointColor(p) {
+      if (currentColorMode === 'taxa') {
+        const rate = p.taxa_aplicacao || 0;
+        if (rate <= 0) return '#71717a';
+        if (rate < 600) return '#38bdf8';
+        if (rate < 1000) return '#22c55e';
+        if (rate < 1500) return '#eab308';
+        if (rate < 2200) return '#f97316';
+        return '#ef4444';
+      } else if (currentColorMode === 'velocidade') {
+        const spd = p.velocidade || 0;
+        if (spd < 4.0) return '#3b82f6';
+        if (spd < 7.5) return '#10b981';
+        if (spd < 10.0) return '#f59e0b';
+        return '#ef4444';
+      } else {
+        const isWork = p.status_operacao === 'APLICANDO' || (p.taxa_aplicacao && p.taxa_aplicacao > 0);
+        return isWork ? '#10b981' : '#f59e0b';
+      }
+    }
+
+    function updateSwathWeights() {
+      if (!leafletMap) return;
+      const zoom = leafletMap.getZoom();
+      const centerLat = leafletMap.getCenter().lat || -17.8;
+      const metersPerPx = (156543.03392 * Math.cos(centerLat * Math.PI / 180)) / Math.pow(2, zoom);
+
+      activeSwathLayers.forEach(item => {
+        if (currentMapMode === 'swath') {
+          if (item.isWorking) {
+            const pxWidth = Math.max(5, Math.round(item.largura_m / metersPerPx));
+            item.layer.setStyle({ weight: pxWidth, opacity: 0.78 });
+          } else {
+            item.layer.setStyle({ weight: 3, opacity: 0.85 });
+          }
+        } else {
+          item.layer.setStyle({ weight: item.isWorking ? 4 : 2, opacity: 0.9 });
+        }
+      });
+    }
+
+    function renderMapRoutes(routes) {
+      mapMarkersLayer.clearLayers();
+      activeSwathLayers = [];
+      window.focusedSwathLayers = [];
+      const allCoords = [];
+
+      const zoom = leafletMap.getZoom();
+      const centerLat = leafletMap.getCenter().lat || -17.8;
+      const metersPerPx = (156543.03392 * Math.cos(centerLat * Math.PI / 180)) / Math.pow(2, zoom);
+
+      let totalPoints = 0;
+
+      routes.forEach((route) => {
+        if (!route.lat_min || !route.lon_min) return;
+
+        const largura_m = route.largura_trabalho_m || 4.5;
+        const opName = route.tipo_operacao || 'Distribuição a Lanço (Adubo Seco)';
+        const taxaMed = route.taxa_media_kg_ha || 0;
+
+        if (route.points && route.points.length > 0) {
+          let currentSegment = [];
+          let currentColor = null;
+          let currentIsWork = null;
+
+          function flushSegment() {
+            if (currentSegment.length < 2) {
+              currentSegment = [];
+              return;
+            }
+            const segLatLngs = currentSegment.map(p => [p.latitude, p.longitude]);
+            const isWork = currentIsWork;
+            const segColor = currentColor;
+            const pxWidth = isWork 
+              ? (currentMapMode === 'swath' ? Math.max(5, Math.round(largura_m / metersPerPx)) : 4)
+              : 3;
+
+            const isDashed = !isWork && (currentColorMode === 'status' || segColor === '#71717a');
+
+            const polyline = L.polyline(segLatLngs, {
+              color: segColor,
+              weight: pxWidth,
+              opacity: isWork ? 0.78 : 0.85,
+              lineCap: 'round',
+              lineJoin: 'round',
+              dashArray: isDashed ? '6, 6' : null
+            }).addTo(mapMarkersLayer);
+
+            polyline.origColor = segColor;
+            polyline.origWeight = pxWidth;
+            polyline.origOpacity = isWork ? 0.78 : 0.85;
+
+            if (selectedTrackIds.has(route.id)) {
+              polyline.setStyle({
+                color: '#ef4444',
+                weight: Math.max(6, pxWidth + 2),
+                opacity: 1.0
+              });
+            }
+
+            activeSwathLayers.push({
+              layer: polyline,
+              largura_m: largura_m,
+              isWorking: isWork,
+              routeId: route.nome_arquivo,
+              arquivoId: route.id,
+              origColor: segColor,
+              origWeight: pxWidth,
+              origOpacity: isWork ? 0.78 : 0.85
+            });
+
+            // Seleção e destaque interativo do rastro ao clicar
+            polyline.on('click', function(e) {
+              if (selectedPolyline && selectedPolyline !== polyline) {
+                selectedPolyline.setStyle({
+                  color: selectedPolyline.origColor,
+                  weight: selectedPolyline.origWeight,
+                  opacity: selectedPolyline.origOpacity
+                });
+              }
+              selectedPolyline = polyline;
+              polyline.origColor = polyline.options.color;
+              polyline.origWeight = polyline.options.weight;
+              polyline.origOpacity = polyline.options.opacity;
+              polyline.setStyle({
+                color: '#f59e0b',
+                weight: Math.max(7, polyline.options.weight + 3),
+                opacity: 1.0
+              });
+              polyline.bringToFront();
+            });
+
+            const segSpd = (currentSegment.reduce((acc, p) => acc + (p.velocidade || 0), 0) / currentSegment.length).toFixed(1);
+            const segRates = currentSegment.filter(p => (p.taxa_aplicacao || 0) > 0);
+            const segRateVal = segRates.length > 0 
+              ? (segRates.reduce((acc, p) => acc + p.taxa_aplicacao, 0) / segRates.length).toFixed(1) 
+              : (taxaMed > 0 ? taxaMed.toFixed(1) : '-');
+
+            polyline.bindPopup(`
+              <div style="font-size:0.75rem; color:#090e17; padding:4px; min-width:240px; font-family: -apple-system, sans-serif;">
+                <div style="font-weight:700; color:#1b4d13; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">🚜 ${route.nome_arquivo}</span>
+                  <span style="font-size:0.65rem; padding:1px 5px; border-radius:3px; font-weight:700; ${isWork ? 'background:#dcfce7; color:#166534;' : 'background:#fef3c7; color:#92400e;'}">
+                    ${isWork ? 'APLICAÇÃO' : 'DESLOCAMENTO'}
+                  </span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:0.72rem; color:#334155;">
+                  <div><strong>Trator:</strong> <span style="color:#0f766e; font-weight:700;">${route.modelo_trator || 'John Deere'}</span></div>
+                  <div><strong>Implemento:</strong> <span style="color:#0284c7; font-weight:700;">${route.implemento || 'Nenhum'}</span></div>
+                  <div><strong>Faixa Real:</strong> <span style="color:#1b4d13; font-weight:700;">${largura_m} m</span></div>
+                  <div><strong>Taxa:</strong> <span style="color:#b45309; font-weight:700;">${segRateVal} kg/ha</span></div>
+                  <div><strong>Velocidade:</strong> ${segSpd} km/h</div>
+                  <div><strong>Horímetro:</strong> ${(currentSegment[0].horimetro || route.horimetro_inicial || 0).toFixed(2)} h</div>
+                </div>
+                <div style="margin-top:6px; padding-top:4px; border-top:1px solid #e2e8f0; font-size:0.68rem; color:#64748b; display:flex; justify-content:space-between;">
+                  <span>Talhão: <strong>${route.atividade_pasta || 'Geral'}</strong></span>
+                  <span style="font-family:monospace; color:#0284c7;">ISOBUS</span>
+                </div>
+                <div style="margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0;">
+                  <button type="button" style="width:100%; background:#ef4444; color:white; border:none; padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(239,68,68,0.3);" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'" onclick="confirmDeleteTrack('${route.id}', '${route.nome_arquivo}')">
+                    <span>🗑️ Excluir / Aparar Este Rastro</span>
+                  </button>
+                </div>
+              </div>
+            `);
+
+            currentSegment = [currentSegment[currentSegment.length - 1]];
+          }
+
+          route.points.forEach(p => {
+            allCoords.push([p.latitude, p.longitude]);
+            totalPoints++;
+            const ptColor = getPointColor(p);
+            const ptWork = p.status_operacao === 'APLICANDO' || (p.taxa_aplicacao && p.taxa_aplicacao > 0);
+
+            if (currentColor === null) {
+              currentColor = ptColor;
+              currentIsWork = ptWork;
+              currentSegment.push(p);
+            } else if (currentColor === ptColor && currentIsWork === ptWork) {
+              currentSegment.push(p);
+            } else {
+              currentSegment.push(p);
+              flushSegment();
+              currentColor = ptColor;
+              currentIsWork = ptWork;
+              currentSegment.push(p);
+            }
+          });
+          flushSegment();
+
+        } else if (route.points && route.points.length === 1) {
+          const pt = route.points[0];
+          allCoords.push([pt.latitude, pt.longitude]);
+          totalPoints++;
+          const marker = L.circleMarker([pt.latitude, pt.longitude], {
+            radius: 6,
+            color: '#10b981',
+            fillColor: '#10b981',
+            fillOpacity: 0.9,
+            weight: 2
+          }).addTo(mapMarkersLayer).bindPopup(`
+            <div style="font-size:0.75rem; color:#090e17; padding:4px; min-width:220px; font-family:-apple-system, sans-serif;">
+              <div style="font-weight:700; color:#1b4d13; border-bottom:1px solid #cbd5e1; padding-bottom:3px; margin-bottom:4px;">
+                📍 ${route.nome_arquivo}
+              </div>
+              <div style="font-size:0.72rem; color:#334155;">
+                <div><strong>Tipo:</strong> Registro Pontual Estático</div>
+                <div><strong>Trator:</strong> ${route.modelo_trator || 'John Deere'}</div>
+                <div><strong>Talhão:</strong> ${route.atividade_pasta || 'Geral'}</div>
+                <div><strong>Horímetro:</strong> ${(route.horimetro_inicial || 0).toFixed(2)} h</div>
+              </div>
+              <div style="margin-top:6px; padding-top:4px; border-top:1px solid #e2e8f0;">
+                <button type="button" style="width:100%; background:#ef4444; color:white; border:none; padding:4px 8px; font-size:0.70rem; font-weight:700; border-radius:4px; cursor:pointer;" onclick="confirmDeleteTrack('${route.id}', '${route.nome_arquivo}')">
+                  🗑️ Excluir Este Ponto
+                </button>
+              </div>
+            </div>
+          `);
+
+          activeSwathLayers.push({
+            layer: marker,
+            largura_m: largura_m,
+            isWorking: false,
+            routeId: route.nome_arquivo,
+            arquivoId: route.id,
+            origColor: '#10b981',
+            origWeight: 6,
+            origOpacity: 0.9
+          });
+        }
+      });
+
+      if (allCoords.length > 0) {
+        currentMapBounds = L.latLngBounds(allCoords);
+        leafletMap.fitBounds(currentMapBounds, { padding: [35, 35] });
+      }
+
+      // Atualiza Map HUD
+      const hudRoutes = document.getElementById('hudRoutes');
+      if (hudRoutes) hudRoutes.textContent = routes.length;
+      const hudPoints = document.getElementById('hudPoints');
+      if (hudPoints) hudPoints.textContent = totalPoints.toLocaleString('pt-BR');
+    }
+
+    async function confirmDeleteTrack(arquivoId, filename) {
+      if (!confirm(`Deseja realmente aparar/excluir este rastro do mapa?\n\nArquivo: ${filename}\n\nO rastro será removido e a área/horímetro serão recalculados imediatamente.`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/rastro/excluir?arquivo_id=${arquivoId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          // Remove camadas do rastro imediatamente do mapa
+          activeSwathLayers = activeSwathLayers.filter(item => {
+            if (item.arquivoId === arquivoId) {
+              mapMarkersLayer.removeLayer(item.layer);
+              return false;
+            }
+            return true;
+          });
+          leafletMap.closePopup();
+
+          if (data.kpis) updateKpisUI(data.kpis);
+
+          // Atualiza dados locais
+          cachedRoutes = (cachedRoutes || []).filter(r => r.id !== arquivoId);
+          cachedSessions = (cachedSessions || []).filter(s => s.id !== arquivoId);
+          renderSessionsTable(cachedSessions);
+
+          const hudRoutes = document.getElementById('hudRoutes');
+          if (hudRoutes) hudRoutes.textContent = cachedRoutes.length;
+
+          showToast(`Rastro excluído com sucesso! <button onclick="restoreTrack('${arquivoId}')" style="margin-left:8px; background:#ffde00; color:#090e17; border:none; padding:2px 7px; border-radius:3px; font-weight:bold; cursor:pointer;">Desfazer</button>`);
+        } else {
+          alert("Falha ao excluir o rastro.");
+        }
+      } catch (err) {
+        console.error("Erro ao excluir rastro:", err);
+        alert("Erro na requisição: " + err);
+      }
+    }
+
+    async function restoreTrack(arquivoId) {
+      try {
+        const res = await fetch(`/api/rastro/restaurar?arquivo_id=${arquivoId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Rastro restaurado com sucesso!");
+          loadDashboardData();
+        }
+      } catch (err) {
+        console.error("Erro ao restaurar rastro:", err);
+        alert("Erro ao restaurar: " + err);
+      }
+    }
+
+    // =========================================================================
+    // SELEÇÃO EM LOTE POR ÁREA NO MAPA E NA TABELA DE ATRIBUTOS
+    // =========================================================================
+    function toggleBoxSelectMode(forceState = null) {
+      if (forceState !== null) {
+        isBoxSelectActive = forceState;
+      } else {
+        isBoxSelectActive = !isBoxSelectActive;
+      }
+
+      const btn = document.getElementById('btnBoxSelect');
+      const lbl = document.getElementById('lblBoxSelect');
+      const mapElem = document.getElementById('map');
+
+      if (isBoxSelectActive) {
+        if (btn) {
+          btn.style.background = '#f59e0b';
+          btn.style.color = '#090e17';
+          btn.style.fontWeight = '700';
+          btn.style.borderColor = '#f59e0b';
+        }
+        if (lbl) lbl.textContent = 'Clique e arraste no mapa';
+        if (mapElem) mapElem.style.cursor = 'crosshair';
+        leafletMap.dragging.disable();
+        showToast("Modo de seleção ativo: Clique e arraste um retângulo no mapa sobre os rastros que deseja selecionar.");
+      } else {
+        if (btn) {
+          btn.style.background = 'rgba(245, 158, 11, 0.08)';
+          btn.style.color = '#f59e0b';
+          btn.style.fontWeight = 'normal';
+          btn.style.borderColor = 'rgba(245, 158, 11, 0.45)';
+        }
+        if (lbl) lbl.textContent = 'Selecionar Área';
+        if (mapElem) mapElem.style.cursor = '';
+        leafletMap.dragging.enable();
+        boxStartLatLng = null;
+      }
+      lucide.createIcons();
+    }
+
+    function selectTracksInBounds(bounds) {
+      if (!cachedRoutes || cachedRoutes.length === 0) return;
+
+      let foundCount = 0;
+      cachedRoutes.forEach(r => {
+        if (!r.points || r.points.length === 0) return;
+        const inside = r.points.some(p => bounds.contains([p.latitude, p.longitude]));
+        if (inside) {
+          if (!selectedTrackIds.has(r.id)) foundCount++;
+          selectedTrackIds.add(r.id);
+        }
+      });
+
+      if (foundCount === 0 && selectedTrackIds.size === 0) {
+        showToast("Nenhum rastro encontrado dentro da área desenhada.");
+        if (boxSelectRect) {
+          leafletMap.removeLayer(boxSelectRect);
+          boxSelectRect = null;
+        }
+        return;
+      }
+
+      updateSelectionUI();
+      showToast(`${foundCount} novos rastros selecionados na área! (Total: ${selectedTrackIds.size})`);
+    }
+
+    function toggleRowSelection(id, isChecked, event) {
+      if (event) event.stopPropagation();
+      if (isChecked) {
+        selectedTrackIds.add(id);
+      } else {
+        selectedTrackIds.delete(id);
+      }
+      updateSelectionUI();
+    }
+
+    function toggleSelectAllRows(isChecked) {
+      const chks = document.querySelectorAll('.track-row-chk');
+      chks.forEach(chk => {
+        chk.checked = isChecked;
+        const id = chk.dataset.id;
+        if (isChecked) {
+          selectedTrackIds.add(id);
+        } else {
+          selectedTrackIds.delete(id);
+        }
+      });
+      updateSelectionUI();
+    }
+
+    function onRowClick(id, filename, event) {
+      if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+        if (selectedTrackIds.has(id)) {
+          selectedTrackIds.delete(id);
+        } else {
+          selectedTrackIds.add(id);
+        }
+        updateSelectionUI();
+      } else {
+        focusSessionOnMap(id, filename, event);
+      }
+    }
+
+    function clearAllSelections() {
+      selectedTrackIds.clear();
+      if (boxSelectRect) {
+        leafletMap.removeLayer(boxSelectRect);
+        boxSelectRect = null;
+      }
+      updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+      const count = selectedTrackIds.size;
+
+      // 1. Atualiza visualização das linhas no mapa
+      activeSwathLayers.forEach(item => {
+        if (selectedTrackIds.has(item.arquivoId)) {
+          item.layer.setStyle({
+            color: '#ef4444',
+            weight: Math.max(6, (item.origWeight || 4) + 2),
+            opacity: 1.0
+          });
+          item.layer.bringToFront();
+        } else {
+          item.layer.setStyle({
+            color: item.origColor || item.layer.options.color,
+            weight: item.origWeight || item.layer.options.weight,
+            opacity: item.origOpacity !== undefined ? item.origOpacity : 0.8
+          });
+        }
+      });
+
+      // 2. Atualiza checkboxes e linhas na tabela de atributos
+      const chks = document.querySelectorAll('.track-row-chk');
+      let allChecked = chks.length > 0;
+      chks.forEach(chk => {
+        const id = chk.dataset.id;
+        const isSel = selectedTrackIds.has(id);
+        chk.checked = isSel;
+        const row = chk.closest('tr');
+        if (row) {
+          if (isSel) row.classList.add('selected-row');
+          else row.classList.remove('selected-row');
+        }
+        if (!isSel) allChecked = false;
+      });
+
+      const chkAll = document.getElementById('chkSelectAllRows');
+      if (chkAll) chkAll.checked = chks.length > 0 && allChecked;
+
+      // 3. Calcula totais da seleção (área e horas)
+      let selArea = 0.0;
+      let selHours = 0.0;
+      if (count > 0 && cachedSessions) {
+        cachedSessions.forEach(s => {
+          if (selectedTrackIds.has(s.id)) {
+            selArea += (s.area_trabalhada_ha || 0);
+            selHours += Math.max(0, (s.horimetro_final - s.horimetro_inicial) || 0);
+          }
+        });
+      }
+
+      // 4. Atualiza HUD flutuante no mapa
+      const mapBatchHud = document.getElementById('mapBatchHud');
+      const lblBatchCount = document.getElementById('lblBatchCount');
+      const lblBatchMeta = document.getElementById('lblBatchMeta');
+      if (mapBatchHud) {
+        if (count > 0) {
+          mapBatchHud.style.display = 'flex';
+          if (lblBatchCount) lblBatchCount.textContent = count;
+          if (lblBatchMeta) lblBatchMeta.textContent = `Área: ${selArea.toFixed(2)} ha • ${selHours.toFixed(2)} h`;
+        } else {
+          mapBatchHud.style.display = 'none';
+        }
+      }
+
+      // 5. Atualiza barra de ações em lote na aba da tabela
+      const tableBatchActions = document.getElementById('tableBatchActions');
+      const lblTableSelectedCount = document.getElementById('lblTableSelectedCount');
+      if (tableBatchActions) {
+        if (count > 0) {
+          tableBatchActions.style.display = 'inline-flex';
+          if (lblTableSelectedCount) lblTableSelectedCount.textContent = count;
+        } else {
+          tableBatchActions.style.display = 'none';
+        }
+      }
+
+      lucide.createIcons();
+    }
+
+    async function deleteSelectedBatch() {
+      if (selectedTrackIds.size === 0) {
+        showToast("Nenhum rastro selecionado.", "error");
+        return;
+      }
+
+      const count = selectedTrackIds.size;
+      const idsArray = Array.from(selectedTrackIds);
+
+      if (!confirm(`Deseja realmente aparar/excluir os ${count} rastros selecionados?\n\nEles serão removidos do mapa e as métricas de área e horímetro recalculadas.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/rastro/excluir-lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ arquivo_ids: idsArray })
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Remove camadas do mapa na hora
+          activeSwathLayers = activeSwathLayers.filter(item => {
+            if (selectedTrackIds.has(item.arquivoId)) {
+              mapMarkersLayer.removeLayer(item.layer);
+              return false;
+            }
+            return true;
+          });
+
+          // Atualiza caches locais
+          cachedRoutes = (cachedRoutes || []).filter(r => !selectedTrackIds.has(r.id));
+          cachedSessions = (cachedSessions || []).filter(s => !selectedTrackIds.has(s.id));
+
+          if (data.kpis) updateKpisUI(data.kpis);
+
+          clearAllSelections();
+          renderSessionsTable(cachedSessions);
+
+          const hudRoutes = document.getElementById('hudRoutes');
+          if (hudRoutes) hudRoutes.textContent = cachedRoutes.length;
+
+          const idsEncoded = encodeURIComponent(JSON.stringify(idsArray));
+          showToast(`${count} rastros excluídos com sucesso! <button onclick="restoreBatch('${idsEncoded}')" style="margin-left:8px; background:#ffde00; color:#090e17; border:none; padding:2px 8px; border-radius:3px; font-weight:bold; cursor:pointer;">Desfazer Lote</button>`);
+        } else {
+          alert("Falha ao excluir o lote de rastros.");
+        }
+      } catch (err) {
+        console.error("Erro ao excluir lote:", err);
+        alert("Erro na exclusão em lote: " + err);
+      }
+    }
+
+    async function restoreBatch(encodedIds) {
+      try {
+        const idsArray = JSON.parse(decodeURIComponent(encodedIds));
+        const res = await fetch('/api/rastro/restaurar-lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ arquivo_ids: idsArray })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`${data.restored_count} rastros restaurados com sucesso!`);
+          updateFilterSegmentation();
+        }
+      } catch (err) {
+        console.error("Erro ao restaurar lote:", err);
+        alert("Erro ao restaurar: " + err);
+      }
+    }
+
+    // =========================================================================
+    // SÉRIES TEMPORAIS COM APACHE ECHARTS
+    // =========================================================================
+    function initChart() {
+      const chartDom = document.getElementById('echartsTimeline');
+      chartInstance = echarts.init(chartDom, 'dark');
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross' },
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          borderColor: '#2c3f58',
+          textStyle: { color: '#f8fafc', fontSize: 11 }
+        },
+        legend: {
+          data: ['RPM Motor', 'Velocidade (km/h)', 'Carga (%)', 'Taxa (kg/ha)'],
+          top: 0,
+          textStyle: { color: '#94a3b8', fontSize: 10 }
+        },
+        grid: {
+          top: 30,
+          left: 45,
+          right: 45,
+          bottom: 35
+        },
+        xAxis: {
+          type: 'category',
+          data: [],
+          axisLine: { lineStyle: { color: '#2c3f58' } },
+          axisLabel: { color: '#64748b', fontSize: 9 }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: 'RPM / Taxa',
+            min: 0,
+            splitLine: { lineStyle: { color: '#162235' } },
+            axisLabel: { color: '#94a3b8', fontSize: 9 }
+          },
+          {
+            type: 'value',
+            name: 'km/h & %',
+            min: 0,
+            max: 100,
+            splitLine: { show: false },
+            axisLabel: { color: '#94a3b8', fontSize: 9 }
+          }
+        ],
+        dataZoom: [
+          { type: 'inside', start: 0, end: 100 },
+          {
+            type: 'slider',
+            start: 0,
+            end: 100,
+            height: 14,
+            bottom: 2,
+            borderColor: '#2c3f58',
+            fillerColor: 'rgba(56, 189, 248, 0.2)',
+            textStyle: { color: '#64748b', fontSize: 8 }
+          }
+        ],
+        series: []
+      };
+
+      chartInstance.setOption(option);
+      window.addEventListener('resize', () => chartInstance.resize());
+    }
+
+    function setChartMetric(metric) {
+      currentChartMetric = metric;
+      const metrics = ['all', 'speed', 'rpm', 'load', 'rate'];
+      metrics.forEach(m => {
+        const btn = document.getElementById(`btnMetric_${m}`);
+        if (btn) {
+          if (m === metric) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+      if (cachedSeriesData && cachedSeriesData.length > 0) {
+        renderChartData(cachedSeriesData);
+      }
+    }
+
+    function renderChartData(seriesData) {
+      if (!seriesData) return;
+      cachedSeriesData = seriesData;
+      if (seriesData.length === 0) {
+        chartInstance.setOption({ xAxis: { data: [] }, series: [] });
+        return;
+      }
+
+      const timestamps = [];
+      const rpms = [];
+      const speeds = [];
+      const loads = [];
+      const rates = [];
+
+      seriesData.forEach(pt => {
+        const tStr = pt.timestamp_iso ? pt.timestamp_iso.replace('T', ' ').substring(5, 19) : '';
+        timestamps.push(tStr);
+        rpms.push(pt.rpm || 0);
+        speeds.push(pt.velocidade ? Number(pt.velocidade.toFixed(1)) : 0);
+        loads.push(pt.carga ? Number(pt.carga.toFixed(1)) : 0);
+        rates.push(pt.taxa_aplicacao ? Math.round(pt.taxa_aplicacao) : 0);
+      });
+
+      let legendData = [];
+      let yAxes = [];
+      let seriesList = [];
+
+      if (currentChartMetric === 'speed') {
+        legendData = ['Velocidade (km/h)'];
+        yAxes = [{ type: 'value', name: 'km/h', min: 0, splitLine: { lineStyle: { color: '#162235' } }, axisLabel: { color: '#94a3b8', fontSize: 9 } }];
+        seriesList = [{
+          name: 'Velocidade (km/h)',
+          type: 'line',
+          smooth: true,
+          data: speeds,
+          itemStyle: { color: '#10b981' },
+          lineStyle: { width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(16, 185, 129, 0.35)' },
+              { offset: 1, color: 'rgba(16, 185, 129, 0.02)' }
+            ])
+          }
+        }];
+      } else if (currentChartMetric === 'rpm') {
+        legendData = ['RPM Motor'];
+        yAxes = [{ type: 'value', name: 'RPM', min: 0, splitLine: { lineStyle: { color: '#162235' } }, axisLabel: { color: '#94a3b8', fontSize: 9 } }];
+        seriesList = [{
+          name: 'RPM Motor',
+          type: 'line',
+          smooth: true,
+          data: rpms,
+          itemStyle: { color: '#3b82f6' },
+          lineStyle: { width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(59, 130, 246, 0.35)' },
+              { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+            ])
+          }
+        }];
+      } else if (currentChartMetric === 'load') {
+        legendData = ['Carga do Motor (%)'];
+        yAxes = [{ type: 'value', name: 'Carga (%)', min: 0, max: 100, splitLine: { lineStyle: { color: '#162235' } }, axisLabel: { color: '#94a3b8', fontSize: 9 } }];
+        seriesList = [{
+          name: 'Carga do Motor (%)',
+          type: 'line',
+          smooth: true,
+          data: loads,
+          itemStyle: { color: '#f59e0b' },
+          lineStyle: { width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(245, 158, 11, 0.35)' },
+              { offset: 1, color: 'rgba(245, 158, 11, 0.02)' }
+            ])
+          }
+        }];
+      } else if (currentChartMetric === 'rate') {
+        legendData = ['Taxa de Aplicação (kg/ha)'];
+        yAxes = [{ type: 'value', name: 'kg/ha', min: 0, splitLine: { lineStyle: { color: '#162235' } }, axisLabel: { color: '#94a3b8', fontSize: 9 } }];
+        seriesList = [{
+          name: 'Taxa de Aplicação (kg/ha)',
+          type: 'line',
+          smooth: true,
+          data: rates,
+          itemStyle: { color: '#a855f7' },
+          lineStyle: { width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(168, 85, 247, 0.35)' },
+              { offset: 1, color: 'rgba(168, 85, 247, 0.02)' }
+            ])
+          }
+        }];
+      } else {
+        // 'all'
+        legendData = ['RPM Motor', 'Velocidade (km/h)', 'Carga (%)', 'Taxa (kg/ha)'];
+        yAxes = [
+          { type: 'value', name: 'RPM / kg/ha', min: 0, splitLine: { lineStyle: { color: '#162235' } }, axisLabel: { color: '#94a3b8', fontSize: 9 } },
+          { type: 'value', name: 'km/h & %', min: 0, max: 100, splitLine: { show: false }, axisLabel: { color: '#94a3b8', fontSize: 9 } }
+        ];
+        seriesList = [
+          { name: 'RPM Motor', type: 'line', yAxisIndex: 0, smooth: true, data: rpms, itemStyle: { color: '#3b82f6' }, lineStyle: { width: 1.8 } },
+          { name: 'Velocidade (km/h)', type: 'line', yAxisIndex: 1, smooth: true, data: speeds, itemStyle: { color: '#10b981' }, lineStyle: { width: 2 } },
+          { name: 'Carga (%)', type: 'line', yAxisIndex: 1, smooth: true, data: loads, itemStyle: { color: '#f59e0b' }, lineStyle: { width: 1.5, type: 'dashed' } },
+          { name: 'Taxa (kg/ha)', type: 'line', yAxisIndex: 0, smooth: true, data: rates, itemStyle: { color: '#a855f7' }, lineStyle: { width: 2 } }
+        ];
+      }
+
+      chartInstance.setOption({
+        legend: { data: legendData },
+        xAxis: { data: timestamps },
+        yAxis: yAxes,
+        series: seriesList
+      }, { notMerge: true });
+    }
+
+    // =========================================================================
+    // TABELA DE ATRIBUTOS DAS SESSÕES COM FILTRO DINÂMICO
+    // =========================================================================
+    function renderSessionsTable(sessions) {
+      const tbody = document.getElementById('attrTableBody');
+      const badge = document.getElementById('lblTableCount');
+      if (!tbody) return;
+
+      if (!sessions || sessions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:24px; color:#64748b;">Nenhuma sessão encontrada para este filtro.</td></tr>`;
+        if (badge) badge.textContent = `(0 sessões)`;
+        return;
+      }
+
+      applyTableFilter();
+    }
+
+    function applyTableFilter() {
+      const tbody = document.getElementById('attrTableBody');
+      const badge = document.getElementById('lblTableCount');
+      if (!tbody) return;
+
+      let filtered = cachedSessions || [];
+
+      // Filtro de Rastro GPS / Log CAN
+      const selGps = document.getElementById('selectGpsFilter');
+      const gpsVal = selGps ? selGps.value : 'all';
+      if (gpsVal === 'gps_only') {
+        filtered = filtered.filter(s => s.lat_min !== null && s.lat_min !== undefined);
+      } else if (gpsVal === 'no_gps') {
+        filtered = filtered.filter(s => s.lat_min === null || s.lat_min === undefined);
+      }
+
+      if (currentSearchText) {
+        filtered = filtered.filter(s => {
+          const str = `${s.nome_arquivo || ''} ${s.atividade_pasta || ''} ${s.tipo_operacao || ''} ${s.modelo_trator || ''} ${s.implemento || ''}`.toLowerCase();
+          return str.includes(currentSearchText);
+        });
+      }
+
+      if (badge) badge.textContent = `(${filtered.length} sessões)`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:24px; color:#64748b;">Nenhuma sessão encontrada para este filtro.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => {
+        const deltaH = Math.max(0, (s.horimetro_final - s.horimetro_inicial)).toFixed(2);
+        const rpmMed = s.rpm_medio ? Math.round(s.rpm_medio) : '-';
+        const velMed = s.velocidade_media ? s.velocidade_media.toFixed(1) + ' km/h' : '-';
+        const ativ = s.atividade_pasta || 'Geral';
+        const opName = s.tipo_operacao || 'Distribuição a Lanço';
+        const modeloTrator = s.modelo_trator || 'JD 6150M';
+        const implemento = s.implemento || opName || 'DN 1006';
+        const largura = s.largura_trabalho_m ? s.largura_trabalho_m.toFixed(1) + ' m' : '4.5 m';
+        const taxa = s.taxa_media_kg_ha && s.taxa_media_kg_ha > 0 ? Math.round(s.taxa_media_kg_ha) + ' kg/ha' : '-';
+        const area = s.area_trabalhada_ha && s.area_trabalhada_ha > 0 ? s.area_trabalhada_ha.toFixed(2) + ' ha' : '-';
+        const isSelected = selectedTrackIds.has(s.id);
+        const isFocused = currentFocusedSessionId === s.id;
+        const rowClass = `${isSelected ? 'selected-row' : ''} ${isFocused ? 'active-focus-row' : ''}`.trim();
+
+        const hasGps = s.lat_min !== null && s.lat_min !== undefined;
+        const durSec = s.duracao_segundos ? s.duracao_segundos.toFixed(1) + 's' : '0s';
+        const gpsBadge = hasGps
+          ? `<span class="tag-gps-yes" title="Possui rastro GPS no mapa"><i data-lucide="map-pin" style="width:10px;height:10px;"></i> Rastro GPS</span>`
+          : `<span class="tag-gps-no" title="Log rápido de monitor (${durSec}) sem coordenadas GPS"><i data-lucide="zap-off" style="width:10px;height:10px;"></i> Log CAN (${durSec})</span>`;
+
+        return `
+          <tr class="${rowClass}" onclick="onRowClick('${s.id}', '${s.nome_arquivo}', event)" title="${hasGps ? 'Clique para enquadrar no mapa' : 'Log rápido de monitor sem rastro GPS'}" style="cursor: pointer;">
+            <td style="text-align: center;" onclick="event.stopPropagation()">
+              <input type="checkbox" class="track-row-chk" data-id="${s.id}" ${isSelected ? 'checked' : ''} onchange="toggleRowSelection('${s.id}', this.checked, event)" style="cursor: pointer;" />
+            </td>
+            <td style="color: #cbd5e1; font-family: monospace;">${s.data_inicio || '-'}</td>
+            <td style="text-align: center;">${gpsBadge}</td>
+            <td><span class="tag-farm">${ativ.split('_')[0] || 'Fazenda'}</span></td>
+            <td><strong style="color: #f8fafc;">${ativ}</strong></td>
+            <td><span style="color: #ffde00; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="tractor" style="width:11px; height:11px;"></i>${modeloTrator}</span></td>
+            <td><span style="color: #38bdf8; font-weight: 500;">${implemento}</span></td>
+            <td><span class="val-width" style="font-weight: 700;">${largura}</span></td>
+            <td><span class="val-rate">${taxa}</span></td>
+            <td><span class="val-area">${area}</span></td>
+            <td style="font-weight: 600;">${s.horimetro_final ? s.horimetro_final.toFixed(2) + ' h' : '-'}</td>
+            <td style="color: #10b981; font-weight: 700;">+${deltaH} h</td>
+            <td style="font-family: monospace; color: #94a3b8; font-size: 0.70rem;">${velMed} • ${rpmMed} RPM</td>
+            <td style="text-align: center;">
+              <button type="button" class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); padding: 3px 8px; font-size: 0.70rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" onclick="event.stopPropagation(); confirmDeleteTrack('${s.id}', '${s.nome_arquivo}')" title="Excluir / Aparar este rastro">
+                <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const chkAll = document.getElementById('chkSelectAllRows');
+      if (chkAll) {
+        chkAll.checked = filtered.length > 0 && filtered.every(s => selectedTrackIds.has(s.id));
+      }
+
+      lucide.createIcons();
+    }
+
+    function focusSessionOnMap(id, filename, event = null) {
+      currentFocusedSessionId = id;
+
+      // 1. Destaque visual imediato na linha da tabela
+      document.querySelectorAll('table.attr-table tbody tr').forEach(r => {
+        r.classList.remove('active-focus-row', 'active');
+      });
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active-focus-row');
+      } else {
+        const tr = document.querySelector(`.track-row-chk[data-id="${id}"]`)?.closest('tr');
+        if (tr) tr.classList.add('active-focus-row');
+      }
+
+      // 2. Se o painel inferior estiver expandido (500px), ajusta para normal (290px) para exibir o mapa com folga
+      const panel = document.getElementById('attrPanel');
+      if (dockSize === 'expanded' && panel) {
+        dockSize = 'normal';
+        panel.classList.remove('collapsed', 'expanded');
+        const icon = document.getElementById('btnToggleIcon');
+        if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+        if (leafletMap) leafletMap.invalidateSize();
+      }
+
+      // 3. Localiza a rota e coordenadas nos caches locais
+      const route = (cachedRoutes || []).find(r => r.id === id || r.nome_arquivo === filename);
+      const session = (cachedSessions || []).find(s => s.id === id || s.nome_arquivo === filename);
+
+      let coords = [];
+      if (route && route.points && route.points.length > 0) {
+        coords = route.points.map(p => [p.latitude, p.longitude]);
+      } else if (route && route.lat_min && route.lat_max && route.lon_min && route.lon_max) {
+        coords = [
+          [route.lat_min, route.lon_min],
+          [route.lat_max, route.lon_max]
+        ];
+      } else if (session && session.lat_min && session.lat_max && session.lon_min && session.lon_max) {
+        coords = [
+          [session.lat_min, session.lon_min],
+          [session.lat_max, session.lon_max]
+        ];
+      }
+
+      if (coords.length === 0) {
+        const dur = session && session.duracao_segundos ? session.duracao_segundos.toFixed(2) + 's' : '';
+        showToast(`ℹ️ Este arquivo é um log rápido do monitor (${dur || 'sem GPS'}) e não possui coordenadas de campo.`, "error");
+        return;
+      }
+
+      let bottomPadding = 50;
+      if (panel && !panel.classList.contains('collapsed')) {
+        bottomPadding = (panel.offsetHeight || 290) + 35;
+      }
+
+      // 4. Calcula o enquadramento do mapa (ponto único vs polígono) com compensação do dock
+      if (coords.length === 1) {
+        leafletMap.flyTo(coords[0], 18, { duration: 1.2 });
+      } else {
+        const bounds = L.latLngBounds(coords);
+        if (!bounds.isValid()) {
+          showToast("Coordenadas inválidas para enquadramento.", "error");
+          return;
+        }
+
+        leafletMap.flyToBounds(bounds, {
+          paddingTopLeft: [50, 60],
+          paddingBottomRight: [50, bottomPadding],
+          maxZoom: 18,
+          duration: 1.2
+        });
+      }
+
+      // 5. Restaura camadas anteriormente focadas para sua cor/estilo normal
+      if (window.focusedSwathLayers && window.focusedSwathLayers.length > 0) {
+        window.focusedSwathLayers.forEach(swath => {
+          if (swath && swath.layer) {
+            if (selectedTrackIds.has(swath.arquivoId)) {
+              swath.layer.setStyle({
+                color: '#ef4444',
+                weight: Math.max(6, (swath.origWeight || 4) + 2),
+                opacity: 1.0
+              });
+            } else {
+              swath.layer.setStyle({
+                color: swath.origColor,
+                weight: swath.origWeight,
+                opacity: swath.origOpacity
+              });
+            }
+          }
+        });
+        window.focusedSwathLayers = [];
+      }
+
+      // 6. Destaca as polylines/faixas deste rastro no mapa com amarelo ouro John Deere vibrante
+      const matchingSwaths = activeSwathLayers.filter(s => s.arquivoId === id || s.routeId === filename);
+      if (matchingSwaths.length > 0) {
+        window.focusedSwathLayers = matchingSwaths;
+        matchingSwaths.forEach(swath => {
+          if (swath.layer) {
+            swath.layer.setStyle({
+              color: '#ffde00',
+              weight: Math.max(8, (swath.origWeight || 4) + 4),
+              opacity: 1.0
+            });
+            swath.layer.bringToFront();
+          }
+        });
+
+        // 7. Abre o popup descritivo no segmento de trabalho ou central
+        const targetSwath = matchingSwaths.find(s => s.isWorking) || matchingSwaths[Math.floor(matchingSwaths.length / 2)];
+        if (targetSwath && targetSwath.layer) {
+          setTimeout(() => {
+            if (targetSwath.layer && leafletMap.hasLayer(targetSwath.layer)) {
+              targetSwath.layer.openPopup();
+            }
+          }, 500);
+        }
+      }
+
+      showToast(`📍 Câmera focada no rastro: ${filename} (${coords.length} pontos)`);
+    }
+
+    function exportCSV() {
+      if (!cachedSessions || cachedSessions.length === 0) {
+        showToast("Nenhuma sessão disponível para exportação.", "error");
+        return;
+      }
+      let csv = "Arquivo;Data_Inicio;Atividade_Pasta;Operacao;Largura_m;Taxa_Media_kg_ha;Area_ha;Horimetro_Inicial;Horimetro_Final;Delta_Horas;RPM_Medio;Velocidade_kmh\n";
+      cachedSessions.forEach(s => {
+        const deltaH = Math.max(0, (s.horimetro_final - s.horimetro_inicial)).toFixed(2);
+        csv += `"${s.nome_arquivo}";"${s.data_inicio}";"${s.atividade_pasta}";"${s.tipo_operacao}";${s.largura_trabalho_m || 4.5};${s.taxa_media_kg_ha || 0};${s.area_trabalhada_ha || 0};${s.horimetro_inicial};${s.horimetro_final};${deltaH};${s.rpm_medio || 0};${s.velocidade_media || 0}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `telemetria_jd_g5_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Planilha CSV exportada com sucesso!");
+    }
+
+    // =========================================================================
+    // EXPORTAÇÃO KML UNIFICADO (GOOGLE EARTH PRO 3D / QGIS / GPS)
+    // =========================================================================
+    function hexToKmlColor(hex, alpha = "ff") {
+      if (!hex || !hex.startsWith('#') || hex.length < 7) return alpha + "2b7c36";
+      const r = hex.slice(1, 3);
+      const g = hex.slice(3, 5);
+      const b = hex.slice(5, 7);
+      return alpha + b + g + r;
+    }
+
+    function exportKML(selectedOnly = false) {
+      let targets = [];
+      if (selectedOnly || (selectedTrackIds && selectedTrackIds.size > 0)) {
+        const idSet = selectedTrackIds.size > 0 ? selectedTrackIds : new Set();
+        targets = (cachedRoutes || []).filter(r => idSet.has(r.id));
+      } else {
+        targets = cachedRoutes || [];
+      }
+
+      if (targets.length === 0) {
+        showToast("Nenhum rastro disponível para exportação em KML.", "error");
+        return;
+      }
+
+      let kml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      kml += `<kml xmlns="http://www.opengis.net/kml/2.2">\n`;
+      kml += `  <Document>\n`;
+      kml += `    <name>Telemetria John Deere G5 • Mapa Unificado</name>\n`;
+      kml += `    <description>Rastros e telemetria gerados pelo Cockpit Multi-Máquinas</description>\n`;
+
+      targets.forEach((route, idx) => {
+        if (!route.points || route.points.length === 0) return;
+        const session = (cachedSessions || []).find(s => s.id === route.id || s.nome_arquivo === route.nome_arquivo) || {};
+
+        const kmlCol = hexToKmlColor(route.color || '#367c2b', "ff");
+        const coordsStr = route.points
+          .map(p => `${p.longitude},${p.latitude},${p.altitude || 0}`)
+          .join(' ');
+
+        const ativ = session.atividade_pasta || 'Geral';
+        const op = session.tipo_operacao || 'Distribuição a Lanço';
+        const trator = session.modelo_trator || 'JD 6150M';
+        const imp = session.implemento || 'DN 1006';
+        const deltaH = Math.max(0, (session.horimetro_final - session.horimetro_inicial) || 0).toFixed(2);
+
+        kml += `    <Style id="style_${idx}">\n`;
+        kml += `      <LineStyle>\n`;
+        kml += `        <color>${kmlCol}</color>\n`;
+        kml += `        <width>3.5</width>\n`;
+        kml += `      </LineStyle>\n`;
+        kml += `    </Style>\n`;
+        kml += `    <Placemark>\n`;
+        kml += `      <name>${session.nome_arquivo || route.nome_arquivo} - ${ativ}</name>\n`;
+        kml += `      <styleUrl>#style_${idx}</styleUrl>\n`;
+        kml += `      <ExtendedData>\n`;
+        kml += `        <Data name="Arquivo"><value>${session.nome_arquivo || route.nome_arquivo || ''}</value></Data>\n`;
+        kml += `        <Data name="Data"><value>${session.data_inicio || ''}</value></Data>\n`;
+        kml += `        <Data name="Atividade_Talhao"><value>${ativ}</value></Data>\n`;
+        kml += `        <Data name="Operacao"><value>${op}</value></Data>\n`;
+        kml += `        <Data name="Trator"><value>${trator}</value></Data>\n`;
+        kml += `        <Data name="Implemento"><value>${imp}</value></Data>\n`;
+        kml += `        <Data name="Faixa_Real_m"><value>${session.largura_trabalho_m || 4.5}</value></Data>\n`;
+        kml += `        <Data name="Taxa_kg_ha"><value>${session.taxa_media_kg_ha || 0}</value></Data>\n`;
+        kml += `        <Data name="Area_ha"><value>${session.area_trabalhada_ha || 0}</value></Data>\n`;
+        kml += `        <Data name="Horimetro_Inicial"><value>${session.horimetro_inicial || 0}</value></Data>\n`;
+        kml += `        <Data name="Horimetro_Final"><value>${session.horimetro_final || 0}</value></Data>\n`;
+        kml += `        <Data name="Horas_Trabalhadas"><value>${deltaH}</value></Data>\n`;
+        kml += `        <Data name="RPM_Medio"><value>${session.rpm_medio || 0}</value></Data>\n`;
+        kml += `        <Data name="Velocidade_kmh"><value>${session.velocidade_media || 0}</value></Data>\n`;
+        kml += `      </ExtendedData>\n`;
+        kml += `      <LineString>\n`;
+        kml += `        <tessellate>1</tessellate>\n`;
+        kml += `        <altitudeMode>clampToGround</altitudeMode>\n`;
+        kml += `        <coordinates>${coordsStr}</coordinates>\n`;
+        kml += `      </LineString>\n`;
+        kml += `    </Placemark>\n`;
+      });
+
+      kml += `  </Document>\n`;
+      kml += `</kml>`;
+
+      const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `telemetria_jd_g5_${targets.length}_rastros_${new Date().toISOString().slice(0, 10)}.kml`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`KML com ${targets.length} rastros exportado para o Google Earth Pro!`);
+    }
+
+    // =========================================================================
+    // ISOLAMENTO DE ÁREA (MANTER APENAS RASTROS SELECIONADOS)
+    // =========================================================================
+    let isKeepOnlyFilterActive = false;
+    let backupBeforeKeepOnly = { routes: null, sessions: null };
+
+    function keepOnlySelectedBatch() {
+      if (selectedTrackIds.size === 0) {
+        showToast("Nenhum rastro selecionado para isolar.", "error");
+        return;
+      }
+      const targetIds = new Set(selectedTrackIds);
+
+      if (!isKeepOnlyFilterActive) {
+        backupBeforeKeepOnly = {
+          routes: [...(cachedRoutes || [])],
+          sessions: [...(cachedSessions || [])]
+        };
+      }
+
+      isKeepOnlyFilterActive = true;
+
+      // Filtra rotas e sessões locais
+      cachedRoutes = (backupBeforeKeepOnly.routes || []).filter(r => targetIds.has(r.id));
+      cachedSessions = (backupBeforeKeepOnly.sessions || []).filter(s => targetIds.has(s.id));
+
+      // Remove camadas não selecionadas do mapa
+      activeSwathLayers.forEach(item => {
+        if (!targetIds.has(item.arquivoId)) {
+          if (leafletMap.hasLayer(item.layer)) leafletMap.removeLayer(item.layer);
+        } else {
+          if (!leafletMap.hasLayer(item.layer)) mapMarkersLayer.addLayer(item.layer);
+          item.layer.setStyle({
+            color: item.origColor || '#367c2b',
+            weight: item.origWeight || 4,
+            opacity: item.origOpacity !== undefined ? item.origOpacity : 0.8
+          });
+        }
+      });
+
+      // Atualiza tabela e contadores
+      clearAllSelections();
+      applyTableFilter();
+      updateKpisFromLocalSessions(cachedSessions);
+
+      const btnReset = document.getElementById('btnResetKeepOnly');
+      if (btnReset) btnReset.style.display = 'inline-flex';
+
+      const hudRoutes = document.getElementById('hudRoutes');
+      if (hudRoutes) hudRoutes.textContent = cachedRoutes.length;
+
+      resetMapView();
+      showToast(`🎯 Visualização isolada em ${cachedRoutes.length} rastros da área! Clique em 'Mostrar Todos' para restaurar.`);
+    }
+
+    function resetKeepOnlyFilter() {
+      if (!isKeepOnlyFilterActive || !backupBeforeKeepOnly.routes) return;
+
+      cachedRoutes = [...backupBeforeKeepOnly.routes];
+      cachedSessions = [...backupBeforeKeepOnly.sessions];
+      isKeepOnlyFilterActive = false;
+      backupBeforeKeepOnly = { routes: null, sessions: null };
+
+      // Restaura todas as camadas no mapa
+      activeSwathLayers.forEach(item => {
+        if (!leafletMap.hasLayer(item.layer)) {
+          mapMarkersLayer.addLayer(item.layer);
+        }
+        item.layer.setStyle({
+          color: item.origColor || '#367c2b',
+          weight: item.origWeight || 4,
+          opacity: item.origOpacity !== undefined ? item.origOpacity : 0.8
+        });
+      });
+
+      const btnReset = document.getElementById('btnResetKeepOnly');
+      if (btnReset) btnReset.style.display = 'none';
+
+      clearAllSelections();
+      applyTableFilter();
+      loadDashboardData();
+      showToast("Todos os rastros foram restaurados no mapa e na tabela.");
+    }
+
+    function updateKpisFromLocalSessions(sessions) {
+      if (!sessions || sessions.length === 0) return;
+      let totalArea = 0.0;
+      let totalHours = 0.0;
+      let sumSpeed = 0.0, countSpeed = 0;
+      let sumRpm = 0.0, countRpm = 0;
+      let sumRate = 0.0, countRate = 0;
+
+      sessions.forEach(s => {
+        totalArea += (s.area_trabalhada_ha || 0);
+        totalHours += Math.max(0, (s.horimetro_final - s.horimetro_inicial) || 0);
+        if (s.velocidade_media && s.velocidade_media > 0) {
+          sumSpeed += s.velocidade_media;
+          countSpeed++;
+        }
+        if (s.rpm_medio && s.rpm_medio > 0) {
+          sumRpm += s.rpm_medio;
+          countRpm++;
+        }
+        if (s.taxa_media_kg_ha && s.taxa_media_kg_ha > 0) {
+          sumRate += s.taxa_media_kg_ha;
+          countRate++;
+        }
+      });
+
+      const elArea = document.getElementById('kpiTotalArea');
+      if (elArea) elArea.textContent = `${totalArea.toFixed(2)} ha`;
+
+      const elHours = document.getElementById('kpiDeltaHours');
+      if (elHours) elHours.textContent = `+${totalHours.toFixed(2)} h`;
+
+      const elSpeed = document.getElementById('kpiAvgSpeed');
+      if (elSpeed && countSpeed > 0) elSpeed.textContent = `${(sumSpeed / countSpeed).toFixed(1)} km/h`;
+
+      const elRpm = document.getElementById('kpiAvgRpm');
+      if (elRpm && countRpm > 0) elRpm.textContent = `${Math.round(sumRpm / countRpm)} RPM`;
+
+      const elRate = document.getElementById('kpiAvgRate');
+      if (elRate && countRate > 0) elRate.textContent = `${Math.round(sumRate / countRate)} kg/ha`;
+
+      const elFiles = document.getElementById('kpiFilesCount');
+      if (elFiles) elFiles.textContent = sessions.length;
+    }
+
+    // =========================================================================
+    // IMPORTAÇÃO E EXIBIÇÃO DE TALHÕES (SHAPEFILE .SHP / .ZIP E KML)
+    // =========================================================================
+    let savedFarmBoundaries = JSON.parse(localStorage.getItem('jd_saved_farm_boundaries') || '[]');
+    let farmBoundaryLayers = {};
+    let showFarmBoundaries = true;
+
+    function utmToLatLon(x, y, zone = 23, south = true) {
+      const a = 6378137.0;
+      const f = 1 / 298.257223563;
+      const k0 = 0.9996;
+      const e = Math.sqrt(2 * f - f * f);
+      const e2 = (e * e) / (1 - e * e);
+      const x1 = x - 500000.0;
+      const y1 = south ? (y - 10000000.0) : y;
+      const m = y1 / k0;
+      const mu = m / (a * (1 - (e * e) / 4 - (3 * Math.pow(e, 4)) / 64 - (5 * Math.pow(e, 6)) / 256));
+      const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+      const j1 = (3 * e1) / 2 - (27 * Math.pow(e1, 3)) / 32;
+      const j2 = (21 * Math.pow(e1, 2)) / 16 - (55 * Math.pow(e1, 4)) / 32;
+      const j3 = (151 * Math.pow(e1, 3)) / 96;
+      const j4 = (1097 * Math.pow(e1, 4)) / 512;
+      const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+      const c1 = e2 * Math.pow(Math.cos(fp), 2);
+      const t1 = Math.pow(Math.tan(fp), 2);
+      const r1 = (a * (1 - e * e)) / Math.pow(1 - e * e * Math.pow(Math.sin(fp), 2), 1.5);
+      const n1 = a / Math.sqrt(1 - e * e * Math.pow(Math.sin(fp), 2));
+      const d = x1 / (n1 * k0);
+      const q1 = (n1 * Math.tan(fp)) / r1;
+      const q2 = (d * d) / 2;
+      const q3 = ((5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e2) * Math.pow(d, 4)) / 24;
+      const q4 = ((61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e2 - 3 * c1 * c1) * Math.pow(d, 6)) / 720;
+      const lat = fp - q1 * (q2 - q3 + q4);
+      const q5 = d;
+      const q6 = ((1 + 2 * t1 + c1) * Math.pow(d, 3)) / 6;
+      const q7 = ((5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e2 + 24 * t1 * t1) * Math.pow(d, 5)) / 120;
+      const lon0 = ((zone - 1) * 6 - 180 + 3) * (Math.PI / 180);
+      const lon = lon0 + (q5 - q6 + q7) / Math.cos(fp);
+      return { lat: (lat * 180) / Math.PI, lon: (lon * 180) / Math.PI };
+    }
+
+    function mercatorToLatLon(x, y) {
+      const lon = (x / 20037508.34) * 180;
+      let lat = (y / 20037508.34) * 180;
+      lat = 180 / Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180)) - Math.PI / 2);
+      return { lat, lon };
+    }
+
+    function detectPreferredUtmZone(prjText) {
+      if (prjText && typeof prjText === 'string') {
+        const m = prjText.match(/zone\s*(\d{2})/i) || prjText.match(/fuso\s*(\d{2})/i) || prjText.match(/utm_zone_(\d{2})/i) || prjText.match(/3198(\d)/) || prjText.match(/327(\d\d)/);
+        if (m) {
+          if (m[1].length === 2) return parseInt(m[1], 10);
+          if (m[1] === '1') return 21;
+          if (m[1] === '2') return 22;
+          if (m[1] === '3') return 23;
+          if (m[1] === '4') return 24;
+          if (m[0].startsWith('327')) return parseInt(m[0].substr(3), 10);
+        }
+      }
+      return 23; // Fuso padrão Brasil Central / MG / GO / SP
+    }
+
+    function normalizePointToLatLng(pt0, pt1, preferredZone = 23) {
+      let x = parseFloat(pt0);
+      let y = parseFloat(pt1);
+      if (isNaN(x) || isNaN(y)) return null;
+
+      // 1. Graus decimais
+      if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+        let lat = y, lon = x;
+        if (Math.abs(x) < Math.abs(y) && x < 0 && y < -30) {
+          lat = x; lon = y;
+        }
+        if (lat > 0 && lat <= 35 && lon < 0) {
+          lat = -lat;
+        }
+        return [lat, lon];
+      }
+
+      // 2. Coordenadas UTM SIRGAS 2000
+      let easting = x, northing = y;
+      if (x > y && x > 1000000) {
+        northing = x; easting = y;
+      }
+      if (northing > 1000000 && northing < 10000000 && easting > 50000 && easting < 950000) {
+        const zonesToTry = [preferredZone, 23, 22, 21, 24];
+        for (const z of zonesToTry) {
+          const res = utmToLatLon(easting, northing, z, true);
+          if (res.lat >= -35 && res.lat <= 6 && res.lon >= -75 && res.lon <= -32) {
+            return [res.lat, res.lon];
+          }
+        }
+        const defRes = utmToLatLon(easting, northing, preferredZone, true);
+        return [defRes.lat, defRes.lon];
+      }
+
+      // 3. Web Mercator EPSG:3857
+      if (Math.abs(x) > 1000000 || Math.abs(y) > 1000000) {
+        const mRes = mercatorToLatLon(x, y);
+        if (mRes.lat >= -90 && mRes.lat <= 90 && mRes.lon >= -180 && mRes.lon <= 180) {
+          return [mRes.lat, mRes.lon];
+        }
+      }
+      return null;
+    }
+
+    function computePolygonAreaHa(coords) {
+      if (!coords || coords.length < 3) return 0;
+      const midLat = coords.reduce((acc, c) => acc + c[0], 0) / coords.length;
+      const latFactor = 111320;
+      const lngFactor = 111320 * Math.cos(midLat * Math.PI / 180);
+
+      let areaM2 = 0;
+      for (let i = 0; i < coords.length; i++) {
+        const j = (i + 1) % coords.length;
+        const xi = coords[i][1] * lngFactor;
+        const yi = coords[i][0] * latFactor;
+        const xj = coords[j][1] * lngFactor;
+        const yj = coords[j][0] * latFactor;
+        areaM2 += (xi * yj) - (xj * yi);
+      }
+      return Math.abs(areaM2) / 2 / 10000;
+    }
+
+    function parseGeoJsonFeatures(features, sourceName, preferredZone = 23) {
+      if (!features || !Array.isArray(features)) return [];
+      const extractedFarms = [];
+      const cleanBaseName = sourceName.replace(/\.(zip|shp|dbf|kml)$/i, '').trim();
+
+      features.forEach((feat, idx) => {
+        if (!feat || !feat.geometry) return;
+
+        let polygonRings = [];
+        if (feat.geometry.type === 'Polygon') {
+          if (feat.geometry.coordinates && feat.geometry.coordinates[0]) {
+            polygonRings.push(feat.geometry.coordinates[0]);
+          }
+        } else if (feat.geometry.type === 'MultiPolygon') {
+          if (feat.geometry.coordinates) {
+            feat.geometry.coordinates.forEach(poly => {
+              if (poly && poly[0]) polygonRings.push(poly[0]);
+            });
+          }
+        } else {
+          return;
+        }
+
+        const props = feat.properties || {};
+        const normProps = {};
+        for (const [k, v] of Object.entries(props)) {
+          if (k) normProps[k.toUpperCase().trim()] = (v !== null && v !== undefined) ? String(v).trim() : '';
+        }
+
+        let nomeFaz = normProps['NOME_FAZ'] || normProps['FAZENDA'] || normProps['NOME'] || normProps['NAME'] || cleanBaseName;
+        let talhao = normProps['TALHAO'] || normProps['DESC_TALHA'] || normProps['NUM_TALHAO'] || normProps['PARCELA'] || String(idx + 1);
+        let zona = normProps['ZONA'] || normProps['SETOR'] || '1';
+        let variedade = normProps['VARIEDADE'] || normProps['CULTURA'] || '';
+        let areaTotal = parseFloat(normProps['AREA_TOTAL']) || parseFloat(normProps['AREA']) || 0;
+
+        polygonRings.forEach((ring, rIdx) => {
+          const coords = [];
+          ring.forEach(pt => {
+            const normPt = normalizePointToLatLng(pt[0], pt[1], preferredZone);
+            if (normPt) coords.push(normPt);
+          });
+          if (coords.length < 3) return;
+
+          let subArea = areaTotal;
+          if (!subArea || isNaN(subArea) || polygonRings.length > 1) {
+            subArea = computePolygonAreaHa(coords);
+          }
+
+          extractedFarms.push({
+            id: `farm_${idx}_${rIdx}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            nomeFaz: String(nomeFaz).trim(),
+            talhao: String(talhao).trim(),
+            zona: String(zona).trim(),
+            variedade: String(variedade).trim(),
+            areaTotal: Math.round(subArea * 100) / 100,
+            coords
+          });
+        });
+      });
+      return extractedFarms;
+    }
+
+    function parseFarmKml(xmlText, fileName) {
+      const dom = new DOMParser().parseFromString(xmlText, "text/xml");
+      const placemarks = dom.querySelectorAll("Placemark");
+      const extractedFarms = [];
+
+      placemarks.forEach((p, pIdx) => {
+        const polyEl = p.querySelector("Polygon");
+        if (!polyEl) return;
+
+        const coordsEl = polyEl.querySelector("outerBoundaryIs coordinates") || polyEl.querySelector("coordinates");
+        if (!coordsEl) return;
+
+        const coords = [];
+        coordsEl.textContent.trim().split(/\s+/).forEach(tok => {
+          const parts = tok.split(",");
+          if (parts.length >= 2) {
+            const lon = parseFloat(parts[0]);
+            const lat = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+          }
+        });
+
+        if (coords.length < 3) return;
+
+        const attrs = {};
+        p.querySelectorAll("SimpleData").forEach(el => {
+          const n = el.getAttribute("name");
+          if (n) attrs[n.toUpperCase().trim()] = el.textContent.trim();
+        });
+        p.querySelectorAll("ExtendedData Data").forEach(el => {
+          const n = el.getAttribute("name");
+          const v = el.querySelector("value") ? el.querySelector("value").textContent.trim() : "";
+          if (n) attrs[n.toUpperCase().trim()] = v;
+        });
+
+        const nameEl = p.querySelector("name");
+        let nomeFaz = attrs['NOME_FAZ'] || attrs['FAZENDA'] || attrs['NOME'] || (nameEl ? nameEl.textContent.trim() : fileName);
+        let talhao = attrs['TALHAO'] || attrs['DESC_TALHA'] || `T${pIdx + 1}`;
+        let variedade = attrs['VARIEDADE'] || attrs['CULTURA'] || '';
+        let areaTotal = parseFloat(attrs['AREA_TOTAL']) || parseFloat(attrs['AREA']) || computePolygonAreaHa(coords);
+
+        extractedFarms.push({
+          id: `kml_farm_${pIdx}_${Date.now()}`,
+          nomeFaz: String(nomeFaz).trim(),
+          talhao: String(talhao).trim(),
+          zona: attrs['ZONA'] || '1',
+          variedade: String(variedade).trim(),
+          areaTotal: Math.round(areaTotal * 100) / 100,
+          coords
+        });
+      });
+      return extractedFarms;
+    }
+
+    async function handleFarmBoundaryFiles(e) {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      showToast(`Processando ${files.length} arquivos de talhões...`);
+      const newFarms = [];
+      let preferredZone = detectPreferredUtmZone();
+
+      // 1. Arquivos .ZIP
+      const zipFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+      for (const zf of zipFiles) {
+        try {
+          if (typeof shp === 'undefined') throw new Error("Biblioteca shp.js não carregada.");
+          const buf = await zf.arrayBuffer();
+          const res = await shp(buf);
+          const collections = Array.isArray(res) ? res : [res];
+          collections.forEach(col => {
+            if (col && col.features) {
+              newFarms.push(...parseGeoJsonFeatures(col.features, col.fileName || zf.name, preferredZone));
+            }
+          });
+        } catch (err) {
+          console.error("Erro no ZIP:", err);
+          showToast(`Erro no ZIP ${zf.name}: ${err.message}`, "error");
+        }
+      }
+
+      // 2. Arquivos avulsos .SHP
+      const shpFiles = files.filter(f => f.name.toLowerCase().endsWith('.shp'));
+      for (const shpFile of shpFiles) {
+        try {
+          if (typeof shp === 'undefined') throw new Error("Biblioteca shp.js não carregada.");
+          const baseName = shpFile.name.replace(/\.shp$/i, '').toLowerCase();
+          const dbfFile = files.find(f => f.name.toLowerCase() === `${baseName}.dbf` || f.name.toLowerCase().endsWith('.dbf'));
+          const prjFile = files.find(f => f.name.toLowerCase() === `${baseName}.prj` || f.name.toLowerCase().endsWith('.prj'));
+
+          const shpBuf = await shpFile.arrayBuffer();
+          const dbfBuf = dbfFile ? await dbfFile.arrayBuffer() : null;
+          const prjStr = prjFile ? await prjFile.text() : null;
+          if (prjStr) preferredZone = detectPreferredUtmZone(prjStr);
+
+          const geometries = shp.parseShp(shpBuf, prjStr);
+          const properties = dbfBuf ? shp.parseDbf(dbfBuf) : [];
+          const combined = shp.combine([geometries, properties]);
+          newFarms.push(...parseGeoJsonFeatures(combined.features, shpFile.name, preferredZone));
+        } catch (err) {
+          console.error("Erro no SHP:", err);
+          showToast(`Erro no SHP ${shpFile.name}: ${err.message}`, "error");
+        }
+      }
+
+      // 3. Arquivos KML de polígono
+      const kmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.kml'));
+      for (const kf of kmlFiles) {
+        try {
+          const text = await kf.text();
+          newFarms.push(...parseFarmKml(text, kf.name));
+        } catch (err) {
+          console.error("Erro no KML de talhão:", err);
+        }
+      }
+
+      if (newFarms.length > 0) {
+        savedFarmBoundaries = [...newFarms];
+        localStorage.setItem('jd_saved_farm_boundaries', JSON.stringify(savedFarmBoundaries));
+        renderFarmBoundariesOnMap();
+        showToast(`🌾 ${newFarms.length} contornos de talhões carregados e desenhados no mapa!`);
+      } else {
+        showToast("Nenhum polígono de talhão identificado nos arquivos.", "error");
+      }
+      e.target.value = '';
+    }
+
+    function renderFarmBoundariesOnMap() {
+      Object.values(farmBoundaryLayers).forEach(l => {
+        if (leafletMap && leafletMap.hasLayer(l)) leafletMap.removeLayer(l);
+      });
+      farmBoundaryLayers = {};
+
+      const lblToggle = document.getElementById('lblShowFarms');
+      if (lblToggle) {
+        lblToggle.style.display = savedFarmBoundaries.length > 0 ? 'inline-flex' : 'none';
+      }
+
+      if (!showFarmBoundaries || !savedFarmBoundaries || savedFarmBoundaries.length === 0) return;
+
+      const allCoords = [];
+      savedFarmBoundaries.forEach(farm => {
+        if (!farm.coords || farm.coords.length < 3) return;
+        allCoords.push(...farm.coords);
+
+        const poly = L.polygon(farm.coords, {
+          color: '#f59e0b',
+          weight: 2,
+          dashArray: '5, 5',
+          fillColor: '#f59e0b',
+          fillOpacity: 0.12
+        });
+
+        const tip = `<b>🌾 ${farm.nomeFaz}</b>${farm.talhao ? ' - T. ' + farm.talhao : ''}<br><span style="color:#fde68a;">${farm.areaTotal.toFixed(1)} ha</span>`;
+        poly.bindTooltip(tip, { sticky: true });
+
+        poly.bindPopup(`
+          <div style="font-size:0.84rem; min-width:200px; padding:4px;">
+            <div style="font-weight:700; color:#f59e0b; border-bottom:1px solid #334155; padding-bottom:4px; margin-bottom:6px;">
+              🌾 ${farm.nomeFaz} - Talhão ${farm.talhao || '-'}
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+              <div><span style="color:#94a3b8; font-size:0.7rem;">ÁREA:</span><br><b>${farm.areaTotal.toFixed(2)} ha</b></div>
+              <div><span style="color:#94a3b8; font-size:0.7rem;">VARIEDADE:</span><br><b style="color:#10b981;">${farm.variedade || '-'}</b></div>
+            </div>
+          </div>
+        `);
+
+        poly.addTo(leafletMap);
+        farmBoundaryLayers[farm.id] = poly;
+      });
+
+      if (allCoords.length > 0 && (!cachedRoutes || cachedRoutes.length === 0)) {
+        leafletMap.fitBounds(L.latLngBounds(allCoords), { padding: [30, 30] });
+      }
+    }
+
+    function toggleFarmBoundariesVisibility() {
+      const chk = document.getElementById('chkShowFarms');
+      showFarmBoundaries = chk ? chk.checked : true;
+      renderFarmBoundariesOnMap();
+    }
+
+    // =========================================================================
+    // INTEGRAÇÃO JOHN DEERE OPERATIONS CENTER & AMOSTRAS OFICIAIS (GEN4)
+    // =========================================================================
+    let activeSampleData = null;
+    let samplePointsLayer = null;
+
+    async function openJDSamplesModal() {
+      const modal = document.getElementById('jdSamplesModal');
+      const container = document.getElementById('jdSamplesList');
+      if (!modal || !container) return;
+
+      container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">Carregando catálogo oficial John Deere...</div>';
+      modal.classList.add('active');
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/johndeere/amostras');
+        const samples = await res.json();
+
+        container.innerHTML = samples.map(s => `
+          <div style="background: #090e17; border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: border-color 0.2s;" onmouseenter="this.style.borderColor='#38bdf8'" onmouseleave="this.style.borderColor='var(--border)'">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-weight: 700; color: #f8fafc; font-size: 0.85rem;">${s.titulo}</span>
+                <span style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 1px 6px; border-radius: 4px; font-weight: 600;">${s.tipo}</span>
+              </div>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 4px;">
+                <strong>Fazenda:</strong> ${s.fazenda} • <strong>Talhão:</strong> ${s.talhao} • <strong>Cultura:</strong> ${s.cultura} • <strong>Pontos:</strong> ${s.pontos_estimados.toLocaleString('pt-BR')}
+              </div>
+              <div style="font-size: 0.70rem; color: #10b981;">
+                ✨ ${s.destaque}
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="loadJDSample('${s.id}')" style="flex-shrink: 0; padding: 6px 14px;">
+              <i data-lucide="play" style="width:13px; height:13px;"></i> Carregar
+            </button>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        container.innerHTML = `<div style="color: #ef4444; padding: 15px;">Falha ao carregar catálogo: ${err.message}</div>`;
+      }
+    }
+
+    function closeJDSamplesModal() {
+      const modal = document.getElementById('jdSamplesModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function closeTankMixHud() {
+      const hud = document.getElementById('tankMixHud');
+      if (hud) hud.style.display = 'none';
+    }
+
+    async function loadJDSample(sampleId) {
+      closeJDSamplesModal();
+      showToast("Carregando amostra oficial John Deere...", false);
+
+      try {
+        const res = await fetch(`/api/johndeere/amostras/${sampleId}?max_points=20000`);
+        const data = await res.json();
+        if (!data.success) {
+          showToast("Erro ao processar amostra JD.", true);
+          return;
+        }
+
+        activeSampleData = data;
+        renderJDSampleOnMap(data);
+        renderJDSampleRecipe(data);
+        updateKpisWithSample(data);
+        showToast(`Amostra "${data.metadata.produto_principal}" carregada com sucesso! (${data.kpis.pontos_exibidos.toLocaleString('pt-BR')} pontos)`);
+      } catch (err) {
+        console.error("Erro ao carregar amostra:", err);
+        showToast("Falha na conexão com o servidor ao carregar amostra.", true);
+      }
+    }
+
+    function renderJDSampleRecipe(data) {
+      const hud = document.getElementById('tankMixHud');
+      if (!hud) return;
+
+      hud.style.display = 'block';
+      document.getElementById('tankMixTitle').textContent = data.metadata.produto_principal || 'Receituário de Tanque';
+      document.getElementById('tankMixMeta').textContent = `Fazenda: ${data.metadata.fazenda} • Talhão: ${data.metadata.talhao} • ${data.metadata.operacao} (${data.metadata.safra})`;
+
+      const comps = data.metadata.receituario || [];
+      const compsDiv = document.getElementById('tankMixComponents');
+      if (comps.length > 0) {
+        compsDiv.innerHTML = comps.map(c => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); font-size: 0.72rem;">
+            <span style="color: ${c.carreador ? '#38bdf8' : '#f8fafc'}; font-weight: ${c.carreador ? '400' : '600'};">
+              ${c.carreador ? '💧 ' : '🧪 '}${c.nome}
+            </span>
+            <span style="color: #f59e0b; font-family: monospace;">${c.taxa_valor || ''} ${c.unidade || ''}</span>
+          </div>
+        `).join('');
+      } else {
+        compsDiv.innerHTML = '<div style="color:#94a3b8; font-size:0.7rem;">Operação com semente certificada ou produto único.</div>';
+      }
+
+      document.getElementById('tankMixSections').textContent = `${data.kpis.total_secoes} Seções / Bicos`;
+      document.getElementById('tankMixSavings').textContent = `${data.kpis.eficiencia_secoes_pct}% Eficiência`;
+      lucide.createIcons();
+    }
+
+    function renderJDSampleOnMap(data) {
+      if (!leafletMap) return;
+
+      if (samplePointsLayer) {
+        leafletMap.removeLayer(samplePointsLayer);
+        samplePointsLayer = null;
+      }
+
+      if (mapMarkersLayer) {
+        mapMarkersLayer.clearLayers();
+      }
+
+      samplePointsLayer = L.layerGroup();
+      const pts = data.pontos || [];
+      const maxRate = data.kpis.taxa_max || 1.0;
+      const minRate = data.kpis.taxa_min || 0.0;
+      const diffRate = Math.max(maxRate - minRate, 0.001);
+
+      const latlngs = [];
+      pts.forEach(p => {
+        latlngs.push([p.lat, p.lng]);
+
+        const norm = Math.min(Math.max((p.rate - minRate) / diffRate, 0), 1);
+        let color = '#22c55e';
+        if (norm < 0.25) color = '#38bdf8';
+        else if (norm > 0.75) color = '#ef4444';
+        else if (norm > 0.5) color = '#f59e0b';
+
+        const marker = L.circleMarker([p.lat, p.lng], {
+          radius: 3,
+          fillColor: color,
+          color: color,
+          weight: 1,
+          opacity: 0.8,
+          fillOpacity: 0.6
+        });
+
+        const pop = `
+          <div style="font-family: sans-serif; font-size: 11px; line-height: 1.4; color: #090e17;">
+            <strong style="color: #0284c7;">Ponto Telemetria John Deere Gen4</strong><br/>
+            <b>Taxa Aplicada:</b> ${p.rate} <br/>
+            <b>Taxa Alvo:</b> ${p.target_rate || '--'} <br/>
+            <b>Seção / Bico:</b> #${p.section || 0}<br/>
+            <b>Elevação:</b> ${p.elevation ? p.elevation + ' m' : '--'}<br/>
+            <b>Rumo / Bússola:</b> ${p.heading ? p.heading + '°' : '--'}<br/>
+            <b>Hora:</b> ${p.time || '--'}
+          </div>
+        `;
+        marker.bindPopup(pop);
+        samplePointsLayer.addLayer(marker);
+      });
+
+      if (latlngs.length > 1) {
+        const poly = L.polyline(latlngs, {
+          color: '#38bdf8',
+          weight: 1.5,
+          opacity: 0.45
+        });
+        samplePointsLayer.addLayer(poly);
+      }
+
+      samplePointsLayer.addTo(leafletMap);
+
+      if (data.bounds && data.bounds.lat_min && data.bounds.lat_max) {
+        leafletMap.fitBounds([
+          [data.bounds.lat_min, data.bounds.lng_min],
+          [data.bounds.lat_max, data.bounds.lng_max]
+        ], { padding: [30, 30] });
+      }
+
+      const hudRoutes = document.getElementById('hudRoutes');
+      if (hudRoutes) hudRoutes.textContent = '1 (Amostra JD)';
+      const hudPoints = document.getElementById('hudPoints');
+      if (hudPoints) hudPoints.textContent = pts.length.toLocaleString('pt-BR');
+    }
+
+    function updateKpisWithSample(data) {
+      const k = data.kpis;
+      const m = data.metadata;
+
+      document.getElementById('kpiDeltaHours').textContent = `+${k.duracao_estimada_h || 3.0} h`;
+      document.getElementById('kpiTotalArea').textContent = `${k.area_trabalhada_ha.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ha`;
+      document.getElementById('kpiAvgRate').textContent = `${k.taxa_media} ${m.operacao.includes('Colheita') ? 'sc/ha' : (m.operacao.includes('Plantio') ? 'sem/m²' : 'L/ha')}`;
+      document.getElementById('kpiWorkingWidth').textContent = `${(k.distancia_percorrida_km > 0 ? (k.area_trabalhada_ha * 10 / k.distancia_percorrida_km).toFixed(1) : 24.0)} m`;
+      document.getElementById('kpiAvgSpeed').textContent = `14,2 km/h`;
+      document.getElementById('kpiAvgRpm').textContent = `1.650 RPM`;
+      document.getElementById('kpiAvgLoad').textContent = `~42%`;
+      document.getElementById('kpiFilesCount').textContent = `1 (Ops)`;
+
+      const kpiDiesel = document.getElementById('kpiDieselCons');
+      if (kpiDiesel) {
+        kpiDiesel.textContent = `~${k.consumo_estimado_lh || 32} L/h • ${k.consumo_estimado_lha || 7.6} L/ha`;
+      }
+      const kpiCap = document.getElementById('kpiFieldCapacity');
+      if (kpiCap) {
+        kpiCap.textContent = `~${k.capacidade_campo_hah || 4.2} ha/h`;
+      }
+    }
+
+    // =========================================================================
+    // DRAG & DROP & UPLOAD DE ARQUIVOS E PASTAS
+    // =========================================================================
+    const dropZone = document.getElementById('dropZone');
+
+    window.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('active');
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget === null) {
+        dropZone.classList.remove('active');
+      }
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('active');
+      showToast("Examinando conteúdo da pasta/arquivos...");
+
+      const files = await extractFilesFromDropEvent(e.dataTransfer);
+      if (files.length === 0) {
+        showToast("Nenhum arquivo .JDL identificado.", "error");
+        return;
+      }
+      uploadFiles(files);
+    });
+
+    function isSupportedUploadFile(fname) {
+      if (!fname) return false;
+      const lower = fname.toLowerCase();
+      return (
+        lower.endsWith('.jdl') ||
+        lower.endsWith('.zip') ||
+        lower.endsWith('.rar')
+      );
+    }
+
+    async function extractFilesFromDropEvent(dataTransfer) {
+      const items = dataTransfer.items;
+      const collectedFiles = [];
+
+      async function traverseEntry(entry, parentPath = "") {
+        if (!entry) return;
+        if (entry.isFile) {
+          return new Promise((resolve) => {
+            entry.file((file) => {
+              if (isSupportedUploadFile(file.name)) {
+                const virtualPath = (parentPath ? parentPath + '/' : '') + file.name;
+                try { Object.defineProperty(file, 'relativePath', { value: virtualPath, writable: true }); } catch(e) {}
+                collectedFiles.push(file);
+              }
+              resolve();
+            }, () => resolve());
+          });
+        } else if (entry.isDirectory) {
+          const dirReader = entry.createReader();
+          const currentPath = (parentPath ? parentPath + '/' : '') + entry.name;
+          return new Promise((resolve) => {
+            function readBatch() {
+              dirReader.readEntries(async (entries) => {
+                if (!entries || entries.length === 0) {
+                  resolve();
+                } else {
+                  for (const subEntry of entries) {
+                    await traverseEntry(subEntry, currentPath);
+                  }
+                  readBatch();
+                }
+              }, () => resolve());
+            }
+            readBatch();
+          });
+        }
+      }
+
+      if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+        for (let i = 0; i < items.length; i++) {
+          const entry = items[i].webkitGetAsEntry();
+          if (entry) await traverseEntry(entry);
+        }
+      } else if (dataTransfer.files && dataTransfer.files.length > 0) {
+        for (let i = 0; i < dataTransfer.files.length; i++) {
+          const f = dataTransfer.files[i];
+          if (isSupportedUploadFile(f.name)) {
+            collectedFiles.push(f);
+          }
+        }
+      }
+      return collectedFiles;
+    }
+
+    function handleFolderSelect(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        const supported = Array.from(e.target.files).filter(f => isSupportedUploadFile(f.name));
+        if (supported.length === 0) {
+          showToast("Nenhum arquivo compatível (.JDL, .ZIP ou .RAR) encontrado na pasta.", "error");
+          return;
+        }
+        uploadFiles(supported);
+      }
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        const supported = Array.from(e.target.files).filter(f => isSupportedUploadFile(f.name));
+        if (supported.length === 0) {
+          showToast("Nenhum arquivo compatível (.JDL, .ZIP ou .RAR) selecionado.", "error");
+          return;
+        }
+        uploadFiles(supported);
+      }
+    }
+
+    async function uploadFiles(fileList) {
+      const validFiles = Array.from(fileList).filter(f => isSupportedUploadFile(f.name));
+      if (validFiles.length === 0) return;
+
+      const progressStrip = document.getElementById('uploadProgressStrip');
+      const progressBar = document.getElementById('uploadProgressBar');
+
+      const BATCH_SIZE = 40;
+      const totalFiles = validFiles.length;
+      const totalBatches = Math.ceil(totalFiles / BATCH_SIZE);
+      let totalImported = 0;
+      let totalSkipped = 0;
+      let totalErrors = 0;
+
+      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+        const start = batchIdx * BATCH_SIZE;
+        const end = Math.min(start + BATCH_SIZE, totalFiles);
+        const batch = validFiles.slice(start, end);
+
+        const pct = Math.round((batchIdx / totalBatches) * 100);
+        progressBar.style.width = `${pct}%`;
+        showToast(`Indexando lote ${batchIdx + 1} de ${totalBatches} (${start + 1} a ${end} de ${totalFiles})...`);
+
+        const formData = new FormData();
+        for (let i = 0; i < batch.length; i++) {
+          const file = batch[i];
+          const relPath = file.webkitRelativePath || file.name;
+          formData.append('files', file, relPath);
+        }
+
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const data = await response.json();
+          if (data.resultados) {
+            totalImported += data.resultados.filter(r => r.status === 'imported').length;
+            totalSkipped += data.resultados.filter(r => r.status === 'skipped').length;
+            totalErrors += data.resultados.filter(r => r.status === 'error').length;
+          }
+        } catch (err) {
+          console.error(`Erro lote ${batchIdx + 1}:`, err);
+          totalErrors += batch.length;
+        }
+      }
+
+      progressBar.style.width = '100%';
+      setTimeout(() => { progressBar.style.width = '0%'; }, 1500);
+
+      showToast(`Upload concluído: ${totalImported} novos, ${totalSkipped} já existentes, ${totalErrors} erros.`, totalErrors > 0 && totalImported === 0 ? "error" : "success");
+      loadDashboardData();
+    }
+
+    async function scanCustomFolder() {
+      const folderInput = document.getElementById('inputCustomFolder');
+      const btn = document.getElementById('btnScanCustomFolder');
+      const folderPath = folderInput.value.trim();
+
+      if (!folderPath) {
+        showToast("Digite o caminho da pasta JD-Data.", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" style="width:14px; height:14px;"></i> Varrendo...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/scan-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder_path: folderPath })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Pasta não encontrada");
+        }
+
+        const data = await res.json();
+        showToast(`Varredura concluída: ${data.importados} novos, ${data.duplicados_ignorados} já indexados.`);
+        closeFolderModal();
+        loadDashboardData();
+      } catch (e) {
+        showToast(`Erro ao varrer pasta: ${e.message}`, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play" style="width:14px; height:14px;"></i> Iniciar Importação`;
+        lucide.createIcons();
+      }
+    }
+
+    async function syncLocalFiles() {
+      const btn = document.getElementById('btnSyncLocal');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin" style="width:14px; height:14px;"></i> Sincronizando...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/sync-local', { method: 'POST' });
+        const data = await res.json();
+        showToast("Arquivos locais sincronizados com sucesso!");
+        loadDashboardData();
+      } catch (e) {
+        showToast("Erro ao sincronizar pasta local.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Sincronizar`;
+        lucide.createIcons();
+      }
+    }
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toastMsg');
+      const icon = document.getElementById('toastIcon');
+
+      msg.textContent = message;
+      if (type === "success") {
+        toast.className = "show";
+        icon.setAttribute("data-lucide", "check-circle");
+      } else {
+        toast.className = "show error";
+        icon.setAttribute("data-lucide", "alert-circle");
+      }
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.className = "";
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

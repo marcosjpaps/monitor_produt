@@ -121,3 +121,4 @@ backend/aggps_settings.json
 # --- AMOSTRAS E SCRIPTS DE ANÁLISE TEMPORÁRIOS ---
 jdl_analyzer.py
 test_backend.py
+.vercel

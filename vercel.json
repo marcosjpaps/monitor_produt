@@ -3,7 +3,7 @@
   "name": "agrotelemetry-monitor",
   "buildCommand": "echo 'Static frontend - no build step required'",
   "outputDirectory": "frontend",
-  "installCommand": "pip install -r backend/requirements.txt",
+  "installCommand": "npm install",
   "framework": null,
   "routes": [
     { "src": "/api/voos", "dest": "/api/voos.js" },
@@ -12,16 +12,19 @@
     { "src": "/api/importacoes", "dest": "/api/importacoes.js" },
     { "src": "/api/preview", "dest": "/api/preview.js" },
     { "src": "/api/(.*)", "dest": "/api/index.py" },
-    { "src": "/johndeere", "dest": "/frontend/index.html" },
-    { "src": "/jacto", "dest": "/frontend/jacto.html" },
-    { "src": "/massey", "dest": "/frontend/massey.html" },
-    { "src": "/massei", "dest": "/frontend/massey.html" },
-    { "src": "/drone", "dest": "/frontend/drone.html" },
-    { "src": "/studio", "dest": "/frontend/studio.html" },
-    { "src": "/css/(.*)", "dest": "/frontend/css/$1" },
-    { "src": "/js/(.*)", "dest": "/frontend/js/$1" },
-    { "src": "/shp.js", "dest": "/frontend/shp.js" },
-    { "src": "/(.*)", "dest": "/frontend/portal.html" }
+    { "src": "/static/(.*)", "dest": "/$1" },
+    { "src": "/johndeere", "dest": "/johndeere.html" },
+    { "src": "/dashboard", "dest": "/johndeere.html" },
+    { "src": "/jdl", "dest": "/johndeere.html" },
+    { "src": "/jacto", "dest": "/jacto.html" },
+    { "src": "/massey", "dest": "/massey.html" },
+    { "src": "/massei", "dest": "/massey.html" },
+    { "src": "/drone", "dest": "/drone.html" },
+    { "src": "/Mapa_Aplicacao_Drones.html", "dest": "/drone.html" },
+    { "src": "/studio", "dest": "/studio.html" },
+    { "src": "/isoxml", "dest": "/studio.html" },
+    { "src": "/portal", "dest": "/index.html" },
+    { "src": "/portal.html", "dest": "/index.html" }
   ],
   "env": {
     "APP_ENV": "production",
@@ -29,9 +32,9 @@
   },
   "functions": {
     "api/index.py": {
-      "runtime": "python3.12",
       "maxDuration": 30,
-      "memory": 512
+      "memory": 512,
+      "excludeFiles": "{node_modules/**,telemetria.db,*.zip,*.js,*.html,samples/**,AgGPS_Data/**,ENC__ARQUIVOS/**,scratch/**,open-dronelog/**,.venv/**,frontend/**}"
     }
   },
   "headers": [

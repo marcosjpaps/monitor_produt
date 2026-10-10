@@ -22,3 +22,7 @@ py7zr>=0.21.0
 # Segurança e validação
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+
+# Leitura SHP/DBF portátil (dispensa QGIS/GDAL)
+pyshp>=2.3.1
+numpy>=1.26.0

@@ -1,0 +1,13 @@
+.venv
+node_modules
+telemetria.db
+ENC__ARQUIVOS.zip
+ENC__ARQUIVOS/
+samples/
+scratch/
+tests/
+open-dronelog/
+*.kml
+*.db
+.vercel
+AgGPS_Data/
