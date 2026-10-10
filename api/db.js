@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { AsyncLocalStorage } = require('async_hooks');
 const context = new AsyncLocalStorage();
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "postgresql://neondb_owner:npg_1NDTULH5VwOP@ep-withered-wildflower-b5qp3tqu-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require";
 let pool, local;
 if (process.env.DB_MODE === 'pglite') {
   const {PGlite}=require('@electric-sql/pglite');

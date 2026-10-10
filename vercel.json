@@ -22,7 +22,9 @@
   ],
   "env": {
     "APP_ENV": "production",
-    "APP_DEBUG": "false"
+    "APP_DEBUG": "false",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_1NDTULH5VwOP@ep-withered-wildflower-b5qp3tqu-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    "POSTGRES_URL": "postgresql://neondb_owner:npg_1NDTULH5VwOP@ep-withered-wildflower-b5qp3tqu-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
   },
   "functions": {
     "api/index.py": {
