@@ -16,7 +16,7 @@ from pathlib import Path
 from .archive_utils import safe_extract, safe_name, extract_rar
 from .pg_adapter import connect as pg_connect
 
-MODULES = {"johndeere", "jacto", "massey"}
+MODULES = {"johndeere", "jacto", "massey", "stara", "caseih", "trimble"}
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_REHYDRATE_FILES = 1500
 

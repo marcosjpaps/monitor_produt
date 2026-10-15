@@ -30,7 +30,7 @@
   const modules={
     johndeere:{title:'John Deere',url:'/johndeere',color:'#94c11f',unit:'Rastros de telemetria'},
     jacto:{title:'Jacto / AgGPS',url:'/jacto',color:'#fb923c',unit:'Eventos de aplicação'},
-    massey:{title:'Massey Ferguson',url:'/massey',color:'#f87171',unit:'Operações importadas'}
+    massey:{title:'Massey / Trimble / Outros',url:'/massey',color:'#f87171',unit:'Operações geográficas importadas'}
   };
   let toastTimer;
 
@@ -83,9 +83,9 @@
     return (Array.isArray(raw)?raw:[]).map((r,i)=>({
       id:String(r.uuid||r.id||'mf-'+i),date:r.operation_date||r.imported_at||'',
       farm:r.farm_name||'',field:r.field_name||'',
-      machine:r.vehicle_name==='Não informado'?'':r.vehicle_name||r.device_serial||'',
+      machine:(r.vehicle_name && r.vehicle_name!=='Não informado' ? r.vehicle_name : ({caseih:'Case IH',stara:'Stara',trimble:'Trimble',massey:'Massey'}[r.device_product] || r.device_product || r.device_serial || '')),
       operation:r.operation_type||'',
-      area:number(r.area_ha),speed:number(r.avg_speed_kmh),hours:number(r.duration_hours),
+      area:number(r.area_ha),speed:number(r.speed_kmh||r.avg_speed_kmh),hours:number(r.duration_hours),
       filename:r.clean_name||r.raw_name||'',details:r,geo:r.geojson_geometry||null
     }));
   }
