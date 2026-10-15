@@ -82,10 +82,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             ("operador", "TEXT")
         ]
         for col, ctype in cols_arquivos:
-            try:
-                cursor.execute(f"ALTER TABLE arquivos_processados ADD COLUMN {col} {ctype};")
-            except Exception:
-                pass
+            cursor.execute(f"ALTER TABLE arquivos_processados ADD COLUMN IF NOT EXISTS {col} {ctype};")
 
         # Backfill e consistência
         try:
@@ -134,10 +131,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             ("status_operacao", "TEXT DEFAULT 'DESLOCAMENTO'")
         ]
         for col, ctype in cols_telemetria:
-            try:
-                cursor.execute(f"ALTER TABLE telemetria_registros ADD COLUMN {col} {ctype};")
-            except Exception:
-                pass
+            cursor.execute(f"ALTER TABLE telemetria_registros ADD COLUMN IF NOT EXISTS {col} {ctype};")
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_telemetria_time ON telemetria_registros(timestamp_ms);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_telemetria_maq ON telemetria_registros(maquina_id);")
