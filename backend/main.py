@@ -133,6 +133,10 @@ def startup_event():
     hydrate_jacto_imports()
 
 def sync_default_local_files():
+    # Na nuvem, dados de exemplo não devem ser importados como operações reais.
+    # Cada importação em produção deve ser acionada pelo usuário e auditada.
+    if os.environ.get("VERCEL"):
+        return 0
     # Caminho configurável via variável de ambiente (sem hardcode de máquina específica)
     default_dir = os.environ.get(
         "JD_DATA_PATH",
