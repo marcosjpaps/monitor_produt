@@ -1307,7 +1307,7 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                 parsed = _import_json.loads(response.body)
                 details = parsed["results"]
                 count = int(parsed.get("imported") or 0)
-                good = any(x.get("status") in ("imported", "duplicate") for x in details)
+                good = count > 0 and any(x.get("status") == "imported" for x in details)
             if good:
                 # Só arquivos AgGPS viram blobs persistentes; JD/MF gravam dados estruturados.
                 store_binary = (module == "jacto" and (
