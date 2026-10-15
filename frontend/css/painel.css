@@ -18,14 +18,14 @@ body.light .btn.primary{color:white}
 input[type="checkbox"]{accent-color:var(--primary);width:17px;height:17px}
 input[type="text"],input[type="search"],input[type="date"],select{background:var(--card);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:8px;min-height:35px;min-width:0}
 .top-shell{flex:none;border-bottom:1px solid var(--border);z-index:450;background:var(--panel)}
-.topbar{display:flex;align-items:center;gap:14px;padding:10px 17px;min-height:65px}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:10px 17px;min-height:65px}
 .brand{display:flex;align-items:center;gap:10px;min-width:188px}
 .brand-mark{width:39px;height:39px;border-radius:9px;background:linear-gradient(135deg,#0369a1,#10b981);display:grid;place-items:center;color:white}
 .brand-mark .icon{width:24px;height:24px}
 .brand b{display:block;font-size:17px;letter-spacing:-.45px;line-height:1.2}
 .brand b span{color:var(--primary)}
 .brand small{display:block;color:var(--muted);font-size:11px}
-.top-center{display:flex;gap:5px;align-items:center;flex:1;min-width:0}
+.top-center{display:flex;gap:5px;align-items:center;flex:1 0 auto;min-width:0}
 .machine-tab{border:1px solid transparent;color:var(--muted);padding:9px 12px;background:transparent;border-radius:7px;min-height:40px;font-weight:650;white-space:nowrap}
 .machine-tab:hover{background:var(--hover);color:var(--ink)}
 .machine-tab[aria-selected="true"]{border-color:var(--primary);background:var(--card);color:var(--ink)}
