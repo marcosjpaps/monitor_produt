@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "agrotelemetry-monitor",
-  "buildCommand": "echo 'Static frontend - no build step required'",
+  "buildCommand": "node scripts/neon-preflight.js",
   "outputDirectory": "frontend",
   "installCommand": "npm install",
   "framework": null,
