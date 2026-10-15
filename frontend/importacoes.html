@@ -67,7 +67,7 @@
       <h2>2. Selecione os arquivos</h2>
       <label class="drop" id="drop">
         <strong>Arraste arquivos para cá ou selecione no aparelho</strong>
-        <small>Aceita até 50 arquivos por lote; no máximo 50 MB por arquivo.</small>
+        <small>Aceita até 50 arquivos por lote; ZIP John Deere de até 1 GB: envio por JDL, com progresso. Demais arquivos: até 50 MB.</small>
         <input type="file" id="files" multiple accept=".jdl,.zip,.rar">
       </label>
       <div class="actions">
@@ -99,6 +99,7 @@
   </main>
   <p class="foot-note">Os dados devem ser exportações válidas do equipamento. Arquivos AGF criptografados não podem ser decodificados automaticamente; exporte KML, SHP ou GeoJSON do monitor Trimble. A aplicação não inventa área ou rendimento quando essa informação não está disponível nos dados.</p>
 </div>
+<script src="/js/zip-import.js"></script>
 <script>
   const acceptByModule = {
     johndeere: '.jdl,.zip,.rar',
@@ -159,10 +160,10 @@
   }
   document.getElementById('upload').addEventListener('click', async () => {
     if (busy) return;
-    const items = Array.from(dropped || files.files || []);
+    let items = Array.from(dropped || files.files || []);
     if (!items.length) return say('Selecione pelo menos um arquivo.', true);
     if (items.length > 50) return say('Máximo de 50 arquivos por lote.', true);
-    if (items.some(f => f.size > 50 * 1024 * 1024)) return say('Um ou mais arquivos excedem 50 MB.', true);
+    if (items.some(f => f.size > (/\.zip$/i.test(f.name) ? 1024*1024*1024 : 50*1024*1024))) return say('Arquivo acima do limite. Para Massey, exporte geometrias abertas; pacotes criptografados não contêm trajetórias legíveis.', true);
     busy = true;
     document.getElementById('upload').disabled = true;
     results.replaceChildren();
@@ -171,10 +172,34 @@
       const allResults = [];
       const module = selected();
       const chunkSize = 2 * 1024 * 1024;
-      for (let idx = 0; idx < items.length; idx++) {
-        const file = items[idx];
-        say('Arquivo ' + (idx + 1) + '/' + items.length + ': ' + file.name);
+      const jobs=[];
+      const warnings=new Map();
+      // Validate all ZIP directories before the first write. Decompress only one member at a time.
+      for(const file of items){
+        let listing=null;
+        if(/\.zip$/i.test(file.name)){
+          listing=await AgriculturalZip.directory(file);
+          if(module==='massey'){
+            const encrypted=listing.filter(e=>/\.agf$/i.test(e.name)).length;
+            const open=listing.some(e=>/\.(shp|kml|geojson|json)$/i.test(e.name));
+            if(!open)throw Error(file.name+': sem geometria aberta; '+encrypted+' AGF. Exporte KML, SHP ou GeoJSON pelo monitor Trimble.');
+            if(encrypted)warnings.set(file.name,encrypted+' AGF proprietários não foram decodificados; somente as geometrias abertas foram processadas.');
+          }
+          if(module!=='johndeere' && file.size>50*1024*1024)throw Error(file.name+': pacote acima de 50 MB; exporte conjuntos abertos menores.');
+        }
+        if(module==='johndeere' && listing){
+          const entries=listing.filter(e=>/\.jdl$/i.test(e.name));
+          if(!entries.length)throw Error(file.name+': nenhum JDL encontrado.');
+          for(const entry of entries)jobs.push({archive:file,entry});
+        }else jobs.push({file});
+      }
+      for (let idx = 0; idx < jobs.length; idx++) {
+        const job=jobs[idx];
+        let file = job.file || {name:job.entry.name};
+        say('Arquivo ' + (idx + 1) + '/' + jobs.length + ': ' + file.name);
         let output;
+        try {
+        if(job.archive)file=await AgriculturalZip.member(job.archive,job.entry);
         if (file.size <= chunkSize) {
           const body = new FormData();
           body.append('module', module);
@@ -203,18 +228,25 @@
             body: JSON.stringify({ upload_id: uploadId, module, filename: file.name })
           });
         }
+        } catch(err) {
+          if(/Sessão expirada/.test(err.message))throw err;
+          output={results:[{filename:file.name,status:'error',message:err.message}]};
+        }
+        if(warnings.has(file.name))for(const item of output.results||[])item.message+=' '+warnings.get(file.name);
         allResults.push(...(output.results || []));
+        const latest=allResults[allResults.length-1];
+        say('Processados '+(idx+1)+'/'+jobs.length+' · '+(latest?.message||file.name));
       }
       const data = {
         results: allResults,
-        counts: Object.fromEntries(['imported','duplicate','archived','error'].map(
+        counts: Object.fromEntries(['imported','duplicate','archived','partial','error'].map(
           status => [status, allResults.filter(x => x.status === status).length]))
       };
       for (const item of data.results || []) {
         const box = document.createElement('div');
         box.className = 'result';
         const tag = asText('span', ({ imported:'Importado', duplicate:'Duplicado',
-          archived:'Arquivado',error:'Erro' }[item.status] || item.status));
+          archived:'Arquivado',partial:'Parcial',error:'Erro' }[item.status] || item.status));
         tag.className = 'tag';
         if (item.status === 'error') tag.classList.add('error');
         if (item.status === 'archived') tag.classList.add('warning');
@@ -225,7 +257,7 @@
       const counts = data.counts || {};
       say((counts.imported || 0) + ' arquivo(s) importados; '
         + (counts.duplicate || 0) + ' duplicados; '
-        + (counts.error || 0) + ' com erro.');
+        + (counts.partial || 0) + ' parciais; ' + (counts.error || 0) + ' com erro.');
       dropped = null;
       files.value = '';
       updateSelected();

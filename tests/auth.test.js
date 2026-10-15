@@ -1,4 +1,4 @@
-const { test } = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const os = require('node:os');
@@ -39,4 +39,7 @@ test('token assinado libera HEAD e protege mutações de origem externa', async 
   const expired = cookie({sub:'teste@example.com',iat:now-8000,exp:now-10});
   const r3 = response(); await handler({method:'HEAD',headers:{cookie:expired}},r3); assert.equal(r3.code,401);
 });
-process.on('exit',()=>fs.rmSync(tmp,{recursive:true,force:true}));
+after(async()=>{
+  await require('../api/db').close();
+  fs.rmSync(tmp,{recursive:true,force:true});
+});

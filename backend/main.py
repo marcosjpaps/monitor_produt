@@ -408,7 +408,7 @@ async def api_upload(files: List[UploadFile] = File(...)):
     import zipfile
 
     results = []
-    processed_set = get_processed_md5_set()
+    processed_set = set()
 
     with get_connection() as conn:
         for file in files:
@@ -453,7 +453,7 @@ async def api_upload(files: List[UploadFile] = File(...)):
                                     j_bytes = jf.read()
                                 try:
                                     parser = JDLParser(j_bytes, rel_jdl_name)
-                                    if parser.md5 in processed_set:
+                                    if parser.md5 in processed_set or conn.execute("SELECT 1 FROM arquivos_processados WHERE hash_md5=?", (parser.md5,)).fetchone():
                                         results.append({
                                             "filename": os.path.basename(rel_jdl_name),
                                             "status": "skipped",
@@ -462,7 +462,14 @@ async def api_upload(files: List[UploadFile] = File(...)):
                                         continue
 
                                     parsed = parser.parse()
-                                    aid = save_parsed_session(parsed, conn_external=conn)
+                                    conn.execute("SAVEPOINT jdl_member")
+                                    try:
+                                        aid = save_parsed_session(parsed, conn_external=conn)
+                                    except Exception:
+                                        conn.execute("ROLLBACK TO SAVEPOINT jdl_member")
+                                        raise
+                                    finally:
+                                        conn.execute("RELEASE SAVEPOINT jdl_member")
                                     processed_set.add(parser.md5)
 
                                     results.append({
@@ -483,7 +490,7 @@ async def api_upload(files: List[UploadFile] = File(...)):
                         else:
                             results.append({
                                 "filename": fname,
-                                "status": "skipped",
+                                "status": "rejected",
                                 "message": "Nenhum arquivo .JDL encontrado dentro do pacote compactado."
                             })
 
@@ -499,7 +506,7 @@ async def api_upload(files: List[UploadFile] = File(...)):
             elif lower_name.endswith(".jdl"):
                 try:
                     parser = JDLParser(raw_bytes, fname)
-                    if parser.md5 in processed_set:
+                    if parser.md5 in processed_set or conn.execute("SELECT 1 FROM arquivos_processados WHERE hash_md5=?", (parser.md5,)).fetchone():
                         results.append({
                             "filename": os.path.basename(fname),
                             "status": "skipped",
@@ -508,7 +515,14 @@ async def api_upload(files: List[UploadFile] = File(...)):
                         continue
 
                     parsed = parser.parse()
-                    arquivo_id = save_parsed_session(parsed, conn_external=conn)
+                    conn.execute("SAVEPOINT jdl_member")
+                    try:
+                        arquivo_id = save_parsed_session(parsed, conn_external=conn)
+                    except Exception:
+                        conn.execute("ROLLBACK TO SAVEPOINT jdl_member")
+                        raise
+                    finally:
+                        conn.execute("RELEASE SAVEPOINT jdl_member")
                     processed_set.add(parser.md5)
 
                     results.append({
@@ -1296,6 +1310,12 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                 details = parsed["results"]
                 count = int(parsed.get("imported") or 0)
                 good = any(x.get("status") in ("imported", "duplicate") for x in details)
+            failures = [x for x in details if x.get('status') in ('error', 'rejected')]
+            if good and failures:
+                results.append({'filename':name,'status':'partial','records':count,
+                                'message':f'{count} registros salvos; {len(failures)} falha(s). Reenvie para tentar os restantes.',
+                                'details':failures[:20]})
+                continue
             if good:
                 # Só arquivos AgGPS viram blobs persistentes; JD/MF gravam dados estruturados.
                 store_binary = (module == "jacto" and (
@@ -1325,7 +1345,7 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
             results.append({"filename": name, "status": "error", "records": 0,
                             "message": "Falha ao processar ou salvar este arquivo. Consulte o log do servidor."})
     counts = {status: sum(x["status"] == status for x in results)
-              for status in ("imported", "duplicate", "archived", "error")}
+              for status in ("imported", "duplicate", "archived", "partial", "error")}
     return {"module": module, "total": len(results), "counts": counts, "results": results}
 
 

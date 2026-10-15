@@ -27,7 +27,10 @@ class Field:
 class Layer:
     def __init__(self, file):
         file = Path(file)
-        reader = shapefile.Reader(dbf=str(file), encoding='utf-8', encodingErrors='replace') if file.suffix.lower()=='.dbf' else shapefile.Reader(str(file), encoding='utf-8', encodingErrors='replace')
+        cpg=file.with_suffix('.cpg')
+        encoding=cpg.read_text().strip() if cpg.exists() else 'utf-8'
+        encoding={'1252':'cp1252','65001':'utf-8'}.get(encoding,encoding)
+        reader = shapefile.Reader(dbf=str(file), encoding=encoding, encodingErrors='strict') if file.suffix.lower()=='.dbf' else shapefile.Reader(str(file), encoding=encoding, encodingErrors='strict')
         self.names = [f[0] for f in reader.fields[1:]]
         self.features = []
         transformer = None

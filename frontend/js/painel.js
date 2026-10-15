@@ -571,7 +571,6 @@
     if(!modules[module])return;
     state.module=module;state.requestSerial++;
     for(const b of document.querySelectorAll('[data-module]'))b.setAttribute('aria-selected',String(b.dataset.module===module));
-    $('moduleLink').href=modules[module].url;
     $('textFilter').value='';$('periodStart').value='';$('periodEnd').value='';
     closeModal();load();
     document.querySelectorAll('.filter-menu[open]').forEach(x=>x.open=false);
