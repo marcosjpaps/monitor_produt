@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { AsyncLocalStorage } = require('async_hooks');
 const context = new AsyncLocalStorage();
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "postgresql://neondb_owner:npg_1NDTULH5VwOP@ep-withered-wildflower-b5qp3tqu-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+if (process.env.VERCEL && !DATABASE_URL) {
+  throw new Error('DATABASE_URL precisa estar configurada nas variáveis protegidas da Vercel.');
+}
 let pool, local;
 if (process.env.DB_MODE === 'pglite') {
   const {PGlite}=require('@electric-sql/pglite');
@@ -12,7 +15,7 @@ if (process.env.DB_MODE === 'pglite') {
 } else if (DATABASE_URL) {
   const { Pool } = require('pg');
   pool = new Pool({ connectionString: DATABASE_URL,
-    ssl: process.env.PG_SSL === 'true' ? {rejectUnauthorized:true} : false });
+    ssl: process.env.PG_SSL === 'true' ? {rejectUnauthorized:true} : undefined });
 } else {
   const { DatabaseSync } = require('node:sqlite');
   const file = process.env.DB_PATH || path.join(__dirname, '../data/database.sqlite');
