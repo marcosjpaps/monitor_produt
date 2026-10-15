@@ -431,7 +431,7 @@
           <label style="display:block; font-size:0.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; text-transform:uppercase;">E-mail de Acesso</label>
           <div style="position:relative;">
             <i data-lucide="mail" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:#64748b;"></i>
-            <input type="email" id="txtEmail" required placeholder="marcos220896antonio@gmail.com" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 12px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
+            <input type="email" id="txtEmail" required placeholder="seu@email.com" style="width:100%; background:#090e17; border:1px solid #334155; border-radius:8px; padding:10px 12px 10px 36px; color:#f8fafc; font-size:0.85rem; outline:none; transition:border-color 0.2s;">
           </div>
         </div>
 
@@ -484,7 +484,7 @@
     <div class="sys-badges">
       <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:4px 10px; border-radius:20px; font-size:0.75rem;">
         <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
-        <span id="userBadgeEmail" style="color:#f8fafc; font-weight:600;">marcos220896antonio@gmail.com</span>
+        <span id="userBadgeEmail" style="color:#f8fafc; font-weight:600;">Administrador</span>
         <button onclick="logout()" title="Sair do Sistema" style="background:transparent; border:none; color:#ef4444; cursor:pointer; margin-left:6px; display:flex; align-items:center;">
           <i data-lucide="log-out" style="width:13px; height:13px;"></i>
         </button>
@@ -672,75 +672,87 @@
   </main>
 
   <script>
-    const AUTH_CONFIG = {
-      email: "marcos220896antonio@gmail.com",
-      pass: "MAR9115COS"
-    };
-
-    function checkAuth() {
-      const isAuth = localStorage.getItem('agromonitor_auth') || sessionStorage.getItem('agromonitor_auth');
+    // Autenticação validada no servidor. Nenhuma senha ou sessão é confiada ao localStorage.
+    function showLoggedIn(email) {
       const overlay = document.getElementById('loginOverlay');
       const userBadge = document.getElementById('userBadgeContainer');
       const userEmail = document.getElementById('userBadgeEmail');
-      const savedUser = localStorage.getItem('agromonitor_user') || sessionStorage.getItem('agromonitor_user');
-      
-      if (isAuth === 'true') {
-        if (overlay) overlay.style.display = 'none';
-        if (userBadge) userBadge.style.display = 'flex';
-        if (userEmail && savedUser) userEmail.innerText = savedUser;
-      } else {
-        if (overlay) overlay.style.display = 'flex';
-        if (userBadge) userBadge.style.display = 'none';
-        setTimeout(() => {
-          const el = document.getElementById('txtEmail');
-          if (el) el.focus();
-        }, 150);
+      if (overlay) overlay.style.display = 'none';
+      if (userBadge) userBadge.style.display = 'flex';
+      if (userEmail) userEmail.textContent = email;
+    }
+
+    function showLogin() {
+      const overlay = document.getElementById('loginOverlay');
+      const userBadge = document.getElementById('userBadgeContainer');
+      if (overlay) overlay.style.display = 'flex';
+      if (userBadge) userBadge.style.display = 'none';
+      const el = document.getElementById('txtEmail');
+      if (el) el.focus();
+    }
+
+    async function checkAuth() {
+      // Exclui dados antigos que nunca foram um login seguro.
+      for (const store of [localStorage, sessionStorage]) {
+        store.removeItem('agromonitor_auth');
+        store.removeItem('agromonitor_user');
+      }
+      try {
+        const response = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+        if (!response.ok) throw new Error('Sessão não autorizada');
+        const data = await response.json();
+        if (!data.authenticated) throw new Error('Sessão não autorizada');
+        showLoggedIn(data.email);
+      } catch {
+        showLogin();
       }
     }
 
-    function handleLogin(e) {
+    async function handleLogin(e) {
       if (e) e.preventDefault();
-      const emailInput = document.getElementById('txtEmail').value.trim().toLowerCase();
-      const passInput = document.getElementById('txtPassword').value.trim();
+      const input = document.getElementById('txtEmail');
+      const pass = document.getElementById('txtPassword');
+      const button = document.getElementById('btnLoginSubmit');
+      const email = input.value.trim().toLowerCase();
+      const password = pass.value;
       const remember = document.getElementById('chkRemember').checked;
       const errorBox = document.getElementById('loginError');
-
-      if (emailInput === AUTH_CONFIG.email.toLowerCase() && passInput === AUTH_CONFIG.pass) {
-        if (errorBox) errorBox.style.display = 'none';
-        if (remember) {
-          localStorage.setItem('agromonitor_auth', 'true');
-          localStorage.setItem('agromonitor_user', emailInput);
-        } else {
-          sessionStorage.setItem('agromonitor_auth', 'true');
-          sessionStorage.setItem('agromonitor_user', emailInput);
+      if (errorBox) errorBox.style.display = 'none';
+      if (button) button.disabled = true;
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, remember }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Não foi possível entrar. Tente novamente.');
         }
-        const overlay = document.getElementById('loginOverlay');
-        if (overlay) overlay.style.display = 'none';
-        const userBadge = document.getElementById('userBadgeContainer');
-        if (userBadge) userBadge.style.display = 'flex';
-        const userEmail = document.getElementById('userBadgeEmail');
-        if (userEmail) userEmail.innerText = emailInput;
-        lucide.createIcons();
-      } else {
+        pass.value = '';
+        showLoggedIn(data.email);
+      } catch (err) {
         if (errorBox) {
           errorBox.style.display = 'block';
-          errorBox.innerText = "E-mail ou senha incorretos. Verifique suas credenciais.";
+          errorBox.textContent = err.message || 'Erro ao entrar no sistema.';
         }
+      } finally {
+        if (button) button.disabled = false;
       }
     }
 
-    function logout() {
-      if (!confirm("Deseja realmente sair do sistema?")) return;
-      localStorage.removeItem('agromonitor_auth');
-      localStorage.removeItem('agromonitor_user');
-      sessionStorage.removeItem('agromonitor_auth');
-      sessionStorage.removeItem('agromonitor_user');
-      const overlay = document.getElementById('loginOverlay');
-      if (overlay) overlay.style.display = 'flex';
-      const userBadge = document.getElementById('userBadgeContainer');
-      if (userBadge) userBadge.style.display = 'none';
-      const pass = document.getElementById('txtPassword');
-      if (pass) pass.value = '';
+    async function logout() {
+      if (!confirm('Deseja realmente sair do sistema?')) return;
+      try {
+        const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        if (!response.ok) throw new Error('Falha ao sair');
+        showLogin();
+        const pass = document.getElementById('txtPassword');
+        if (pass) pass.value = '';
+      } catch {
+        alert('Não foi possível encerrar a sessão. Tente novamente.');
+      }
     }
 
     function togglePasswordVisibility() {
