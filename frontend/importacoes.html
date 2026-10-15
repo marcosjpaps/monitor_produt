@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#091321">
+  <title>Central de Importações • Monitor Agrícola</title>
+  <script src="/js/auth-guard.js"></script>
+  <style>
+    :root { color-scheme:dark; --bg:#07121e;--panel:#101f2f;--border:#28445a;--ink:#edf7fa;--muted:#9fb4c2;--green:#37cf91;--gold:#fac96a;--red:#ff858c }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(ellipse at top,#18334a,var(--bg) 65%);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);min-height:100vh}
+    .wrap{max-width:1160px;margin:auto;padding:25px 20px 70px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+    a{color:var(--green);text-decoration:none}a:hover{text-decoration:underline}
+    h1{font-size:clamp(1.5rem,4vw,2.3rem);margin:29px 0 8px}h2{font-size:1.1rem;margin:0 0 12px}
+    p{color:var(--muted);margin:0 0 12px}
+    .lead{max-width:830px;margin-bottom:25px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:22px;min-width:0}
+    .module-choice{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:20px}
+    .module-choice label{cursor:pointer;display:grid;gap:5px;padding:12px 10px;border:1px solid #47657b;border-radius:11px;font-size:.86rem}
+    .module-choice label:has(input:checked){border-color:var(--green);background:rgba(55,207,145,.11)}
+    .module-choice input{accent-color:var(--green)}
+    .module-choice small{color:var(--muted)}
+    .drop{display:block;border:2px dashed #52778d;border-radius:12px;padding:22px;text-align:center;cursor:pointer;background:rgba(5,15,25,.4)}
+    .drop.dragging{border-color:var(--green);background:rgba(55,207,145,.12)}
+    .drop strong{display:block;font-size:1.08rem;margin-bottom:8px}
+    .drop small{color:var(--muted);display:block}
+    input[type=file]{max-width:100%;margin-top:12px}
+    button,select{background:#20384d;border:1px solid #41617b;border-radius:9px;padding:10px 15px;color:var(--ink);font:inherit;cursor:pointer}
+    button.primary{background:linear-gradient(120deg,#178e62,#0c705b);border-color:#3bddaa;font-weight:700}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #81edb9;outline-offset:2px}
+    .actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:15px}
+    .info{font-size:.82rem}
+    .result,.history-row{border:1px solid #30465a;background:#0a1725;border-radius:10px;padding:11px 13px;margin-top:9px;word-break:break-word}
+    .history-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .history-row strong{font-weight:600}
+    .tag{display:inline-block;border-radius:6px;padding:2px 7px;margin-right:6px;background:rgba(55,207,145,.12);color:var(--green);font-size:.76rem}
+    .error{color:var(--red)}.warning{color:var(--gold)}
+    .history-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+    .history-controls select{max-width:100%}
+    .small{font-size:.8rem;color:var(--muted)}
+    .history-list{max-height:440px;overflow:auto;padding-right:3px}
+    #message[role=status]{margin-top:12px;min-height:23px}
+    .foot-note{margin-top:20px;padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(16,31,47,.7);font-size:.84rem}
+    @media(max-width:790px){.grid{grid-template-columns:1fr}.module-choice{grid-template-columns:1fr}.history-row{align-items:flex-start;flex-direction:column}.wrap{padding:20px 14px 40px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a href="/">← Voltar ao painel inicial</a>
+    <div class="small">Monitor Agrícola · Importações no banco de dados</div>
+  </header>
+  <h1>Central de importações</h1>
+  <p class="lead">Selecione vários arquivos e envie em lotes, com transferência segmentada para arquivos grandes. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
+  <main class="grid">
+    <section class="panel">
+      <h2>1. Escolha o equipamento</h2>
+      <div class="module-choice" id="moduleChoices">
+        <label><input type="radio" name="module" value="johndeere" checked> <strong>John Deere</strong><small>JDL, ZIP, RAR</small></label>
+        <label><input type="radio" name="module" value="jacto"> <strong>Jacto / AgGPS</strong><small>ZIP, RAR, SHP, DBF, SHX, PRJ, XML, KML, JDL</small></label>
+        <label><input type="radio" name="module" value="massey"> <strong>Massey / TMX</strong><small>ZIP, AGF aberto, SHP, KML, GeoJSON</small></label>
+      </div>
+      <h2>2. Selecione os arquivos</h2>
+      <label class="drop" id="drop">
+        <strong>Arraste arquivos para cá ou selecione no aparelho</strong>
+        <small>Aceita até 50 arquivos por lote; no máximo 50 MB por arquivo.</small>
+        <input type="file" id="files" multiple accept=".jdl,.zip,.rar">
+      </label>
+      <div class="actions">
+        <button type="button" class="primary" id="upload">Importar e salvar no banco</button>
+        <span id="selection" class="small">Nenhum arquivo selecionado</span>
+      </div>
+      <p id="message" role="status" aria-live="polite"></p>
+      <div id="results" aria-live="polite"></div>
+    </section>
+    <section class="panel">
+      <h2>Histórico de arquivos importados</h2>
+      <div class="history-controls">
+        <label for="filter" class="small">Equipamento</label>
+        <select id="filter">
+          <option value="">Todos</option>
+          <option value="johndeere">John Deere</option>
+          <option value="jacto">Jacto</option>
+          <option value="massey">Massey</option>
+        </select>
+        <label><input type="checkbox" id="archived"> Arquivados</label>
+        <button type="button" id="refresh">Atualizar</button>
+      </div>
+      <p class="small">O arquivamento organiza o histórico. Para John Deere e Massey, não apaga os dados operacionais; eles permanecem no banco. Para Jacto, os arquivos arquivados deixam de ser carregados na nuvem.</p>
+      <div class="history-list" id="history" aria-live="polite"><p>Carregando histórico…</p></div>
+      <div class="actions">
+        <button type="button" id="more" hidden>Carregar mais</button>
+      </div>
+    </section>
+  </main>
+  <p class="foot-note">Os dados devem ser exportações válidas do equipamento. Arquivos AGF criptografados não podem ser decodificados automaticamente; exporte KML, SHP ou GeoJSON do monitor Trimble. A aplicação não inventa área ou rendimento quando essa informação não está disponível nos dados.</p>
+</div>
+<script>
+  const acceptByModule = {
+    johndeere: '.jdl,.zip,.rar',
+    jacto: '.zip,.rar,.shp,.dbf,.shx,.prj,.xml,.kml,.jdl',
+    massey: '.zip,.agf,.shp,.dbf,.shx,.prj,.cpg,.kml,.geojson,.json'
+  };
+  const files = document.getElementById('files');
+  const message = document.getElementById('message');
+  const results = document.getElementById('results');
+  const historyBox = document.getElementById('history');
+  const more = document.getElementById('more');
+  const selected = () => document.querySelector('input[name=module]:checked').value;
+  let offset = 0;
+  let busy = false;
+  let dropped = null;
+
+  function say(value, error = false) {
+    message.textContent = value;
+    message.className = error ? 'error' : '';
+  }
+  function asText(el, text) {
+    const node = document.createElement(el);
+    node.textContent = String(text ?? '');
+    return node;
+  }
+  function updateSelected() {
+    const items = dropped || files.files;
+    document.getElementById('selection').textContent = items && items.length
+      ? items.length + ' arquivo(s) selecionado(s)' : 'Nenhum arquivo selecionado';
+  }
+  document.getElementById('moduleChoices').addEventListener('change', () => {
+    files.accept = acceptByModule[selected()];
+    files.value = '';
+    dropped = null;
+    updateSelected();
+  });
+  files.addEventListener('change', () => { dropped = null; updateSelected(); });
+  const drop = document.getElementById('drop');
+  for (const evt of ['dragover', 'dragenter']) drop.addEventListener(evt, e => {
+    e.preventDefault(); drop.classList.add('dragging');
+  });
+  for (const evt of ['dragleave', 'drop']) drop.addEventListener(evt, e => {
+    e.preventDefault(); drop.classList.remove('dragging');
+  });
+  drop.addEventListener('drop', e => {
+    dropped = Array.from(e.dataTransfer.files || []);
+    updateSelected();
+  });
+
+  async function request(url, options = {}) {
+    const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Sessão expirada. Entre novamente pelo painel inicial.');
+      throw new Error(data.detail || data.error || 'Falha ao comunicar com o servidor.');
+    }
+    return data;
+  }
+  document.getElementById('upload').addEventListener('click', async () => {
+    if (busy) return;
+    const items = Array.from(dropped || files.files || []);
+    if (!items.length) return say('Selecione pelo menos um arquivo.', true);
+    if (items.length > 50) return say('Máximo de 50 arquivos por lote.', true);
+    if (items.some(f => f.size > 50 * 1024 * 1024)) return say('Um ou mais arquivos excedem 50 MB.', true);
+    busy = true;
+    document.getElementById('upload').disabled = true;
+    results.replaceChildren();
+    say('Validando os arquivos e gravando no banco…');
+    try {
+      const allResults = [];
+      const module = selected();
+      const chunkSize = 2 * 1024 * 1024;
+      for (let idx = 0; idx < items.length; idx++) {
+        const file = items[idx];
+        say('Arquivo ' + (idx + 1) + '/' + items.length + ': ' + file.name);
+        let output;
+        if (file.size <= chunkSize) {
+          const body = new FormData();
+          body.append('module', module);
+          body.append('files', file, file.name);
+          output = await request('/api/importacoes/upload', { method: 'POST', body });
+        } else {
+          const uploadId = crypto.randomUUID();
+          const total = Math.ceil(file.size / chunkSize);
+          for (let part = 0; part < total; part++) {
+            say('Enviando ' + file.name + ' · parte ' + (part + 1) + '/' + total);
+            await request('/api/importacoes/chunk/' + uploadId + '/' + part, {
+              method: 'POST',
+              headers: {
+                'X-Upload-Module': module,
+                'X-Upload-Filename': encodeURIComponent(file.name),
+                'X-Upload-Total': String(total),
+                'Content-Type': 'application/octet-stream'
+              },
+              body: file.slice(part * chunkSize, (part + 1) * chunkSize),
+            });
+          }
+          say('Validando e gravando no banco: ' + file.name);
+          output = await request('/api/importacoes/chunks/finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ upload_id: uploadId, module, filename: file.name })
+          });
+        }
+        allResults.push(...(output.results || []));
+      }
+      const data = {
+        results: allResults,
+        counts: Object.fromEntries(['imported','duplicate','archived','error'].map(
+          status => [status, allResults.filter(x => x.status === status).length]))
+      };
+      for (const item of data.results || []) {
+        const box = document.createElement('div');
+        box.className = 'result';
+        const tag = asText('span', ({ imported:'Importado', duplicate:'Duplicado',
+          archived:'Arquivado',error:'Erro' }[item.status] || item.status));
+        tag.className = 'tag';
+        if (item.status === 'error') tag.classList.add('error');
+        if (item.status === 'archived') tag.classList.add('warning');
+        box.append(tag, asText('strong', item.filename), asText('p', item.message || ''),
+          asText('small', item.records ? item.records + ' registro(s)' : ''));
+        results.append(box);
+      }
+      const counts = data.counts || {};
+      say((counts.imported || 0) + ' arquivo(s) importados; '
+        + (counts.duplicate || 0) + ' duplicados; '
+        + (counts.error || 0) + ' com erro.');
+      dropped = null;
+      files.value = '';
+      updateSelected();
+      await loadHistory(false);
+    } catch (err) { say(err.message, true); }
+    finally { busy = false; document.getElementById('upload').disabled = false; }
+  });
+
+  async function loadHistory(append = false) {
+    if (!append) { offset = 0; historyBox.replaceChildren(); more.hidden = true; }
+    const filter = document.getElementById('filter').value;
+    const archived = document.getElementById('archived').checked;
+    try {
+      const params = new URLSearchParams({ offset:String(offset), limit:'30', archived:String(archived) });
+      if (filter) params.set('module', filter);
+      const data = await request('/api/importacoes?' + params);
+      const labels = { johndeere:'John Deere', jacto:'Jacto', massey:'Massey' };
+      for (const item of data.items || []) {
+        const row = document.createElement('div');row.className = 'history-row';
+        const info = document.createElement('div');
+        const header = asText('div', labels[item.module] + ' · ' + item.filename);header.style.fontWeight='650';
+        const date = item.imported_at ? new Date(item.imported_at).toLocaleString('pt-BR') : '';
+        info.append(header, asText('div', date + ' · ' + (item.records_count || 0) + ' registros · ' +
+          (item.bytes_size / 1048576).toFixed(2) + ' MB'));
+        const button = asText('button', archived ? 'Restaurar' : 'Arquivar');
+        button.type = 'button';button.dataset.id = item.id;
+        button.addEventListener('click', async () => {
+          if (!confirm((archived ? 'Restaurar' : 'Arquivar') + ' este item do histórico?')) return;
+          button.disabled = true;
+          try {
+            await request('/api/importacoes/' + encodeURIComponent(item.id) + '/' +
+              (archived ? 'restore' : 'archive'), { method:'POST' });
+            await loadHistory(false);
+          } catch (err) { say(err.message, true);button.disabled = false; }
+        });
+        row.append(info, button);
+        historyBox.append(row);
+      }
+      offset += (data.items || []).length;
+      more.hidden = offset >= data.total;
+      if (!historyBox.childElementCount) historyBox.append(asText('p','Nenhuma importação encontrada.'));
+    } catch (err) {
+      historyBox.replaceChildren(asText('p',err.message));
+      more.hidden = true;
+    }
+  }
+  document.getElementById('filter').addEventListener('change', () => loadHistory(false));
+  document.getElementById('archived').addEventListener('change', () => loadHistory(false));
+  document.getElementById('refresh').addEventListener('click', () => loadHistory(false));
+  more.addEventListener('click', () => loadHistory(true));
+  updateSelected();loadHistory(false);
+</script>
+</body>
+</html>

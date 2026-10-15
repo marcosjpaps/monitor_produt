@@ -83,7 +83,7 @@ class PgCursor:
 class PgConnection:
     def __init__(self, conn):
         self.conn = conn
-        self.conn.autocommit = True
+        self.conn.autocommit = False
 
     def cursor(self):
         return PgCursor(self.conn.cursor(cursor_factory=RealDictCursor))
@@ -102,10 +102,13 @@ class PgConnection:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self.commit()
-        else:
-            self.conn.rollback()
+        try:
+            if exc_type is None:
+                self.commit()
+            else:
+                self.conn.rollback()
+        finally:
+            self.conn.close()
 
 def connect(db_path=None):
     # Ignora o db_path do SQLite e conecta no Postgres

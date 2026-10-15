@@ -39,8 +39,8 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             implemento_padrao TEXT,
             fabricante TEXT DEFAULT 'John Deere',
             horimetro_atual REAL DEFAULT 0.0,
-            created_at TEXT DEFAULT (datetime('now', 'localtime')),
-            updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
         """)
 
@@ -65,7 +65,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             lat_max REAL,
             lon_min REAL,
             lon_max REAL,
-            imported_at TEXT DEFAULT (datetime('now', 'localtime')),
+            imported_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (maquina_id) REFERENCES maquinas(id)
         );
         """)
@@ -82,10 +82,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             ("operador", "TEXT")
         ]
         for col, ctype in cols_arquivos:
-            try:
-                cursor.execute(f"ALTER TABLE arquivos_processados ADD COLUMN {col} {ctype};")
-            except Exception:
-                pass
+            cursor.execute(f"ALTER TABLE arquivos_processados ADD COLUMN IF NOT EXISTS {col} {ctype};")
 
         # Backfill e consistência
         try:
@@ -109,7 +106,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
         # 3. Registros de Telemetria
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS telemetria_registros (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             arquivo_id TEXT NOT NULL,
             maquina_id TEXT NOT NULL,
             timestamp_iso TEXT NOT NULL,
@@ -134,10 +131,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             ("status_operacao", "TEXT DEFAULT 'DESLOCAMENTO'")
         ]
         for col, ctype in cols_telemetria:
-            try:
-                cursor.execute(f"ALTER TABLE telemetria_registros ADD COLUMN {col} {ctype};")
-            except Exception:
-                pass
+            cursor.execute(f"ALTER TABLE telemetria_registros ADD COLUMN IF NOT EXISTS {col} {ctype};")
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_telemetria_time ON telemetria_registros(timestamp_ms);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_telemetria_maq ON telemetria_registros(maquina_id);")
@@ -170,7 +164,7 @@ def is_file_processed(md5_hash: str, db_path: str = DEFAULT_DB_PATH) -> bool:
 def get_processed_md5_set(db_path: str = DEFAULT_DB_PATH) -> set:
     with get_connection(db_path) as conn:
         rows = conn.execute("SELECT hash_md5 FROM arquivos_processados;").fetchall()
-        return set(r[0] for r in rows)
+        return {r['hash_md5'] for r in rows}
 
 def save_parsed_session(session_data: Dict[str, Any], db_path: str = DEFAULT_DB_PATH, conn_external: Optional[sqlite3.Connection] = None) -> str:
     """Insere uma sessão de telemetria no banco de dados com largura de trabalho e operação."""
@@ -202,7 +196,7 @@ def save_parsed_session(session_data: Dict[str, Any], db_path: str = DEFAULT_DB_
             novo_horimetro = max(m_row["horimetro_atual"] or 0.0, h_final or 0.0)
             cursor.execute("""
                 UPDATE maquinas
-                SET horimetro_atual = ?, modelo = ?, implemento_padrao = ?, updated_at = datetime('now', 'localtime')
+                SET horimetro_atual = ?, modelo = ?, implemento_padrao = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?;
             """, (novo_horimetro, model, implement, maquina_id))
         else:
