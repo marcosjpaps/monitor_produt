@@ -11,7 +11,7 @@ from .massey_engine import MASSEY_DB_PATH, DEFAULT_TRACTOR_FOLDER
 from .archive_utils import safe_name, safe_extract
 from .vector_reader import Open
 
-OP_COLUMNS=['raw_name','clean_name','operation_type','client_name','farm_name','field_name','detected_fields','device_product','device_serial','vehicle_name','implement_name','controller_name','crypto_key_version','crypto_iv','payload_files','source_archive_path','manifest_xml_raw','file_size_bytes','area_ha','applied_rate','total_applied','swath_width_m','geojson_geometry','points_count','operation_date','target_rate','speed_kmh','flow_rate','product_name'
+OP_COLUMNS=['raw_name','clean_name','operation_type','client_name','farm_name','field_name','detected_fields','device_product','device_serial','vehicle_name','implement_name','controller_name','crypto_key_version','crypto_iv','payload_files','source_archive_path','manifest_xml_raw','file_size_bytes','area_ha','applied_rate','total_applied','swath_width_m','geojson_geometry','points_count','operation_date','target_rate','speed_kmh','flow_rate','product_name']
 FIELD_COLUMNS=['farm_name','zone','field_number','field_desc','variety','planting_year','area_ha','center_lon','center_lat','bbox_json','boundary_geojson','source']
 
 def connect():
