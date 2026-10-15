@@ -9,7 +9,7 @@ import os
 import glob
 from typing import List, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -56,6 +56,67 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from .auth import COOKIE_NAME, create_session, current_user, check_credentials, forbid
+
+
+class LoginPayload(BaseModel):
+    email: str
+    password: str
+    remember: bool = True
+
+
+@app.middleware("http")
+async def protect_operational_apis(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/auth/") and path != "/api/health":
+        if not current_user(request):
+            return forbid()
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            origin = request.headers.get("origin")
+            if origin:
+                from urllib.parse import urlparse
+                parsed = urlparse(origin)
+                if parsed.scheme not in ("http", "https") or parsed.netloc.lower() != request.headers.get("host", "").lower():
+                    return JSONResponse({"error": "Origem não autorizada."}, status_code=403)
+    return await call_next(request)
+
+
+@app.post("/api/auth/login")
+async def api_login(payload: LoginPayload, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    valid, status = check_credentials(payload.email, payload.password, client_ip)
+    if not valid:
+        message = "Autenticação não configurada no servidor." if status == 503 else (
+            "Muitas tentativas. Tente novamente mais tarde." if status == 429 else "E-mail ou senha incorretos."
+        )
+        return JSONResponse({"error": message}, status_code=status)
+    token, max_age = create_session(payload.email.strip(), payload.remember)
+    response = JSONResponse({"success": True, "email": payload.email.strip().lower()})
+    response.set_cookie(COOKIE_NAME, token, max_age=max_age, httponly=True,
+                        secure=(os.environ.get("APP_ENV") == "production" or request.url.scheme == "https"),
+                        samesite="lax", path="/")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get("/api/auth/me")
+def api_current_user(request: Request):
+    user = current_user(request)
+    if not user:
+        return forbid()
+    response = JSONResponse({"authenticated": True, "email": user})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.post("/api/auth/logout")
+def api_logout(request: Request):
+    response = JSONResponse({"success": True})
+    response.delete_cookie(COOKIE_NAME, path="/")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 
