@@ -1,15 +1,55 @@
 // api/talhoes.js - Gerenciamento e Sincronização de Talhões/Fazendas no PostgreSQL
 const { query } = require('./db');
+const crypto = require('node:crypto');
+
+function authenticated(req) {
+  const secret = process.env.APP_SECRET_KEY || '';
+  const configuredEmail = (process.env.APP_ADMIN_EMAIL || '').trim().toLowerCase();
+  if (secret.length < 32 || !configuredEmail) return false;
+  try {
+    const cookie = (req.headers?.cookie || '').split(';').map(s => s.trim())
+      .find(s => s.startsWith('agromonitor_session='));
+    if (!cookie) return false;
+    const token = decodeURIComponent(cookie.substring('agromonitor_session='.length));
+    const [body, signature, extra] = token.split('.');
+    if (!body || !signature || extra) return false;
+    const expected = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+    const provided = Buffer.from(signature);
+    const correct = Buffer.from(expected);
+    if (provided.length !== correct.length || !crypto.timingSafeEqual(provided, correct)) return false;
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    const now = Math.floor(Date.now() / 1000);
+    return payload.sub === configuredEmail
+      && Number.isInteger(payload.exp) && payload.exp > now
+      && Number.isInteger(payload.iat) && payload.iat <= now
+      && now - payload.iat <= 14 * 24 * 60 * 60;
+  } catch {
+    return false;
+  }
+}
 const { geometryHash, normalizeCoords, validatePolygon } = require('./sigUtils');
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS' || req.method === 'HEAD') {
-    return res.status(200).end();
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (!authenticated(req)) {
+    return res.status(401).json({ error: 'Sessão expirada ou acesso não autorizado.' });
   }
+  if (!['GET', 'POST', 'DELETE', 'HEAD'].includes(req.method)) {
+    return res.status(405).json({ error: 'Método não permitido.' });
+  }
+  const origin = req.headers?.origin;
+  if (origin && !['GET', 'HEAD'].includes(req.method)) {
+    try {
+      if (new URL(origin).host.toLowerCase() !== String(req.headers.host || '').toLowerCase()) {
+        return res.status(403).json({ error: 'Origem não autorizada.' });
+      }
+    } catch {
+      return res.status(403).json({ error: 'Origem não autorizada.' });
+    }
+  }
+  if (req.method === 'HEAD') return res.status(200).end();
 
   try {
     // 1. GET: Retorna todos os talhões cadastrados no banco de dados
@@ -118,6 +158,6 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Método não permitido' });
   } catch (error) {
     console.error('Erro na API de Talhões:', error);
-    return res.status(500).json({ error: error.message || 'Erro interno no servidor' });
+    return res.status(500).json({ error: 'Erro interno no servidor. Consulte os registros.' });
   }
 };
