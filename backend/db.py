@@ -196,7 +196,7 @@ def save_parsed_session(session_data: Dict[str, Any], db_path: str = DEFAULT_DB_
             novo_horimetro = max(m_row["horimetro_atual"] or 0.0, h_final or 0.0)
             cursor.execute("""
                 UPDATE maquinas
-                SET horimetro_atual = ?, modelo = ?, implemento_padrao = ?, updated_at = datetime('now', 'localtime')
+                SET horimetro_atual = ?, modelo = ?, implemento_padrao = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?;
             """, (novo_horimetro, model, implement, maquina_id))
         else:
