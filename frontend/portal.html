@@ -508,6 +508,10 @@
   <main class="portal-container">
     
     <div class="hero-title">
+      <a href="/painel" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0284c7,#10b981);border:1px solid #38bdf8;color:#fff;font-weight:700;text-decoration:none;padding:12px 19px;border-radius:10px;margin-bottom:18px;">
+        <i data-lucide="map" style="width:19px;height:19px"></i> Abrir mapa operacional no estilo Drone
+        <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
+      </a>
       <h2>Escolha a Plataforma Operacional</h2>
       <p>Escolha um dos três módulos. Importe arquivos reais da operação e consulte históricos, talhões, mapas e indicadores disponíveis.</p>
       <p class="portal-data-note">John Deere: JDL &nbsp;·&nbsp; Jacto: AgGPS/SHP &nbsp;·&nbsp; Massey: KML/SHP/GeoJSON. Indicadores dependem dos dados presentes em cada arquivo.</p>
@@ -684,6 +688,14 @@
       if (overlay) overlay.style.display = 'none';
       if (userBadge) userBadge.style.display = 'flex';
       if (userEmail) userEmail.textContent = email;
+      // Dashboard inspirado no Drone é a tela inicial após autenticação.
+      // O hub original permanece disponível em /?hub=1.
+      const urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.has('hub')) {
+        const next = urlParams.get('next');
+        const pages = ['/painel', '/johndeere', '/jacto', '/massey', '/importacoes'];
+        window.location.replace(pages.includes(next) ? next : '/painel');
+      }
     }
 
     function showLogin() {
