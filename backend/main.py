@@ -9,7 +9,7 @@ import os
 import glob
 from typing import List, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -127,6 +127,10 @@ def startup_event():
     connect().close()
     # Sincroniza arquivos locais padrão caso existam
     sync_default_local_files()
+    # Histórico único de importações; reidrata os dados AgGPS em /tmp na nuvem.
+    from .import_store import init_import_store, hydrate_jacto_imports
+    init_import_store()
+    hydrate_jacto_imports()
 
 def sync_default_local_files():
     # Caminho configurável via variável de ambiente (sem hardcode de máquina específica)
@@ -1189,3 +1193,127 @@ def delete_massey_operations():
     from .massey_import import connect
     with connect() as conn: count=conn.execute('DELETE FROM agricultural_operations').rowcount
     return {'success':True,'deleted_count':count}
+
+
+# ==========================================
+# CENTRAL UNIFICADA DE IMPORTAÇÕES (JDL / AGGPS / TMX)
+# ==========================================
+from .import_store import (
+    MAX_UPLOAD_BYTES, MODULES, lookup_import, register_import, list_imports,
+    change_archive, hydrate_jacto_imports
+)
+import hashlib as _import_hashlib
+import json as _import_json
+
+
+@app.get("/api/importacoes")
+def api_import_history(
+    module: Optional[str] = Query(None),
+    archived: bool = Query(False),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    try:
+        return list_imports(module, archived, limit, offset)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/importacoes/upload")
+async def api_import_central(module: str = Form(...), files: List[UploadFile] = File(...)):
+    """Valida hashes e formatos, reutiliza os parsers nativos e audita no PostgreSQL."""
+    if module not in MODULES:
+        raise HTTPException(400, "Escolha John Deere, Jacto ou Massey.")
+    if not files or len(files) > 50:
+        raise HTTPException(400, "Selecione entre 1 e 50 arquivos por lote.")
+    allowed = {
+        "johndeere": {".jdl", ".zip", ".rar"},
+        "jacto": {".zip", ".rar", ".shp", ".dbf", ".shx", ".prj", ".xml", ".kml", ".jdl"},
+        "massey": {".zip", ".agf", ".shp", ".dbf", ".shx", ".prj", ".cpg", ".kml", ".geojson", ".json"},
+    }
+    results = []
+    for upload in files:
+        name = upload.filename or ""
+        try:
+            name = safe_name(name)
+            from pathlib import Path as _Path
+            if _Path(name).suffix.lower() not in allowed[module]:
+                raise ValueError("Formato não suportado neste módulo.")
+            data = await upload.read(MAX_UPLOAD_BYTES + 1)
+            if len(data) > MAX_UPLOAD_BYTES:
+                raise ValueError("Arquivo acima de 50 MB.")
+            if not data:
+                raise ValueError("Arquivo vazio.")
+            digest = _import_hashlib.sha256(data).hexdigest()
+            existing = lookup_import(module, digest)
+            if existing:
+                state = "archived" if existing["archived_at"] else "duplicate"
+                results.append({"filename": name, "status": state,
+                                "records": existing["records_count"],
+                                "message": "Arquivo já importado; consulte o histórico."})
+                continue
+            await upload.seek(0)
+            if module == "johndeere":
+                response = await api_upload([upload])
+                details = response["resultados"]
+                count = sum(int(x.get("records_count") or 0) for x in details if x.get("status") == "imported")
+                # Arquivo .JDL duplicado dentro do pacote pode não criar sessão nova.
+                good = any(x.get("status") == "imported" for x in details)
+            elif module == "jacto":
+                response = await api_jacto_upload([upload])
+                details = response["resultados"]
+                count = sum(int(x.get("files_count") or (1 if x.get("status") == "imported" else 0))
+                            for x in details)
+                good = any(x.get("status") == "imported" for x in details)
+            else:
+                response = await massey_upload([upload])
+                parsed = _import_json.loads(response.body)
+                details = parsed["results"]
+                count = int(parsed.get("imported") or 0)
+                good = any(x.get("status") in ("imported", "duplicate") for x in details)
+            if good:
+                # Só arquivos AgGPS viram blobs persistentes; JD/MF gravam dados estruturados.
+                store_binary = (module == "jacto" and (
+                    any("AgGPS" in str(x.get("type", "")) for x in details)
+                    or name.lower().endswith((".shp", ".dbf", ".shx", ".prj", ".xml", ".kml"))
+                ))
+                saved = register_import(module, name, data, count, store_binary=store_binary)
+                state = "imported" if saved["new"] else "duplicate"
+                results.append({"filename": name, "status": state, "records": count,
+                                "id": saved["id"], "message": "Dados e histórico registrados no banco."
+                                if saved["new"] else "Arquivo já registrado."})
+            else:
+                statuses = [x.get("status") for x in details]
+                status = "duplicate" if statuses and all(x in ("skipped", "duplicate") for x in statuses) else "error"
+                message = next((x.get("message") for x in details if x.get("status") in ("error","rejected")), None)
+                if not message and status == "duplicate":
+                    message = "Dados anteriormente importados."
+                results.append({"filename": name, "status": status, "records": 0,
+                                "message": message or "Não foram encontrados registros compatíveis."})
+        except Exception as exc:
+            # Não classifica como sucesso caso haja falha de parser ou de persistência.
+            results.append({"filename": name, "status": "error", "records": 0,
+                            "message": str(exc)[:240]})
+    counts = {status: sum(x["status"] == status for x in results)
+              for status in ("imported", "duplicate", "archived", "error")}
+    return {"module": module, "total": len(results), "counts": counts, "results": results}
+
+
+@app.post("/api/importacoes/{item_id}/archive")
+def api_archive_import(item_id: str):
+    row = change_archive(item_id, True)
+    if row is None:
+        raise HTTPException(404, "Importação não encontrada.")
+    if row["module"] == "jacto":
+        hydrate_jacto_imports(reset=True)
+    return row
+
+
+@app.post("/api/importacoes/{item_id}/restore")
+def api_restore_import(item_id: str):
+    row = change_archive(item_id, False)
+    if row is None:
+        raise HTTPException(404, "Importação não encontrada.")
+    if row["module"] == "jacto":
+        hydrate_jacto_imports(reset=True)
+    return row
