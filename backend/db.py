@@ -170,7 +170,7 @@ def is_file_processed(md5_hash: str, db_path: str = DEFAULT_DB_PATH) -> bool:
 def get_processed_md5_set(db_path: str = DEFAULT_DB_PATH) -> set:
     with get_connection(db_path) as conn:
         rows = conn.execute("SELECT hash_md5 FROM arquivos_processados;").fetchall()
-        return set(r[0] for r in rows)
+        return {r['hash_md5'] for r in rows}
 
 def save_parsed_session(session_data: Dict[str, Any], db_path: str = DEFAULT_DB_PATH, conn_external: Optional[sqlite3.Connection] = None) -> str:
     """Insere uma sessão de telemetria no banco de dados com largura de trabalho e operação."""
