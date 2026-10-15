@@ -1278,6 +1278,15 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                                 "message": "Arquivo já importado; consulte o histórico."})
                 continue
             await upload.seek(0)
+            # Server-side: nunca confiar somente na checagem JavaScript do navegador.
+            # Stara/Case ainda não têm parser habilitado; JD Shapefile também exige adaptador.
+            if module == "johndeere":
+                raise ValueError("Para John Deere, o conversor ADAPT/Operations Center Shapefile ainda não está integrado. Nenhum dado foi salvo.")
+            if module in ("jacto", "massey"):
+                from .agri_validator import inspect_application_zip
+                import io as _safe_io
+                clean = inspect_application_zip(name, data, module)
+                upload = UploadFile(filename=name, file=_safe_io.BytesIO(clean.raw))
             if module == "johndeere":
                 response = await api_upload([upload])
                 details = response["resultados"]

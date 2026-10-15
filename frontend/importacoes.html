@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#091321">
   <title>Central de Importações • Monitor Agrícola</title>
   <script src="/js/auth-guard.js"></script>
+  <script src="/js/validar-upload.js"></script>
   <style>
     :root { color-scheme:dark; --bg:#090e17;--panel:#131d2e;--border:#2c3f58;--ink:#edf7fa;--muted:#9fb4c2;--green:#37cf91;--gold:#fac96a;--red:#ff858c }
     *{box-sizing:border-box}
@@ -18,7 +19,7 @@
     .lead{max-width:830px;margin-bottom:25px}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
     .panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:22px;min-width:0}
-    .module-choice{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:20px}
+    .module-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:20px}
     .module-choice label{cursor:pointer;display:grid;gap:5px;padding:12px 10px;border:1px solid #47657b;border-radius:11px;font-size:.86rem}
     .module-choice label:has(input:checked){border-color:var(--green);background:rgba(55,207,145,.11)}
     .module-choice input{accent-color:var(--green)}
@@ -55,20 +56,22 @@
     <div class="small">Monitor Agrícola · Importações no banco de dados</div>
   </header>
   <h1>Central de importações</h1>
-  <p class="lead">Selecione vários arquivos e envie em lotes, com transferência segmentada para arquivos grandes. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
+  <p class="lead">Inspecione ZIP Shapefile, DBF, SHX, PRJ e ISOXML antes de enviar; arquivos sem aplicação real serão barrados. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
   <main class="grid">
     <section class="panel">
       <h2>1. Escolha o equipamento</h2>
       <div class="module-choice" id="moduleChoices">
-        <label><input type="radio" name="module" value="johndeere" checked> <strong>John Deere</strong><small>JDL, ZIP, RAR</small></label>
-        <label><input type="radio" name="module" value="jacto"> <strong>Jacto / AgGPS</strong><small>ZIP, RAR, SHP, DBF, SHX, PRJ, XML, KML, JDL</small></label>
-        <label><input type="radio" name="module" value="massey"> <strong>Massey / TMX</strong><small>ZIP, AGF aberto, SHP, KML, GeoJSON</small></label>
+        <label><input type="radio" name="module" value="johndeere" checked> <strong>John Deere</strong><small>Shapefile ZIP + JSON (As-Applied)</small></label>
+        <label><input type="radio" name="module" value="jacto"> <strong>Jacto</strong><small>Shapefile ZIP com taxa real</small></label>
+        <label><input type="radio" name="module" value="massey"> <strong>Trimble / Massey</strong><small>Coverage ZIP com taxa e velocidade</small></label>
+        <label><input type="radio" name="module" value="stara"> <strong>Stara Topper</strong><small>Inspeção ZIP; decodificador em preparação</small></label>
+        <label><input type="radio" name="module" value="caseih"> <strong>Case IH AFS</strong><small>Inspeção ZIP; decodificador em preparação</small></label>
       </div>
       <h2>2. Selecione os arquivos</h2>
       <label class="drop" id="drop">
         <strong>Arraste arquivos para cá ou selecione no aparelho</strong>
         <small>Aceita até 50 arquivos por lote; no máximo 50 MB por arquivo.</small>
-        <input type="file" id="files" multiple accept=".jdl,.zip,.rar">
+        <input type="file" id="files" multiple accept=".zip,.jdl,.fdd,.kml">
       </label>
       <div class="actions">
         <button type="button" class="primary" id="upload">Importar e salvar no banco</button>
@@ -97,13 +100,15 @@
       </div>
     </section>
   </main>
-  <p class="foot-note">Os dados devem ser exportações válidas do equipamento. Arquivos AGF criptografados não podem ser decodificados automaticamente; exporte KML, SHP ou GeoJSON do monitor Trimble. A aplicação não inventa área ou rendimento quando essa informação não está disponível nos dados.</p>
+  <p class="foot-note">Os dados devem ser exportações válidas do equipamento. Arquivos proprietários sem conversor ADAPT, CN1, OTM ou TLG binário exigem conversão comprovada. KML é apenas mapa, não análise de taxa por ponto. A aplicação não inventa área ou rendimento quando essa informação não está disponível nos dados.</p>
 </div>
 <script>
   const acceptByModule = {
-    johndeere: '.jdl,.zip,.rar',
-    jacto: '.zip,.rar,.shp,.dbf,.shx,.prj,.xml,.kml,.jdl',
-    massey: '.zip,.agf,.shp,.dbf,.shx,.prj,.cpg,.kml,.geojson,.json'
+    johndeere: '.zip,.jdl,.fdd,.kml',
+    jacto: '.zip,.csv,.otm,.kml',
+    massey: '.zip,.kml,.agdata,.pos,.swath,.ehm',
+    stara: '.zip,.kml',
+    caseih: '.zip,.cn1,.kml'
   };
   const files = document.getElementById('files');
   const message = document.getElementById('message');
@@ -173,6 +178,39 @@
       const chunkSize = 2 * 1024 * 1024;
       for (let idx = 0; idx < items.length; idx++) {
         const file = items[idx];
+        say('Pré-validando GIS: ' + file.name);
+        const checked = await window.validarUploadAgricola(file, module);
+        const report = document.createElement('div');
+        report.className = 'result';
+        const heading = document.createElement('strong');
+        heading.textContent = file.name + ' — ' + ({aprovado:'Aprovado',rejeitado:'Rejeitado',revisao:'Exige revisão'}[checked.estado] || checked.estado);
+        report.append(heading);
+        const metadata = document.createElement('p');
+        metadata.textContent = 'Marca: ' + checked.marca + ' | Camadas aceitas: ' + checked.camadasAceitas.length + ' | Descartadas: ' + checked.camadasDescartadas.length;
+        report.append(metadata);
+        for(const issue of [...checked.erros,...checked.avisos]){
+          const note = document.createElement('p');
+          note.textContent = issue.code + ': ' + issue.message;
+          note.className = checked.erros.includes(issue) ? 'error' : 'warning';
+          report.append(note);
+        }
+        results.append(report);
+        if(checked.estado !== 'aprovado') {
+          allResults.push({filename:file.name,status:'error',records:0,message:checked.erros.map(e=>e.message).join('; ') || 'Sem decodificador comprovado. Faça a conversão antes de enviar.'});
+          continue;
+        }
+        if(module==='stara'||module==='caseih'){
+          allResults.push({filename:file.name,status:'error',records:0,message:'Pré-validação aprovada, mas o servidor ainda não tem parser de aplicação Stara/Case IH. Não foi gravado no banco.'});
+          continue;
+        }
+        if(module==='johndeere'){
+          allResults.push({filename:file.name,status:'error',records:0,message:'Pré-validação aprovada. O parser operacional John Deere ainda requer adaptação para ler Shapefile do Operations Center; o pacote não será gravado sem conversor.'});
+          continue;
+        }
+        if(module==='jacto' && file.name.toLowerCase().endsWith('.csv')){
+          allResults.push({filename:file.name,status:'error',records:0,message:'CSV estruturado reconhecido; parser Jacto CSV ainda não integrado. Nenhum dado foi salvo.'});
+          continue;
+        }
         say('Arquivo ' + (idx + 1) + '/' + items.length + ': ' + file.name);
         let output;
         if (file.size <= chunkSize) {
