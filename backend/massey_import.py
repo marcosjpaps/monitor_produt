@@ -15,7 +15,9 @@ OP_COLUMNS=['raw_name','clean_name','operation_type','client_name','farm_name','
 FIELD_COLUMNS=['farm_name','zone','field_number','field_desc','variety','planting_year','area_ha','center_lon','center_lat','bbox_json','boundary_geojson','source']
 
 def connect():
-    Path(MASSEY_DB_PATH).parent.mkdir(parents=True,exist_ok=True)
+    # Persistência PostgreSQL: não criar caminho SQLite no runtime imutável da Vercel.
+    if not __import__('os').environ.get('VERCEL'):
+        Path(MASSEY_DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn=pg_connect()
     
     conn.execute('PRAGMA journal_mode=WAL')
