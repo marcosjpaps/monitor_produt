@@ -55,7 +55,7 @@
     <div class="small">Monitor Agrícola · Importações no banco de dados</div>
   </header>
   <h1>Central de importações</h1>
-  <p class="lead">Carregue vários arquivos de uma vez. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
+  <p class="lead">Selecione vários arquivos e envie em lotes, com transferência segmentada para arquivos grandes. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
   <main class="grid">
     <section class="panel">
       <h2>1. Escolha o equipamento</h2>
@@ -168,10 +168,48 @@
     results.replaceChildren();
     say('Validando os arquivos e gravando no banco…');
     try {
-      const body = new FormData();
-      body.append('module', selected());
-      for (const file of items) body.append('files', file, file.name);
-      const data = await request('/api/importacoes/upload', { method: 'POST', body });
+      const allResults = [];
+      const module = selected();
+      const chunkSize = 2 * 1024 * 1024;
+      for (let idx = 0; idx < items.length; idx++) {
+        const file = items[idx];
+        say('Arquivo ' + (idx + 1) + '/' + items.length + ': ' + file.name);
+        let output;
+        if (file.size <= chunkSize) {
+          const body = new FormData();
+          body.append('module', module);
+          body.append('files', file, file.name);
+          output = await request('/api/importacoes/upload', { method: 'POST', body });
+        } else {
+          const uploadId = crypto.randomUUID();
+          const total = Math.ceil(file.size / chunkSize);
+          for (let part = 0; part < total; part++) {
+            say('Enviando ' + file.name + ' · parte ' + (part + 1) + '/' + total);
+            await request('/api/importacoes/chunk/' + uploadId + '/' + part, {
+              method: 'POST',
+              headers: {
+                'X-Upload-Module': module,
+                'X-Upload-Filename': encodeURIComponent(file.name),
+                'X-Upload-Total': String(total),
+                'Content-Type': 'application/octet-stream'
+              },
+              body: file.slice(part * chunkSize, (part + 1) * chunkSize),
+            });
+          }
+          say('Validando e gravando no banco: ' + file.name);
+          output = await request('/api/importacoes/chunks/finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ upload_id: uploadId, module, filename: file.name })
+          });
+        }
+        allResults.push(...(output.results || []));
+      }
+      const data = {
+        results: allResults,
+        counts: Object.fromEntries(['imported','duplicate','archived','error'].map(
+          status => [status, allResults.filter(x => x.status === status).length]))
+      };
       for (const item of data.results || []) {
         const box = document.createElement('div');
         box.className = 'result';
