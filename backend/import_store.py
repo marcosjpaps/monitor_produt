@@ -47,7 +47,7 @@ def init_import_store():
                 module TEXT NOT NULL,
                 filename TEXT NOT NULL,
                 file_data BYTEA NOT NULL,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY(upload_id,part_index)
             )
         """)
