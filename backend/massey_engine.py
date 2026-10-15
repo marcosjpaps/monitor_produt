@@ -118,11 +118,11 @@ def get_massey_stats() -> Dict[str, Any]:
                 unique_fields_ops.add(op["field_name"])
                 
         # Estatísticas do SIG (farm_fields)
-        fields_row = cur.execute('SELECT COUNT(*), SUM(area_ha) FROM farm_fields').fetchone()
-        total_fields_sig = fields_row[0] if fields_row else 0
-        total_sig_area = float(fields_row[1] or 0) if fields_row else 0.0
+        fields_row = cur.execute('SELECT COUNT(*) AS total_fields, SUM(area_ha) AS area_sum FROM farm_fields').fetchone()
+        total_fields_sig = fields_row['total_fields'] if fields_row else 0
+        total_sig_area = float(fields_row['area_sum'] or 0) if fields_row else 0.0
         
-        farms_sig = [r[0] for r in cur.execute('SELECT DISTINCT farm_name FROM farm_fields WHERE farm_name IS NOT NULL ORDER BY farm_name').fetchall()]
+        farms_sig = [r['farm_name'] for r in cur.execute('SELECT DISTINCT farm_name FROM farm_fields WHERE farm_name IS NOT NULL ORDER BY farm_name').fetchall()]
         
         # Veículo e Controlador padrão
         first_op = ops[0] if ops else None
