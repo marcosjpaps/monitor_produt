@@ -21,9 +21,12 @@ try:
 except Exception:
     pass
 
-DEFAULT_AGGPS_PATH = os.environ.get(
-    "AGGPS_DATA_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "AgGPS_Data")
+# O filesystem da Vercel é efêmero. Arquivos AgGPS persistem no PostgreSQL.
+DEFAULT_AGGPS_PATH = (os.path.join("/tmp", "monitor-agggps")
+    if os.environ.get("VERCEL") else os.environ.get(
+        "AGGPS_DATA_PATH",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "AgGPS_Data")
+    )
 )
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aggps_settings.json")
 
