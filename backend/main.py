@@ -1245,7 +1245,7 @@ def api_import_history(
 
 
 @app.post("/api/importacoes/upload")
-async def api_import_central(module: str = Form(...), files: List[UploadFile] = File(...)):
+async def api_import_central(module: str = Form(...), files: List[UploadFile] = File(...), geometry_only: bool = Form(False)):
     """Valida hashes e formatos, reutiliza os parsers nativos e audita no PostgreSQL."""
     if module not in MODULES:
         raise HTTPException(400, "Escolha John Deere, Jacto ou Massey.")
@@ -1269,13 +1269,22 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                 raise ValueError("Arquivo acima de 50 MB.")
             if not data:
                 raise ValueError("Arquivo vazio.")
+            # Pré-validação antes de qualquer gravação. JDL/AGF e arquivos
+            # reconhecidos pelo parser próprio permanecem disponíveis.
+            from .ag_file_validator import validate_ag_upload
+            validation = validate_ag_upload(name, data, module, allow_geometry_only=geometry_only)
+            if not validation["is_valid"]:
+                results.append({"filename": name, "status": "error", "records": 0,
+                                "message": validation["error_message"] or "Arquivo não validado.",
+                                "validation": validation})
+                continue
             digest = _import_hashlib.sha256(data).hexdigest()
             existing = lookup_import(module, digest)
             if existing:
                 state = "archived" if existing["archived_at"] else "duplicate"
                 results.append({"filename": name, "status": state,
                                 "records": existing["records_count"],
-                                "message": "Arquivo já importado; consulte o histórico."})
+                                "message": "Arquivo já importado; consulte o histórico.", "validation": validation})
                 continue
             await upload.seek(0)
             if module == "johndeere":
@@ -1305,7 +1314,7 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                 saved = register_import(module, name, data, count, store_binary=store_binary)
                 state = "imported" if saved["new"] else "duplicate"
                 results.append({"filename": name, "status": state, "records": count,
-                                "id": saved["id"], "message": "Dados e histórico registrados no banco."
+                                "id": saved["id"], "validation": validation, "message": "Dados e histórico registrados no banco."
                                 if saved["new"] else "Arquivo já registrado."})
             else:
                 statuses = [x.get("status") for x in details]
@@ -1314,7 +1323,7 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                 if not message and status == "duplicate":
                     message = "Dados anteriormente importados."
                 results.append({"filename": name, "status": status, "records": 0,
-                                "message": message or "Não foram encontrados registros compatíveis."})
+                                "message": message or "Não foram encontrados registros compatíveis.", "validation": validation})
         except ValueError as exc:
             results.append({"filename": name, "status": "error", "records": 0,
                             "message": str(exc)[:240]})
@@ -1390,6 +1399,7 @@ async def api_finish_chunked_import(payload: dict = Body(...)):
         raise HTTPException(400, str(exc))
     try:
         buffered = UploadFile(filename=filename, file=io.BytesIO(raw))
-        return await api_import_central(module=module, files=[buffered])
+        geometry_only = payload.get("geometry_only") is True
+        return await api_import_central(module=module, files=[buffered], geometry_only=geometry_only)
     finally:
         clear_chunks(upload_id)
