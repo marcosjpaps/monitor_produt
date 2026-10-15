@@ -83,7 +83,7 @@
     return (Array.isArray(raw)?raw:[]).map((r,i)=>({
       id:String(r.uuid||r.id||'mf-'+i),date:r.operation_date||r.imported_at||'',
       farm:r.farm_name||'',field:r.field_name||'',
-      machine:r.vehicle_name==='Não informado'?'':r.vehicle_name||r.device_serial||'',
+      machine:(r.vehicle_name && r.vehicle_name!=='Não informado' ? r.vehicle_name : ({caseih:'Case IH',stara:'Stara',trimble:'Trimble',massey:'Massey'}[r.device_product] || r.device_product || r.device_serial || '')),
       operation:r.operation_type||'',
       area:number(r.area_ha),speed:number(r.speed_kmh||r.avg_speed_kmh),hours:number(r.duration_hours),
       filename:r.clean_name||r.raw_name||'',details:r,geo:r.geojson_geometry||null
