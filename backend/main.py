@@ -1031,6 +1031,12 @@ def serve_portal():
             return f.read()
     return "<h1>Frontend não encontrado. Verifique a pasta frontend/</h1>"
 
+@app.get("/painel", response_class=HTMLResponse)
+def pagina_painel_drone():
+    """Cockpit responsivo no estilo Drone, com navegação entre três máquinas."""
+    return FileResponse(os.path.join(FRONTEND_DIR, "painel.html"), media_type="text/html")
+
+
 @app.get("/johndeere", response_class=HTMLResponse)
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/jdl", response_class=HTMLResponse)
