@@ -334,11 +334,11 @@ def get_massey_farm_fields(
             params.extend([s, s, s, s])
             
         stats_row = cur.execute(count_query, params).fetchone()
-        total_count = stats_row[0] if stats_row else 0
-        total_area = float(stats_row[1] or 0) if stats_row else 0.0
+        total_count = stats_row['total_fields'] if stats_row else 0
+        total_area = float(stats_row['area_sum'] or 0) if stats_row else 0.0
         
-        farms_list = [r[0] for r in cur.execute("SELECT DISTINCT farm_name FROM farm_fields WHERE farm_name IS NOT NULL ORDER BY farm_name").fetchall()]
-        varieties_list = [r[0] for r in cur.execute("SELECT DISTINCT variety FROM farm_fields WHERE variety IS NOT NULL ORDER BY variety").fetchall()]
+        farms_list = [r['farm_name'] for r in cur.execute("SELECT DISTINCT farm_name FROM farm_fields WHERE farm_name IS NOT NULL ORDER BY farm_name").fetchall()]
+        varieties_list = [r['variety'] for r in cur.execute("SELECT DISTINCT variety FROM farm_fields WHERE variety IS NOT NULL ORDER BY variety").fetchall()]
         
         query += " ORDER BY farm_name, field_number LIMIT ? OFFSET ?"
         exec_params = list(params) + [limit, offset]
