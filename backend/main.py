@@ -1290,10 +1290,15 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                     message = "Dados anteriormente importados."
                 results.append({"filename": name, "status": status, "records": 0,
                                 "message": message or "Não foram encontrados registros compatíveis."})
-        except Exception as exc:
-            # Não classifica como sucesso caso haja falha de parser ou de persistência.
+        except ValueError as exc:
             results.append({"filename": name, "status": "error", "records": 0,
                             "message": str(exc)[:240]})
+        except Exception:
+            # Detalhes de drivers/credenciais do banco não são enviados ao navegador.
+            import logging
+            logging.exception("Falha ao importar %s (%s)", name, module)
+            results.append({"filename": name, "status": "error", "records": 0,
+                            "message": "Falha ao processar ou salvar este arquivo. Consulte o log do servidor."})
     counts = {status: sum(x["status"] == status for x in results)
               for status in ("imported", "duplicate", "archived", "error")}
     return {"module": module, "total": len(results), "counts": counts, "results": results}
