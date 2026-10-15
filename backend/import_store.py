@@ -39,6 +39,19 @@ def init_import_store():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS monitor_imports_date_idx ON monitor_imports(imported_at)")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monitor_import_chunks (
+                upload_id TEXT NOT NULL,
+                part_index INTEGER NOT NULL,
+                total_parts INTEGER NOT NULL,
+                module TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                file_data BYTEA NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(upload_id,part_index)
+            )
+        """)
+        conn.execute("DELETE FROM monitor_import_chunks WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '1 day'")
         conn.commit()
 
 
@@ -154,3 +167,54 @@ def hydrate_jacto_imports(*, reset: bool = False):
             target.write_bytes(raw)
         hydrated += 1
     return {"hydrated": hydrated, "mode": "cloud"}
+
+
+def store_chunk(upload_id: str, part_index: int, total_parts: int,
+                module: str, filename: str, raw: bytes):
+    if module not in MODULES or not (1 <= total_parts <= 40):
+        raise ValueError("Parâmetros do envio incompatíveis")
+    if not 0 <= part_index < total_parts:
+        raise ValueError("Número da parte inválido")
+    if not raw or len(raw) > 2 * 1024 * 1024:
+        raise ValueError("A parte deve ter até 2 MB")
+    filename = safe_name(filename)
+    with pg_connect() as conn:
+        existing = conn.execute(
+            "SELECT module,filename,total_parts FROM monitor_import_chunks WHERE upload_id=? LIMIT 1",
+            (upload_id,),
+        ).fetchone()
+        if existing and (existing["module"] != module or
+                         existing["filename"] != filename or
+                         existing["total_parts"] != total_parts):
+            raise ValueError("Envio não corresponde ao arquivo original")
+        conn.execute("""
+            INSERT INTO monitor_import_chunks
+                (upload_id,part_index,total_parts,module,filename,file_data)
+            VALUES (?,?,?,?,?,?)
+            ON CONFLICT(upload_id,part_index) DO UPDATE SET file_data=excluded.file_data
+        """, (upload_id, part_index, total_parts, module, filename, raw))
+        conn.commit()
+
+
+def finish_chunks(upload_id: str, module: str, filename: str):
+    filename = safe_name(filename)
+    with pg_connect() as conn:
+        rows = conn.execute("""
+            SELECT part_index,total_parts,module,filename,file_data
+            FROM monitor_import_chunks WHERE upload_id=? ORDER BY part_index
+        """, (upload_id,)).fetchall()
+    if not rows or rows[0]["module"] != module or rows[0]["filename"] != filename:
+        raise ValueError("Arquivo enviado não encontrado")
+    expected = int(rows[0]["total_parts"])
+    if len(rows) != expected or [r["part_index"] for r in rows] != list(range(expected)):
+        raise ValueError("Envio incompleto: uma ou mais partes estão faltando")
+    data = b"".join(bytes(r["file_data"]) for r in rows)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise ValueError("Arquivo excede o limite de 50 MB")
+    return data
+
+
+def clear_chunks(upload_id: str):
+    with pg_connect() as conn:
+        conn.execute("DELETE FROM monitor_import_chunks WHERE upload_id=?", (upload_id,))
+        conn.commit()
