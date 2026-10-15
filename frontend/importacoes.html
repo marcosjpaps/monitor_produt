@@ -45,6 +45,10 @@
     .history-list{max-height:440px;overflow:auto;padding-right:3px}
     #message[role=status]{margin-top:12px;min-height:23px}
     .foot-note{margin-top:20px;padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(16,31,47,.7);font-size:.84rem}
+    .validation-option{display:flex;align-items:flex-start;gap:9px;margin-top:13px;color:var(--muted);font-size:.85rem;cursor:pointer}
+    .validation-option input{accent-color:var(--green);margin-top:4px}
+    .validation-data{padding:9px 0 0;color:var(--muted);font-size:.82rem}
+    .validation-data strong{color:var(--green)}
     @media(max-width:790px){.grid{grid-template-columns:1fr}.module-choice{grid-template-columns:1fr}.history-row{align-items:flex-start;flex-direction:column}.wrap{padding:20px 14px 40px}}
   </style>
 </head>
@@ -55,7 +59,7 @@
     <div class="small">Monitor Agrícola · Importações no banco de dados</div>
   </header>
   <h1>Central de importações</h1>
-  <p class="lead">Selecione vários arquivos e envie em lotes, com transferência segmentada para arquivos grandes. O servidor verifica formatos, identifica duplicados e mantém o histórico no PostgreSQL. Fazendas, operações e telemetria continuam nos módulos correspondentes.</p>
+  <p class="lead">Importação no padrão do painel Drone: selecione vários arquivos, acompanhe o envio em partes e consulte o histórico no Neon. Antes de salvar, o servidor verifica geometrias, tabelas de atributos, taxa aplicada, prescrições, limites, linhas AB e arquivos incompletos. A marca detectada não substitui o leitor próprio de cada equipamento.</p>
   <main class="grid">
     <section class="panel">
       <h2>1. Escolha o equipamento</h2>
@@ -67,9 +71,11 @@
       <h2>2. Selecione os arquivos</h2>
       <label class="drop" id="drop">
         <strong>Arraste arquivos para cá ou selecione no aparelho</strong>
-        <small>Aceita até 50 arquivos por lote; no máximo 50 MB por arquivo.</small>
+        <small>Aceita até 50 arquivos por lote; no máximo 50 MB por arquivo. Para SHP, compacte .shp, .shx, .dbf e .prj juntos em ZIP.</small>
         <input type="file" id="files" multiple accept=".jdl,.zip,.rar">
       </label>
+      <label class="validation-option"><input type="checkbox" id="geometryOnly"> Importar somente geometria (KML/GeoJSON), sem tratar como aplicação, taxa ou rendimento. Use apenas para visualizar talhões/rotas.</label>
+      <p class="small">Validação reconhece indícios de John Deere, Stara, Case IH, Jacto e Trimble. Stara/Case IH: use exportação aberta em SHP/ZIP no leitor geográfico (Massey / TMX); ISOXML TimeLog e formatos proprietários sem decoder não são importados como aplicação.</p>
       <div class="actions">
         <button type="button" class="primary" id="upload">Importar e salvar no banco</button>
         <span id="selection" class="small">Nenhum arquivo selecionado</span>
@@ -114,6 +120,7 @@
   let offset = 0;
   let busy = false;
   let dropped = null;
+  const geometryOnly = document.getElementById('geometryOnly');
 
   function say(value, error = false) {
     message.textContent = value;
@@ -164,6 +171,7 @@
     if (items.length > 50) return say('Máximo de 50 arquivos por lote.', true);
     if (items.some(f => f.size > 50 * 1024 * 1024)) return say('Um ou mais arquivos excedem 50 MB.', true);
     busy = true;
+    geometryOnly.disabled = true;
     document.getElementById('upload').disabled = true;
     results.replaceChildren();
     say('Validando os arquivos e gravando no banco…');
@@ -178,6 +186,7 @@
         if (file.size <= chunkSize) {
           const body = new FormData();
           body.append('module', module);
+          body.append('geometry_only', String(geometryOnly.checked));
           body.append('files', file, file.name);
           output = await request('/api/importacoes/upload', { method: 'POST', body });
         } else {
@@ -200,7 +209,7 @@
           output = await request('/api/importacoes/chunks/finalize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ upload_id: uploadId, module, filename: file.name })
+            body: JSON.stringify({ upload_id: uploadId, module, filename: file.name, geometry_only: geometryOnly.checked })
           });
         }
         allResults.push(...(output.results || []));
@@ -220,6 +229,20 @@
         if (item.status === 'archived') tag.classList.add('warning');
         box.append(tag, asText('strong', item.filename), asText('p', item.message || ''),
           asText('small', item.records ? item.records + ' registro(s)' : ''));
+        if (item.validation) {
+          const v = item.validation;
+          const brand = {JOHN_DEERE:'John Deere',STARA:'Stara',CASE_IH:'Case IH',JACTO:'Jacto',TRIMBLE:'Trimble',GENERIC_AG:'Marca não identificada'}[v.detected_brand] || 'Desconhecida';
+          const meta = document.createElement('div');
+          meta.className = 'validation-data';
+          meta.append(asText('strong', 'Validação: '), asText('span', brand + ' · ' + (v.operation_type || 'Não identificado') +
+            ' · ' + (v.valid_layers || []).length + ' camada(s) de aplicação'));
+          if ((v.valid_layers || []).length) meta.append(asText('div','Camadas: ' +
+            v.valid_layers.map(layer => layer.base_name + ' (' + layer.record_count + ' registros)').join(', ')));
+          if ((v.missing_files || []).length) meta.append(asText('div','Faltando: ' + v.missing_files.join(', ')));
+          for (const item of (v.ignored_layers || []).slice(0, 4)) meta.append(asText('div', 'Ignorada: ' + item.base_name + ' — ' + item.reason));
+          for (const msg of (v.warnings || []).slice(0, 4)) meta.append(asText('div', 'Atenção: ' + msg));
+          box.append(meta);
+        }
         results.append(box);
       }
       const counts = data.counts || {};
@@ -231,7 +254,7 @@
       updateSelected();
       await loadHistory(false);
     } catch (err) { say(err.message, true); }
-    finally { busy = false; document.getElementById('upload').disabled = false; }
+    finally { busy = false; geometryOnly.disabled = false; document.getElementById('upload').disabled = false; }
   });
 
   async function loadHistory(append = false) {
