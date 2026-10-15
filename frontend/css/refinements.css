@@ -37,3 +37,51 @@ table tbody tr{transition:background .15s ease;}
 #mapContainer .leaflet-container{background:#090e17;}
 @media(max-width:780px){#topSection.top-section{max-height:350px;}#attrPanel{height:250px;}.map-hud{left:12px;}header .brand{flex:1 1 100%;}}
 @media(max-width:680px){.top-bar{flex-wrap:wrap;gap:12px;padding:16px 20px;}.brand-top{min-width:0;}.brand-top-text{min-width:0;}.sys-badges{flex-wrap:wrap;gap:8px;}.hero-title h2{font-size:1.85rem;}.portal-container{padding:24px 20px;}.cards-grid{grid-template-columns:minmax(0,1fr);}.badge-brand{max-width:100%;}}
+
+/* Portal unificado: apenas os três módulos operacionais ativos. */
+.portal-data-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(148,163,184,.22);
+  background: rgba(15,23,42,.58);
+  border-radius: 10px;
+  font-size: .82rem !important;
+  line-height: 1.65 !important;
+}
+.portal-container .cards-grid {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  align-items: stretch;
+  gap: 20px;
+}
+.portal-container .machine-card {
+  padding: 24px;
+  min-width: 0;
+}
+.portal-container .machine-card:focus-visible {
+  outline: 3px solid #6ee7b7;
+  outline-offset: 4px;
+}
+.portal-container .machine-card .btn-enter {
+  pointer-events: none;
+}
+.badge-status.offline {
+  color: #fda4af;
+  border-color: rgba(244,63,94,.4);
+  background: rgba(244,63,94,.09);
+}
+.badge-status.offline .pulse-dot {
+  background: #fb7185;
+  box-shadow: none;
+  animation: none;
+}
+@media(max-width:1000px) {
+  .portal-container .cards-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:680px) {
+  .portal-container .cards-grid { grid-template-columns: 1fr; }
+  .portal-container .machine-card { padding: 20px; }
+  .portal-container .hero-title h2 { font-size: 1.65rem; }
+  .portal-container { gap: 22px; }
+  .top-bar { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+  .sys-badges { flex-wrap: wrap; }
+}

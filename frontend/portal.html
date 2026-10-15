@@ -491,11 +491,11 @@
       </div>
       <div class="badge-status">
         <span class="pulse-dot"></span>
-        <span>Sistema disponível</span>
+        <span id="backendStatusText" role="status" aria-live="polite">Verificando serviços…</span>
       </div>
       <div style="font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);">
         <i data-lucide="cloud" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px; color:#38bdf8;"></i>
-        Nuvem Neon PostgreSQL
+        Dados de máquinas agrícolas
       </div>
     </div>
   </header>
@@ -505,7 +505,8 @@
     
     <div class="hero-title">
       <h2>Escolha a Plataforma Operacional</h2>
-      <p>Selecione a máquina ou ecossistema de arquivos que deseja monitorar. Cada cockpit possui ferramentas e métricas customizadas para sua respectiva operação.</p>
+      <p>Escolha um dos três módulos. Importe arquivos reais da operação e consulte históricos, talhões, mapas e indicadores disponíveis.</p>
+      <p class="portal-data-note">John Deere: JDL &nbsp;·&nbsp; Jacto: AgGPS/SHP &nbsp;·&nbsp; Massey: KML/SHP/GeoJSON. Indicadores dependem dos dados presentes em cada arquivo.</p>
     </div>
 
     <div class="cards-grid">
@@ -549,10 +550,10 @@
           </ul>
         </div>
 
-        <button class="btn-enter" onclick="window.location.href='/johndeere'">
+        <span class="btn-enter">
           <span>Acessar Módulo John Deere G5</span>
           <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </button>
+        </span>
       </a>
 
       <!-- CARD 2: JACTO / TRIMBLE AGGPS -->
@@ -594,10 +595,10 @@
           </ul>
         </div>
 
-        <button class="btn-enter" onclick="window.location.href='/jacto'">
+        <span class="btn-enter">
           <span>Acessar Módulo Jacto / Trimble</span>
           <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </button>
+        </span>
       </a>
 
 
@@ -640,55 +641,10 @@
           </ul>
         </div>
 
-        <button class="btn-enter" onclick="window.location.href='/massey'">
+        <span class="btn-enter">
           <span>Acessar Módulo Massey Ferguson</span>
           <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </button>
-      </a>
-
-      <!-- CARD 5: PRECISION AG STUDIO (ISOXML & JDLINK) -->
-      <a href="/studio" class="machine-card card-studio">
-        <div>
-          <div class="card-top">
-            <div class="card-header-icon">
-              <i data-lucide="cpu" style="width: 30px; height: 30px;"></i>
-            </div>
-            <span class="badge-brand">ISOXML • JDLink Studio</span>
-          </div>
-
-          <div class="card-title">
-            <h3>Precision Ag Studio</h3>
-            <p>Zoneamento Agronômico, ISO 11783 TaskData & JDLink API v4</p>
-          </div>
-
-          <ul class="specs-list">
-            <li>
-              <i data-lucide="grid" style="width: 16px; height: 16px;"></i>
-              <span>Zoneamento: <strong>Grade 5m a 30m & CV% (farmingpy)</strong></span>
-            </li>
-            <li>
-              <i data-lucide="file-code-2" style="width: 16px; height: 16px;"></i>
-              <span>Padrão Universal: <strong>ISO 11783 TaskData v4.3 (isoxml-py)</strong></span>
-            </li>
-            <li>
-              <i data-lucide="satellite" style="width: 16px; height: 16px;"></i>
-              <span>Telemetria JDLink: <strong>Frota Conectada ao Vivo via API v4</strong></span>
-            </li>
-            <li>
-              <i data-lucide="search" style="width: 16px; height: 16px;"></i>
-              <span>Catálogo DDI: <strong>28 Entidades AEF (ISO 11783-11)</strong></span>
-            </li>
-            <li>
-              <i data-lucide="hard-drive-download" style="width: 16px; height: 16px;"></i>
-              <span>Exportador de Campo: <strong>Gera TASKDATA.zip para Pendrives</strong></span>
-            </li>
-          </ul>
-        </div>
-
-        <button class="btn-enter" onclick="window.location.href='/studio'">
-          <span>Acessar Precision Studio</span>
-          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </button>
+        </span>
       </a>
 
     </div>
@@ -801,8 +757,29 @@
       lucide.createIcons();
     }
 
+    async function checkBackendHealth() {
+      const label = document.getElementById('backendStatusText');
+      if (!label) return;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch('/api/health', { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error('Serviço indisponível');
+        const data = await response.json();
+        if (data.status !== 'ok') throw new Error('Serviço indisponível');
+        label.textContent = 'API operacional';
+        label.parentElement.classList.remove('offline');
+      } catch {
+        label.textContent = 'API indisponível — importações podem falhar';
+        label.parentElement.classList.add('offline');
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       checkAuth();
+      checkBackendHealth();
       lucide.createIcons();
     });
   </script>
