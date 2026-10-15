@@ -21,11 +21,11 @@ def connect():
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('CREATE TABLE IF NOT EXISTS agricultural_operations(id TEXT PRIMARY KEY,'+','.join(c+' TEXT' for c in OP_COLUMNS)+',imported_at TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS farm_fields(id TEXT PRIMARY KEY,'+','.join(c+(' REAL' if c in ('area_ha','center_lon','center_lat') else ' TEXT') for c in FIELD_COLUMNS)+')')
-    # Migração conservadora de bancos existentes.
+    # Migração PostgreSQL idempotente; erros ignorados deixam a transação abortada.
     for table,columns in [('agricultural_operations',OP_COLUMNS+['imported_at']),('farm_fields',FIELD_COLUMNS)]:
-        names={r[1] for r in conn.execute('PRAGMA table_info('+table+')')}
         for c in columns:
-            if c not in names: conn.execute('ALTER TABLE '+table+' ADD COLUMN '+c+' TEXT')
+            ctype = 'DOUBLE PRECISION' if table == 'farm_fields' and c in ('area_ha','center_lon','center_lat') else 'TEXT'
+            conn.execute('ALTER TABLE '+table+' ADD COLUMN IF NOT EXISTS '+c+' '+ctype)
     conn.commit()
     return conn
 
