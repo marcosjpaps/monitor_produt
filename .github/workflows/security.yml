@@ -20,6 +20,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit
       - run: node --test tests/auth.test.js
+      - run: node --test tests/painel-drone.test.js
 
   autenticacao-python:
     runs-on: ubuntu-latest

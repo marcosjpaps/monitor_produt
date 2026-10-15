@@ -308,6 +308,21 @@ def api_filtros_segmentacao(
         data_fim=data_fim
     )
 
+@app.get("/api/rastro/lixeira")
+def api_lixeira_rastros(limit: int = Query(100, ge=1, le=500)):
+    """Lista rastros John Deere excluídos logicamente, sem alterar seus dados."""
+    with get_connection() as conn:
+        rows = conn.execute("""
+            SELECT id, nome_arquivo, atividade_pasta, data_inicio, data_fim, modelo_trator,
+                   area_trabalhada_ha, is_deleted
+            FROM arquivos_processados
+            WHERE is_deleted = 1
+            ORDER BY data_inicio DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return {"items": [dict(r) for r in rows], "limit": limit}
+
+
 @app.post("/api/rastro/excluir")
 def api_excluir_rastro(arquivo_id: str = Query(...)):
     """Apara/Exclui o rastro selecionado pelo usuário no mapa."""
@@ -1015,6 +1030,12 @@ def serve_portal():
         with open(index_path, "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Frontend não encontrado. Verifique a pasta frontend/</h1>"
+
+@app.get("/painel", response_class=HTMLResponse)
+def pagina_painel_drone():
+    """Cockpit responsivo no estilo Drone, com navegação entre três máquinas."""
+    return FileResponse(os.path.join(FRONTEND_DIR, "painel.html"), media_type="text/html")
+
 
 @app.get("/johndeere", response_class=HTMLResponse)
 @app.get("/dashboard", response_class=HTMLResponse)

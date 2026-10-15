@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090e17">
+  <title>Monitor Agrícola • Mapa e Operações</title>
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/css/painel.css">
+  <script src="/vendor/leaflet/leaflet.js" defer></script>
+  <script src="/vendor/lucide.min.js" defer></script>
+  <script src="/js/auth-guard.js" defer></script>
+  <script src="/js/painel.js" defer></script>
+</head>
+<body class="mobile-map">
+  <section class="top-shell" id="topSection">
+    <header class="topbar">
+      <a class="brand" href="/?hub=1" title="Portal de máquinas">
+        <span class="brand-mark"><i data-lucide="tractor" class="icon"></i></span>
+        <span><b>Monitor<span>Agrícola</span></b><small>Mapa de aplicação e operações</small></span>
+      </a>
+      <div class="top-center" role="tablist" aria-label="Equipamentos">
+        <button class="machine-tab" data-module="johndeere" role="tab" aria-selected="true">John Deere</button>
+        <button class="machine-tab" data-module="jacto" role="tab" aria-selected="false">Jacto / AgGPS</button>
+        <button class="machine-tab" data-module="massey" role="tab" aria-selected="false">Massey Ferguson</button>
+      </div>
+      <div class="top-actions">
+        <button class="status-btn" id="dbStatus" title="Verificar conexão com a API e os dados"><span class="status-dot" id="dbDot"></span><span id="dbText">Verificando banco</span></button>
+        <a class="btn primary desktop-action" href="/importacoes"><i data-lucide="file-up" class="icon"></i> Importar arquivos</a>
+        <button class="btn desktop-action" id="exportCsv" title="Baixar tabela filtrada"><i data-lucide="file-spreadsheet" class="icon"></i> CSV</button>
+        <button class="btn desktop-action" id="exportKml" title="Baixar geometrias visíveis em KML"><i data-lucide="download" class="icon"></i> KML</button>
+        <button class="btn desktop-action" id="btnFields" title="Ver e importar talhões"><i data-lucide="layers" class="icon"></i> Talhões</button>
+        <button class="btn desktop-action" id="btnTrash" title="Arquivamentos e lixeira"><i data-lucide="trash-2" class="icon"></i> Lixeira</button>
+        <button class="btn" id="btnTheme" title="Alternar tema claro e escuro" aria-label="Alternar tema claro e escuro"><i data-lucide="sun-moon" class="icon"></i></button>
+        <button class="btn mobile-actions" id="openActions" aria-expanded="false" aria-controls="mobileActions" title="Mostrar ações"><i data-lucide="menu" class="icon"></i></button>
+        <button class="btn" id="logout" title="Sair da conta" aria-label="Sair da conta"><i data-lucide="log-out" class="icon"></i></button>\n        <a class="btn" href="/?hub=1" title="Abrir portal com três módulos" aria-label="Voltar ao portal"><i data-lucide="home" class="icon"></i></a>
+      </div>
+      <div class="mobile-actions" id="mobileActions" hidden style="flex:0 0 100%;gap:7px;flex-wrap:wrap">
+        <a href="/importacoes" class="btn primary">Importar</a>
+        <button class="btn" id="mobileCsv">CSV</button>
+        <button class="btn" id="mobileKml">KML</button>
+        <button class="btn" id="mobileFields">Talhões</button>
+        <button class="btn" id="mobileTrash">Lixeira</button>
+      </div>
+    </header>
+    <div class="kpi-strip" aria-label="Indicadores reais da operação">
+      <div class="kpi"><i data-lucide="list-checks" class="icon"></i><div><span id="kpiTitleCount">Registros</span><strong id="kpiCount">—</strong><em id="kpiCountInfo">Dados importados</em></div></div>
+      <div class="kpi"><i data-lucide="maximize-2" class="icon" style="color:var(--green)"></i><div><span>Área registrada</span><strong id="kpiArea">—</strong><em>Hectares dos registros</em></div></div>
+      <div class="kpi"><i data-lucide="tractor" class="icon"></i><div><span>Máquinas</span><strong id="kpiMachines">—</strong><em>Com dados disponíveis</em></div></div>
+      <div class="kpi"><i data-lucide="map" class="icon"></i><div><span>Fazendas</span><strong id="kpiFarms">—</strong><em>Identificadas</em></div></div>
+      <div class="kpi"><i data-lucide="clock-3" class="icon" style="color:var(--amber)"></i><div><span>Horas registradas</span><strong id="kpiHours">—</strong><em>Quando disponíveis</em></div></div>
+      <div class="kpi"><i data-lucide="gauge" class="icon"></i><div><span>Velocidade média</span><strong id="kpiSpeed">—</strong><em>km/h, se disponível</em></div></div>
+      <div class="kpi"><i data-lucide="map-pinned" class="icon" style="color:var(--green)"></i><div><span>Feições no mapa</span><strong id="kpiGeo">—</strong><em>Rastros, cobertura, talhões</em></div></div>
+    </div>
+  </section>
+  <main class="work" id="workspace">
+    <section class="map-zone" id="mapZone" aria-label="Mapa das operações agrícolas">
+      <div id="map" role="application" aria-label="Mapa Leaflet com os dados geográficos importados"></div>
+      <div class="map-toolbar">
+        <button class="btn small" id="toggleTop" title="Recolher ou expandir cabeçalho"><i data-lucide="chevrons-up" class="icon"></i><span class="hide-mobile" id="topLabel">Ocultar topo</span></button>
+        <button class="btn small" id="toggleFull" title="Mapa em tela cheia"><i data-lucide="maximize" class="icon"></i><span class="hide-mobile">Tela cheia</span></button>
+        <button class="btn small" id="zoomAll" title="Enquadrar todas as feições"><i data-lucide="locate-fixed" class="icon"></i> Enquadrar</button>
+        <label class="btn small" title="Mostrar ou ocultar limites de talhões" style="cursor:pointer"><input type="checkbox" id="toggleFarms" checked> Talhões</label>
+        <label class="btn small" title="Mostrar ou ocultar a camada das operações" style="cursor:pointer"><input type="checkbox" id="toggleOperations" checked> Operações</label>
+        <label class="btn small" title="Selecionar registros filtrados" style="cursor:pointer"><input type="checkbox" id="selectAll" checked> Todos</label>
+        <select id="baseLayer" aria-label="Estilo do mapa"><option value="sat">Satélite</option><option value="street">Estradas</option></select>
+        <a class="btn small" id="moduleLink" href="/johndeere" title="Abrir cockpit completo"><i data-lucide="external-link" class="icon"></i><span class="hide-mobile">Detalhes do módulo</span></a>
+      </div>
+      <div class="map-hud"><span id="coordsLabel">Lat / lon —</span><span>Zoom <strong id="zoomValue">—</strong></span><span>Visíveis <strong id="visibleCount">0</strong></span></div>
+      <div class="map-empty" id="mapEmpty" hidden><i data-lucide="map" class="icon"></i><b id="emptyMapTitle">Sem rastros no período</b><p id="emptyMapDesc">Importe arquivos reais para visualizar as operações e os talhões cadastrados.</p><a class="btn primary" href="/importacoes">Importar arquivos</a></div>
+    </section>
+    <section class="data-panel" id="dataPanel" aria-label="Tabela de atributos">
+      <div class="panel-head">
+        <div class="panel-name"><i data-lucide="table-2" class="icon"></i><strong>TABELA DE ATRIBUTOS</strong><span class="count" id="totalLabel">(0 registros)</span><button class="btn small" id="panelResize" title="Recolher ou expandir tabela"><i data-lucide="chevron-down" class="icon"></i></button></div>
+        <div class="filters">
+          <div class="period">
+            <input type="date" id="periodStart" aria-label="Data inicial">
+            <input type="date" id="periodEnd" aria-label="Data final">
+          </div>
+          <details class="filter-menu" id="farmMenu"><summary id="farmSummary">Fazendas ▾</summary><div class="filter-options"><input type="search" id="searchFarm" placeholder="Buscar fazenda..." aria-label="Buscar fazenda"><button data-reset="farm">Todas</button><div id="farmOptions"></div></div></details>
+          <details class="filter-menu" id="fieldMenu"><summary id="fieldSummary">Talhões ▾</summary><div class="filter-options"><input type="search" id="searchField" placeholder="Buscar talhão..." aria-label="Buscar talhão"><button data-reset="field">Todos</button><div id="fieldOptions"></div></div></details>
+          <details class="filter-menu" id="machineMenu"><summary id="machineSummary">Equipamentos ▾</summary><div class="filter-options"><input type="search" id="searchMachine" placeholder="Buscar equipamento..." aria-label="Buscar equipamento"><button data-reset="machine">Todos</button><div id="machineOptions"></div></div></details>
+          <details class="filter-menu" id="dateMenu"><summary id="dateSummary">Datas ▾</summary><div class="filter-options"><input type="search" id="searchDate" placeholder="Buscar data..." aria-label="Buscar data"><button data-reset="date">Todas</button><div id="dateOptions"></div></div></details>
+          <input type="search" id="textFilter" placeholder="Buscar operação..." aria-label="Buscar na tabela">
+          <button class="btn small" id="clearFilters" title="Limpar filtros"><i data-lucide="rotate-ccw" class="icon"></i> Limpar</button>
+          <button class="btn small" id="refresh" title="Consultar dados atualizados"><i data-lucide="refresh-cw" class="icon"></i></button>
+          <button class="btn danger small" id="deleteSelected" title="Enviar rastros John Deere selecionados para a lixeira" hidden><i data-lucide="trash-2" class="icon"></i> Excluir selecionados</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table aria-label="Operações, fazendas e arquivos importados">
+          <thead><tr id="tableHead"><th><input type="checkbox" id="headSelect" checked aria-label="Selecionar registros filtrados"></th><th>Data / Hora</th><th>Fazenda</th><th>Talhão</th><th>Equipamento</th><th>Operação</th><th>Área (ha)</th><th>Velocidade</th><th>Horas</th><th>Arquivo</th></tr></thead>
+          <tbody id="tableBody"><tr><td class="table-empty" colspan="10">Consultando dados do banco…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination"><span id="pageInfo">0 registros</span><div><label>Por página <select id="pageSize"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option></select></label><button id="prevPage" class="btn small" aria-label="Página anterior">‹</button><span id="pageNumber">1 / 1</span><button id="nextPage" class="btn small" aria-label="Próxima página">›</button></div></div>
+    </section>
+  </main>
+  <nav class="mobile-tabs" aria-label="Visualização no celular"><button class="btn active" id="mobileMap" aria-pressed="true">Mapa</button><button class="btn" id="mobileTable" aria-pressed="false">Operações e filtros</button></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="modal-cover" id="modalCover" hidden role="presentation">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header><h2 id="modalTitle">Detalhes</h2><button class="btn small" id="closeModal" aria-label="Fechar janela">Fechar ✕</button></header>
+      <p id="modalDescription"></p>
+      <div id="modalContent" class="list"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -4,7 +4,7 @@ const base=__dirname;
 if(fs.existsSync(path.join(base,'.env')) && process.loadEnvFile)process.loadEnvFile(path.join(base,'.env'));
 const {transaction}=require('./api/db');
 const routes=Object.fromEntries(['talhoes'].map(n=>['/api/'+n,require('./api/'+n)]));
-const pages={'/importacoes':'frontend/importacoes.html','/':'frontend/portal.html','/johndeere':'frontend/johndeere.html','/dashboard':'frontend/johndeere.html','/jdl':'frontend/johndeere.html','/jacto':'frontend/jacto.html','/massey':'frontend/massey.html','/massei':'frontend/massey.html','/studio':'frontend/studio.html','/isoxml':'frontend/studio.html','/index.html':'frontend/portal.html','/portal.html':'frontend/portal.html','/portal':'frontend/portal.html'};
+const pages={'/painel':'frontend/painel.html','/importacoes':'frontend/importacoes.html','/':'frontend/portal.html','/johndeere':'frontend/johndeere.html','/dashboard':'frontend/johndeere.html','/jdl':'frontend/johndeere.html','/jacto':'frontend/jacto.html','/massey':'frontend/massey.html','/massei':'frontend/massey.html','/studio':'frontend/studio.html','/isoxml':'frontend/studio.html','/index.html':'frontend/portal.html','/portal.html':'frontend/portal.html','/portal':'frontend/portal.html'};
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'application/javascript','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2'};
 const backendPort=Number(process.env.PYTHON_PORT||8000);
 function json(res,code,data){if(res.writableEnded)return;res.writeHead(code,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}

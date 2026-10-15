@@ -19,6 +19,10 @@
       "dest": "/$1"
     },
     {
+      "src": "/painel",
+      "dest": "/painel.html"
+    },
+    {
       "src": "/importacoes",
       "dest": "/importacoes.html"
     },
