@@ -1175,7 +1175,7 @@ def health(): return {'status':'ok'}
 
 @app.post('/api/upload-multi')
 @app.post('/api/massey/upload')
-async def massey_upload(files: List[UploadFile] = File(...)):
+async def massey_upload(files: List[UploadFile] = File(...), origin_brand: Optional[str] = None):
     import tempfile
     from pathlib import Path
     from .massey_import import connect, import_file
@@ -1193,7 +1193,7 @@ async def massey_upload(files: List[UploadFile] = File(...)):
             if p.suffix.lower() in ('.dbf','.shx','.prj','.cpg'):continue
             try:
                 conn.execute('SAVEPOINT single_file')
-                n=import_file(conn,p,name)
+                n=import_file(conn,p,name,origin_brand=origin_brand)
                 conn.execute('RELEASE single_file');imported+=n
                 results.append({'filename':name,'status':'imported' if n else 'duplicate','imported':n})
             except Exception as e:
@@ -1248,13 +1248,16 @@ def api_import_history(
 async def api_import_central(module: str = Form(...), files: List[UploadFile] = File(...), geometry_only: bool = Form(False)):
     """Valida hashes e formatos, reutiliza os parsers nativos e audita no PostgreSQL."""
     if module not in MODULES:
-        raise HTTPException(400, "Escolha John Deere, Jacto ou Massey.")
+        raise HTTPException(400, "Selecione um leitor de equipamento habilitado.")
     if not files or len(files) > 50:
         raise HTTPException(400, "Selecione entre 1 e 50 arquivos por lote.")
     allowed = {
         "johndeere": {".jdl", ".zip", ".rar"},
         "jacto": {".zip", ".rar", ".shp", ".dbf", ".shx", ".prj", ".xml", ".kml", ".jdl"},
         "massey": {".zip", ".agf", ".shp", ".dbf", ".shx", ".prj", ".cpg", ".kml", ".geojson", ".json"},
+        "stara": {".zip", ".geojson", ".json", ".kml"},
+        "caseih": {".zip", ".geojson", ".json", ".kml"},
+        "trimble": {".zip", ".agf", ".geojson", ".json", ".kml"},
     }
     results = []
     for upload in files:
@@ -1300,7 +1303,7 @@ async def api_import_central(module: str = Form(...), files: List[UploadFile] = 
                             for x in details)
                 good = any(x.get("status") == "imported" for x in details)
             else:
-                response = await massey_upload([upload])
+                response = await massey_upload([upload], origin_brand=module)
                 parsed = _import_json.loads(response.body)
                 details = parsed["results"]
                 count = int(parsed.get("imported") or 0)
