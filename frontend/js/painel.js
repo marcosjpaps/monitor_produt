@@ -107,9 +107,20 @@
       // Busca no backend quando suporta datas para evitar downloads enormes.
       if(module!=='massey'){if(start)q.set('data_inicio',start);if(end)q.set('data_fim',end);}
       const url=queries[module]+(q.size?'?'+q:'');
-      const [data,farms]=await Promise.all([request(url),request('/api/talhoes').catch(()=>({farms:[]}))]);
+      const [data,farms,farmGroups]=await Promise.all([
+        request(url),
+        request('/api/talhoes').catch(()=>({farms:[]})),
+        module==='johndeere'?request('/api/fazendas').catch(()=>[]):Promise.resolve([])
+      ]);
       if(nonce!==state.requestSerial)return;
       state.rows=module==='johndeere'?jdRows(data):module==='jacto'?jactoRows(data):masseyRows(data);
+      if(module==='johndeere'&&Array.isArray(farmGroups)){
+        const activityFarms=new Map();
+        farmGroups.forEach(group=>(group.talhoes||[]).forEach(t=>{
+          if(t.atividade)activityFarms.set(t.atividade,group.fazenda||'');
+        }));
+        state.rows.forEach(row=>{if(!row.farm)row.farm=activityFarms.get(row.field)||'';});
+      }
       // IDs para seleção devem ser estáveis dentro da lista; não mostrar registros apagados.
       state.selected=new Set(state.rows.map(r=>r.id));
       state.allFarms=Array.isArray(farms.farms)?farms.farms:[];
