@@ -308,6 +308,21 @@ def api_filtros_segmentacao(
         data_fim=data_fim
     )
 
+@app.get("/api/rastro/lixeira")
+def api_lixeira_rastros(limit: int = Query(100, ge=1, le=500)):
+    """Lista rastros John Deere excluídos logicamente, sem alterar seus dados."""
+    with get_connection() as conn:
+        rows = conn.execute("""
+            SELECT id, nome_arquivo, atividade_pasta, data_inicio, data_fim, modelo_trator,
+                   area_trabalhada_ha, is_deleted
+            FROM arquivos_processados
+            WHERE is_deleted = 1
+            ORDER BY data_inicio DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return {"items": [dict(r) for r in rows], "limit": limit}
+
+
 @app.post("/api/rastro/excluir")
 def api_excluir_rastro(arquivo_id: str = Query(...)):
     """Apara/Exclui o rastro selecionado pelo usuário no mapa."""
