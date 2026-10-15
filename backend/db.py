@@ -39,8 +39,8 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             implemento_padrao TEXT,
             fabricante TEXT DEFAULT 'John Deere',
             horimetro_atual REAL DEFAULT 0.0,
-            created_at TEXT DEFAULT (datetime('now', 'localtime')),
-            updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
         """)
 
@@ -65,7 +65,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
             lat_max REAL,
             lon_min REAL,
             lon_max REAL,
-            imported_at TEXT DEFAULT (datetime('now', 'localtime')),
+            imported_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (maquina_id) REFERENCES maquinas(id)
         );
         """)
@@ -106,7 +106,7 @@ def init_db(db_path: str = DEFAULT_DB_PATH):
         # 3. Registros de Telemetria
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS telemetria_registros (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             arquivo_id TEXT NOT NULL,
             maquina_id TEXT NOT NULL,
             timestamp_iso TEXT NOT NULL,
