@@ -3,8 +3,8 @@ from psycopg2.extras import RealDictCursor
 import os
 import re
 
-DEFAULT_NEON_URL = "postgresql://neondb_owner:npg_1NDTULH5VwOP@ep-withered-wildflower-b5qp3tqu-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
-DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or DEFAULT_NEON_URL
+# Credenciais devem vir do ambiente, jamais do código ou de valores padrão.
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
 
 def convert_sqlite_to_pg_sql(sql):
     if "PRAGMA" in sql.upper():
