@@ -66,7 +66,10 @@
       <div class="module-choice" id="moduleChoices">
         <label><input type="radio" name="module" value="johndeere" checked> <strong>John Deere</strong><small>JDL, ZIP, RAR</small></label>
         <label><input type="radio" name="module" value="jacto"> <strong>Jacto / AgGPS</strong><small>ZIP, RAR, SHP, DBF, SHX, PRJ, XML, KML, JDL</small></label>
-        <label><input type="radio" name="module" value="massey"> <strong>Massey / TMX</strong><small>ZIP, AGF aberto, SHP, KML, GeoJSON</small></label>
+        <label><input type="radio" name="module" value="massey"> <strong>Massey / TMX</strong><small>ZIP, AGF aberto, KML, GeoJSON</small></label>
+        <label><input type="radio" name="module" value="trimble"> <strong>Trimble</strong><small>ZIP com SHP e aplicação; AGF aberto</small></label>
+        <label><input type="radio" name="module" value="stara"> <strong>Stara</strong><small>ZIP Shapefile de aplicação</small></label>
+        <label><input type="radio" name="module" value="caseih"> <strong>Case IH</strong><small>ZIP Shapefile de aplicação</small></label>
       </div>
       <h2>2. Selecione os arquivos</h2>
       <label class="drop" id="drop">
@@ -75,7 +78,7 @@
         <input type="file" id="files" multiple accept=".jdl,.zip,.rar">
       </label>
       <label class="validation-option"><input type="checkbox" id="geometryOnly"> Importar somente geometria (KML/GeoJSON), sem tratar como aplicação, taxa ou rendimento. Use apenas para visualizar talhões/rotas.</label>
-      <p class="small">Validação reconhece indícios de John Deere, Stara, Case IH, Jacto e Trimble. Stara/Case IH: use exportação aberta em SHP/ZIP no leitor geográfico (Massey / TMX); ISOXML TimeLog e formatos proprietários sem decoder não são importados como aplicação.</p>
+      <p class="small">Validação reconhece indícios de John Deere, Stara, Case IH, Jacto e Trimble. Stara e Case IH usam ZIP com Shapefile aberto no leitor geográfico; os registros entram no mapa unificado de operações. ISOXML TimeLog e formatos proprietários sem decoder não são importados como aplicação.</p>
       <div class="actions">
         <button type="button" class="primary" id="upload">Importar e salvar no banco</button>
         <span id="selection" class="small">Nenhum arquivo selecionado</span>
@@ -92,6 +95,9 @@
           <option value="johndeere">John Deere</option>
           <option value="jacto">Jacto</option>
           <option value="massey">Massey</option>
+          <option value="trimble">Trimble</option>
+          <option value="stara">Stara</option>
+          <option value="caseih">Case IH</option>
         </select>
         <label><input type="checkbox" id="archived"> Arquivados</label>
         <button type="button" id="refresh">Atualizar</button>
@@ -109,7 +115,10 @@
   const acceptByModule = {
     johndeere: '.jdl,.zip,.rar',
     jacto: '.zip,.rar,.shp,.dbf,.shx,.prj,.xml,.kml,.jdl',
-    massey: '.zip,.agf,.shp,.dbf,.shx,.prj,.cpg,.kml,.geojson,.json'
+    massey: '.zip,.agf,.shp,.dbf,.shx,.prj,.cpg,.kml,.geojson,.json',
+    trimble: '.zip,.agf,.kml,.geojson,.json',
+    stara: '.zip,.kml,.geojson,.json',
+    caseih: '.zip,.kml,.geojson,.json'
   };
   const files = document.getElementById('files');
   const message = document.getElementById('message');
@@ -265,7 +274,7 @@
       const params = new URLSearchParams({ offset:String(offset), limit:'30', archived:String(archived) });
       if (filter) params.set('module', filter);
       const data = await request('/api/importacoes?' + params);
-      const labels = { johndeere:'John Deere', jacto:'Jacto', massey:'Massey' };
+      const labels = { johndeere:'John Deere', jacto:'Jacto', massey:'Massey', trimble:'Trimble', stara:'Stara', caseih:'Case IH' };
       for (const item of data.items || []) {
         const row = document.createElement('div');row.className = 'history-row';
         const info = document.createElement('div');
