@@ -120,12 +120,12 @@ def validate_ag_upload(name: str, data: bytes, module: str, allow_geometry_only:
         result.update(is_valid=True, container_format='PROPRIETARY_RAW', operation_type='PARSER_REQUIRED', error_message=None)
         result['warnings'].append('Pacote RAR será verificado e processado pelo parser do servidor.')
         return result
-    if ext == '.agf' and module == 'massey':
+    if ext == '.agf' and module in ('massey', 'trimble'):
         result.update(is_valid=True, detected_brand='TRIMBLE', container_format='PROPRIETARY_RAW', operation_type='PARSER_REQUIRED', error_message=None)
         result['warnings'].append('AGF aberto será lido pelo parser; AGF criptografado será rejeitado.')
         return result
     if ext in ('.kml', '.geojson', '.json'):
-        if module != 'massey' and ext != '.kml':
+        if module not in ('massey', 'stara', 'caseih', 'trimble') and ext != '.kml':
             return result
         result['container_format'] = 'KML_VISUAL_ONLY' if ext == '.kml' else 'GEOJSON'
         try:
@@ -242,7 +242,7 @@ def validate_ag_upload(name: str, data: bytes, module: str, allow_geometry_only:
                 reason = '; '.join(x['reason'] for x in result['ignored_layers'][:3])
                 result['error_message'] = 'Nenhuma camada de aplicação confirmada: ' + reason
                 return result
-            if any(p.lower().endswith('.kml') for p in paths) and module == 'massey':
+            if any(p.lower().endswith('.kml') for p in paths) and module in ('massey', 'stara', 'caseih', 'trimble'):
                 return _geo_only(result, allow_geometry_only, 'ZIP com KML apenas: sem telemetria de aplicação.')
             result['error_message'] = 'ZIP sem Shapefile de aplicação reconhecido.'
             return result
