@@ -15,17 +15,19 @@ OP_COLUMNS=['raw_name','clean_name','operation_type','client_name','farm_name','
 FIELD_COLUMNS=['farm_name','zone','field_number','field_desc','variety','planting_year','area_ha','center_lon','center_lat','bbox_json','boundary_geojson','source']
 
 def connect():
-    Path(MASSEY_DB_PATH).parent.mkdir(parents=True,exist_ok=True)
+    # Persistência PostgreSQL: não criar caminho SQLite no runtime imutável da Vercel.
+    if not __import__('os').environ.get('VERCEL'):
+        Path(MASSEY_DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn=pg_connect()
     
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('CREATE TABLE IF NOT EXISTS agricultural_operations(id TEXT PRIMARY KEY,'+','.join(c+' TEXT' for c in OP_COLUMNS)+',imported_at TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS farm_fields(id TEXT PRIMARY KEY,'+','.join(c+(' REAL' if c in ('area_ha','center_lon','center_lat') else ' TEXT') for c in FIELD_COLUMNS)+')')
-    # Migração conservadora de bancos existentes.
+    # Migração PostgreSQL idempotente; erros ignorados deixam a transação abortada.
     for table,columns in [('agricultural_operations',OP_COLUMNS+['imported_at']),('farm_fields',FIELD_COLUMNS)]:
-        names={r[1] for r in conn.execute('PRAGMA table_info('+table+')')}
         for c in columns:
-            if c not in names: conn.execute('ALTER TABLE '+table+' ADD COLUMN '+c+' TEXT')
+            ctype = 'DOUBLE PRECISION' if table == 'farm_fields' and c in ('area_ha','center_lon','center_lat') else 'TEXT'
+            conn.execute('ALTER TABLE '+table+' ADD COLUMN IF NOT EXISTS '+c+' '+ctype)
     conn.commit()
     return conn
 
