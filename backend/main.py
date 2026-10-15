@@ -1317,3 +1317,49 @@ def api_restore_import(item_id: str):
     if row["module"] == "jacto":
         hydrate_jacto_imports(reset=True)
     return row
+
+
+
+@app.post("/api/importacoes/chunk/{upload_id}/{index}")
+async def api_import_chunk(
+    request: Request, upload_id: str, index: int
+):
+    """Upload de 2 MB/parte para não estourar o limite de requisição da Vercel."""
+    import uuid
+    from urllib.parse import unquote
+    from .import_store import store_chunk
+    try:
+        if str(uuid.UUID(upload_id)) != upload_id or len(upload_id) != 36:
+            raise ValueError("Identificador de upload inválido")
+        module = request.headers.get("x-upload-module", "")
+        filename = unquote(request.headers.get("x-upload-filename", ""))
+        total = int(request.headers.get("x-upload-total", "0"))
+        if len(filename) > 240:
+            raise ValueError("Nome de arquivo muito longo")
+        raw = await request.body()
+        store_chunk(upload_id, index, total, module, filename, raw)
+        return {"success": True, "part": index, "total": total}
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/importacoes/chunks/finalize")
+async def api_finish_chunked_import(payload: dict = Body(...)):
+    """Reconstrói o arquivo e o entrega ao mesmo validador da importação direta."""
+    import uuid
+    import io
+    from .import_store import finish_chunks, clear_chunks
+    upload_id = str(payload.get("upload_id") or "")
+    module = str(payload.get("module") or "")
+    filename = str(payload.get("filename") or "")
+    try:
+        if str(uuid.UUID(upload_id)) != upload_id:
+            raise ValueError("Identificador de envio inválido")
+        raw = finish_chunks(upload_id, module, filename)
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(400, str(exc))
+    try:
+        buffered = UploadFile(filename=filename, file=io.BytesIO(raw))
+        return await api_import_central(module=module, files=[buffered])
+    finally:
+        clear_chunks(upload_id)
