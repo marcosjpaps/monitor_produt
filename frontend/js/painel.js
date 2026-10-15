@@ -435,11 +435,11 @@
   }
   function exportSelectedKml(){
     const selected=new Set(state.visible.filter(r=>state.selected.has(r.id)).map(r=>r.id));
-    const features=state.sourceFeatures.filter(f=>{
-      const id=f.properties?._row;
-      return selected.has(id)||(id===null&&state.module==='jacto');
-    });
-    if($('toggleFarms').checked)features.push(...state.allFarms.map(farmFeature).filter(Boolean));
+    // Exportar somente o que está efetivamente visível no mapa.
+    const features=state.layerMeta.map(item=>item.feature)
+      .filter(f=>f.properties?._boundary || selected.has(f.properties?._row)
+        || (state.module==='jacto'&&f.properties?._row===null));
+
     exportKML(features,'monitor_'+state.module+'_'+new Date().toISOString().slice(0,10)+'.kml');
   }
   function areaFromRing(coords){
@@ -622,6 +622,7 @@
       setTimeout(()=>state.map?.invalidateSize(),250);
     });
     $('toggleFull').addEventListener('click',()=>{document.body.classList.toggle('fullmap');setTimeout(()=>state.map?.invalidateSize(),130);});
+    $('logout').addEventListener('click',logout);
     $('btnTheme').addEventListener('click',()=>{
       const light=document.body.classList.toggle('light');
       localStorage.setItem('monitor_visual_theme',light?'light':'dark');
