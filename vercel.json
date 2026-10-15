@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "agrotelemetry-monitor",
-  "buildCommand": "node scripts/neon-preflight.js && node scripts/neon-init.js && node scripts/neon-preflight.js",
+  "buildCommand": "node scripts/neon-preflight.js && node scripts/neon-write-test.js",
   "outputDirectory": "frontend",
   "installCommand": "npm install",
   "framework": null,
