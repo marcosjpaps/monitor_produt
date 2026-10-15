@@ -94,9 +94,17 @@ class ImportStoreTests(unittest.TestCase):
             result = store.hydrate_jacto_imports()
             self.assertEqual(result["hydrated"], 1)
             self.assertEqual(len(list(Path(aggps_root).rglob("EventHistory.dbf"))), 1)
+            self.assertEqual(store.hydrate_jacto_imports()['hydrated'], 0)
+            # A different request/instance registers a new package after startup.
+            newer = io.BytesIO()
+            with zipfile.ZipFile(newer, 'w') as archive:
+                archive.writestr('Fazenda 3/Talhao 4/EventHistory.dbf', b'novo')
+            store.register_import('jacto', 'Novo.zip', newer.getvalue(), 1, store_binary=True)
+            self.assertEqual(store.hydrate_jacto_imports()['hydrated'], 2)
+            self.assertEqual(len(list(Path(aggps_root).rglob('EventHistory.dbf'))), 2)
             store.change_archive(row["id"], True)
-            store.hydrate_jacto_imports(reset=True)
-            self.assertEqual(len(list(Path(aggps_root).rglob("EventHistory.dbf"))), 0)
+            store.hydrate_jacto_imports()
+            self.assertEqual(len(list(Path(aggps_root).rglob("EventHistory.dbf"))), 1)
 
 
 if __name__ == "__main__":

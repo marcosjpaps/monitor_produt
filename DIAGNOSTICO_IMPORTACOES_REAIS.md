@@ -20,6 +20,8 @@ Todos os 16.821 JDL foram percorridos pelo parser, sem erros. Não foram encontr
 - Cada gravação JDL usa savepoint: uma falha SQL não deixa a transação PostgreSQL inutilizável para os próximos arquivos. A checagem de duplicados consulta o hash com índice, sem carregar todo o histórico a cada JDL.
 - O leitor SHP respeita CPG; a persistência converte datas DBF para ISO antes de serializar GeoJSON. São regressões preventivas verificadas com fixture Latin-1/data; não foram identificadas como a causa da falha do AgData real, que já passa na main.
 - A entrada autenticada sempre leva ao painel inspirado no Drone, inclusive com o antigo parâmetro hub. O portal alternativo e seus links foram removidos da navegação principal. As APIs agrícolas e a autenticação por cookie permanecem.
+- O Jacto agora compara o manifesto do histórico em cada leitura e reconstrói o cache temporário quando outra instância importou ou arquivou arquivos. Binários só são transferidos quando esse manifesto muda; a reconstrução elimina cópias locais repetidas. Isso corrige o painel vazio em instâncias já aquecidas da Vercel.
+- Os talhões abertos do Massey/AgData passam a aparecer no mapa e na tabela como “Talhão cadastrado”, separadamente das operações. O filtro de camadas controla seus polígonos e preserva a geometria original.
 
 ## Evidências e isolamento
 
@@ -29,10 +31,11 @@ Todos os 16.821 JDL foram percorridos pelo parser, sem erros. Não foram encontr
 - Produção: somente consultas de metadados/contagens via conector Neon. Nenhuma escrita de dados ou migração foi executada por este trabalho na branch de produção. As 296 linhas de farm_fields já existiam; sessões e pontos estavam zerados na consulta.
 - O Edge local usou respostas simuladas para todas as APIs; não acessou produção. As imagens de inspeção são entregues separadamente, não versionadas.
 
-## Limitações e validação pendente
+## Validação autenticada e limitações
 
-- O fluxo completo autenticado no preview precisa apontar para a branch isolada do Neon antes de enviar arquivos. A revisão automática bloqueou o envio da conexão privilegiada para as variáveis de preview da Vercel; foi solicitada autorização explícita. Nenhum contorno foi aplicado.
-- A configuração atual de startup pode executar DDL idempotente. Não testar APIs dinâmicas em um preview que possa herdar DATABASE_URL de produção.
+- Após autorização explícita do usuário, foram configuradas DATABASE_URL e credenciais exclusivas somente para a branch de preview do PR. O fluxo HTTP real passou: acesso anônimo recusado, login, cookie Secure/HttpOnly, uploads segmentados de AgData/Jacto e dos membros inicial/maior de cada ZIP John Deere, consulta de histórico/eventos e logout. Os reenvios AgData/Jacto foram identificados como duplicados.
+- A consulta visual após os uploads revelou o cache Jacto desatualizado em instâncias já aquecidas e a ausência dos talhões Massey na tela principal; ambos foram corrigidos antes da validação final do painel.
+- A configuração atual de startup pode executar DDL idempotente. O preview deste PR usa a branch isolada `br-summer-truth-b5c5d6oy`; a produção não foi utilizada para esses testes.
 - Não houve promoção, merge ou importação de produção. O PR permanece separado da main.
 - Payload Trimble criptografado exige exportação KML/SHP/GeoJSON pelo equipamento. Não é possível inventar telemetria a partir do manifest.
 - Enviar milhares de JDL individualmente pode levar tempo; manter a página aberta. Uma nova tentativa ignora os hashes já gravados. A duração de todos os uploads na Vercel ainda não foi medida.

@@ -792,6 +792,7 @@ def api_jacto_kpis(
     data_fim: Optional[str] = Query(None)
 ):
     """Retorna KPIs operacionais consolidados da Jacto / Trimble AgGPS."""
+    hydrate_jacto_imports()
     return get_aggps_kpis(
         root_dir=diretorio,
         fazenda=fazenda,
@@ -803,6 +804,7 @@ def api_jacto_kpis(
 @app.get("/api/jacto/fazendas")
 def api_jacto_fazendas(diretorio: Optional[str] = Query(None)):
     """Retorna lista de fazendas e talhões disponíveis nos arquivos AgGPS."""
+    hydrate_jacto_imports()
     return get_aggps_farms_and_fields(root_dir=diretorio)
 
 @app.get("/api/jacto/eventos")
@@ -814,6 +816,7 @@ def api_jacto_eventos(
     data_fim: Optional[str] = Query(None)
 ):
     """Retorna o histórico de eventos/sessões de pulverização da Jacto."""
+    hydrate_jacto_imports()
     return get_aggps_events_list(
         root_dir=diretorio,
         fazenda=fazenda,
@@ -831,6 +834,7 @@ def api_jacto_cobertura(
     max_features: int = Query(15000, ge=1, le=50000)
 ):
     """Retorna polígonos reais de cobertura (Coverage.shp) em GeoJSON para o Leaflet."""
+    hydrate_jacto_imports()
     return get_aggps_coverage_geojson(
         root_dir=diretorio,
         fazenda=fazenda,
@@ -846,6 +850,7 @@ def api_jacto_linhas_guia(
     talhao: Optional[str] = Query(None)
 ):
     """Retorna linhas e curvas de piloto automático (Swaths.shp) em GeoJSON."""
+    hydrate_jacto_imports()
     return get_aggps_swaths_geojson(
         root_dir=diretorio,
         fazenda=fazenda,
