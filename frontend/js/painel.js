@@ -613,11 +613,12 @@
     $('mobileTable').addEventListener('click',()=>mobileView('data'));
     $('panelResize').addEventListener('click',()=>{$('workspace').classList.toggle('map-focused');setTimeout(()=>state.map?.invalidateSize(),220);});
     $('toggleTop').addEventListener('click',()=>{
-      $('topSection').hidden=!$('topSection').hidden;
-      // Com cabeçalho oculto, o controle de reexibição continua disponível no mapa.
-      $('topLabel').textContent=$('topSection').hidden?'Mostrar topo':'Ocultar topo';
-      if($('topSection').hidden){$('topSection').hidden=false;$('topSection').style.maxHeight='0px';$('topSection').style.overflow='hidden';$('topSection').style.border='none';}
-      else{$('topSection').removeAttribute('style');}
+      const collapsed=$('topSection').classList.toggle('collapsed-top');
+      $('topSection').style.maxHeight=collapsed?'0px':'';
+      $('topSection').style.overflow=collapsed?'hidden':'';
+      $('topSection').style.border=collapsed?'none':'';
+      $('topLabel').textContent=collapsed?'Mostrar topo':'Ocultar topo';
+      $('topSection').style.flexBasis=collapsed?'0':'';
       setTimeout(()=>state.map?.invalidateSize(),250);
     });
     $('toggleFull').addEventListener('click',()=>{document.body.classList.toggle('fullmap');setTimeout(()=>state.map?.invalidateSize(),130);});
