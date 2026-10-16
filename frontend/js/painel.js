@@ -30,7 +30,7 @@
   const modules={
     johndeere:{title:'John Deere',url:'/johndeere',color:'#94c11f',unit:'Rastros de telemetria'},
     jacto:{title:'Jacto / AgGPS',url:'/jacto',color:'#fb923c',unit:'Eventos de aplicação'},
-    massey:{title:'Massey Ferguson',url:'/massey',color:'#f87171',unit:'Operações importadas'}
+    massey:{title:'Massey Ferguson',url:'/massey',color:'#f87171',unit:'Operações e talhões'}
   };
   let toastTimer;
 
@@ -89,6 +89,14 @@
       filename:r.clean_name||r.raw_name||'',details:r,geo:r.geojson_geometry||null
     }));
   }
+  function masseyFieldRows(raw){
+    return (raw?.features||[]).filter(f=>f.geometry).map((f,i)=>{
+      const p=f.properties||{};
+      return {id:'field-'+(p.id||i),date:'',farm:p.farm||'',field:p.talhao||'',machine:'',
+        operation:'Talhão cadastrado',area:number(p.area_ha),speed:null,hours:null,
+        filename:p.source||'',details:p,geo:f,isField:true};
+    });
+  }
   async function load(){
     const nonce=++state.requestSerial;
     const module=state.module;
@@ -107,13 +115,15 @@
       // Busca no backend quando suporta datas para evitar downloads enormes.
       if(module!=='massey'){if(start)q.set('data_inicio',start);if(end)q.set('data_fim',end);}
       const url=queries[module]+(q.size?'?'+q:'');
-      const [data,farms,farmGroups]=await Promise.all([
+      const [data,farms,farmGroups,fieldData]=await Promise.all([
         request(url),
         request('/api/talhoes').catch(()=>({farms:[]})),
-        module==='johndeere'?request('/api/fazendas').catch(()=>[]):Promise.resolve([])
+        module==='johndeere'?request('/api/fazendas').catch(()=>[]):Promise.resolve([]),
+        module==='massey'?request('/api/massey/farm-fields/geojson'):Promise.resolve(null)
       ]);
       if(nonce!==state.requestSerial)return;
       state.rows=module==='johndeere'?jdRows(data):module==='jacto'?jactoRows(data):masseyRows(data);
+      if(module==='massey')state.rows.push(...masseyFieldRows(fieldData));
       if(module==='johndeere'&&Array.isArray(farmGroups)){
         const activityFarms=new Map();
         farmGroups.forEach(group=>(group.talhoes||[]).forEach(t=>{
@@ -173,7 +183,7 @@
           ...(f.properties||{}),_row:state.rows.find(r=>r.farm===f.properties?.farm&&r.field===f.properties?.field)?.id||null
         }}));
       }else{
-        state.sourceFeatures=state.rows.flatMap(row=>addFeatures(row.geo).map(f=>({type:'Feature',geometry:f.geometry,properties:{...(f.properties||{}),_row:row.id}})));
+        state.sourceFeatures=state.rows.flatMap(row=>addFeatures(row.geo).map(f=>({type:'Feature',geometry:f.geometry,properties:{...(f.properties||{}),_row:row.id,_boundary:!!row.isField}})));
       }
     }catch(err){if(nonce===state.requestSerial)toast('Registros carregados, mas o mapa não pôde ser atualizado: '+err.message,true);}
   }
@@ -313,7 +323,7 @@
     });
     const col=modules[state.module].color;
     if($('toggleOperations').checked){
-      for(const f of features){
+      for(const f of features.filter(f=>!f.properties?._boundary)){
         try{
           const layer=L.geoJSON(f,{style:()=>({color:col,weight:3,opacity:.92,fillColor:col,fillOpacity:.18}),pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{radius:4,color:col})});
           layer.on('click',e=>{const props=f.properties||{};const tooltip=document.createElement('div');tooltip.textContent=[props.farm,props.field].filter(Boolean).join(' • ')||'Geometria importada';L.popup().setLatLng(e.latlng).setContent(tooltip).openOn(state.map);});
@@ -322,6 +332,11 @@
       }
     }
     if($('toggleFarms').checked){
+      for(const f of features.filter(f=>f.properties?._boundary)){
+        const layer=L.geoJSON(f,{style:{color:'#eab308',weight:2,dashArray:'7 5',fillOpacity:.06}});
+        const label=document.createElement('span');label.textContent=[f.properties?.farm,f.properties?.talhao].filter(Boolean).join(' • ');
+        layer.bindTooltip(label);state.boundaries.addLayer(layer);state.layerMeta.push({feature:f,layer});
+      }
       for(const farm of state.allFarms){
         const f=farmFeature(farm);if(!f)continue;
         try{
@@ -571,7 +586,6 @@
     if(!modules[module])return;
     state.module=module;state.requestSerial++;
     for(const b of document.querySelectorAll('[data-module]'))b.setAttribute('aria-selected',String(b.dataset.module===module));
-    $('moduleLink').href=modules[module].url;
     $('textFilter').value='';$('periodStart').value='';$('periodEnd').value='';
     closeModal();load();
     document.querySelectorAll('.filter-menu[open]').forEach(x=>x.open=false);

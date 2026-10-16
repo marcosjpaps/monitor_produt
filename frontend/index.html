@@ -423,7 +423,7 @@
         <i data-lucide="shield-check" style="width:30px; height:30px;"></i>
       </div>
       
-      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">AgroTelemetry Portal</h2>
+      <h2 style="font-size:1.35rem; color:#f8fafc; font-weight:700; margin-bottom:4px;">Monitor Agrícola</h2>
       <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:24px;">Controle de Operações & Telemetria</p>
 
       <form id="loginForm" onsubmit="handleLogin(event)" style="text-align:left;">
@@ -469,216 +469,6 @@
     </div>
   </div>
 
-  <!-- TOP BAR -->
-  <header class="top-bar">
-    <div class="brand-top">
-      <div class="brand-top-icon">
-        <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
-      </div>
-      <div class="brand-top-text">
-        <h1>AgroTelemetry Cockpit Multi-Máquinas</h1>
-        <p>Plataforma Integrada de Operações e Telemetria de Precisão</p>
-      </div>
-    </div>
-
-    <div class="sys-badges">
-      <a href="/importacoes" title="Importar arquivos e consultar histórico" style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid #34d399;border-radius:10px;background:rgba(16,185,129,.12);color:#b9ffe3;font-weight:700;text-decoration:none;font-size:.82rem;">
-        <i data-lucide="file-up" style="width:16px;height:16px;"></i>
-        Importações e Banco
-      </a>
-      <div id="userBadgeContainer" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:4px 10px; border-radius:20px; font-size:0.75rem;">
-        <i data-lucide="user" style="width:13px; height:13px; color:#38bdf8;"></i>
-        <span id="userBadgeEmail" style="color:#f8fafc; font-weight:600;">Administrador</span>
-        <button onclick="logout()" title="Sair do Sistema" style="background:transparent; border:none; color:#ef4444; cursor:pointer; margin-left:6px; display:flex; align-items:center;">
-          <i data-lucide="log-out" style="width:13px; height:13px;"></i>
-        </button>
-      </div>
-      <div class="badge-status">
-        <span class="pulse-dot"></span>
-        <span id="backendStatusText" role="status" aria-live="polite">Verificando serviços…</span>
-      </div>
-      <div style="font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);">
-        <i data-lucide="cloud" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px; color:#38bdf8;"></i>
-        Dados de máquinas agrícolas
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN CONTAINER -->
-  <main class="portal-container">
-    
-    <div class="hero-title">
-      <a href="/painel" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0284c7,#10b981);border:1px solid #38bdf8;color:#fff;font-weight:700;text-decoration:none;padding:12px 19px;border-radius:10px;margin-bottom:18px;">
-        <i data-lucide="map" style="width:19px;height:19px"></i> Abrir mapa operacional no estilo Drone
-        <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
-      </a>
-      <h2>Escolha a Plataforma Operacional</h2>
-      <p>Escolha um dos três módulos. Importe arquivos reais da operação e consulte históricos, talhões, mapas e indicadores disponíveis.</p>
-      <p class="portal-data-note">John Deere: JDL &nbsp;·&nbsp; Jacto: AgGPS/SHP &nbsp;·&nbsp; Massey: KML/SHP/GeoJSON. Indicadores dependem dos dados presentes em cada arquivo.</p>
-    </div>
-
-    <div class="cards-grid">
-      
-      <!-- CARD 1: JOHN DEERE G5 -->
-      <a href="/johndeere" class="machine-card card-jd">
-        <div>
-          <div class="card-top">
-            <div class="card-header-icon">
-              <i data-lucide="tractor" style="width: 30px; height: 30px;"></i>
-            </div>
-            <span class="badge-brand">John Deere G5</span>
-          </div>
-
-          <div class="card-title">
-            <h3>Trator JD 6150M</h3>
-            <p>Telemetria de Motor e Distribuição a Lanço • Arquivos .JDL</p>
-          </div>
-
-          <ul class="specs-list">
-            <li>
-              <i data-lucide="cpu" style="width: 16px; height: 16px;"></i>
-              <span>Fonte: <strong>Logs CAN / J1939 (.JDL) + MyJohnDeere Shapefiles</strong></span>
-            </li>
-            <li>
-              <i data-lucide="fuel" style="width: 16px; height: 16px;"></i>
-              <span>Consumo & Rendimento: <strong>Indicadores calculados a partir dos logs</strong></span>
-            </li>
-            <li>
-              <i data-lucide="flask-conical" style="width: 16px; height: 16px;"></i>
-              <span>Receituário de Tanque: <strong>Mistura Agronômica e Seções Ativas</strong></span>
-            </li>
-            <li>
-              <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
-              <span>Sandbox: <strong>Dados de exemplo disponíveis quando incluídos</strong></span>
-            </li>
-            <li>
-              <i data-lucide="database" style="width: 16px; height: 16px;"></i>
-              <span>Banco de Dados: <strong>Histórico salvo e restaurável</strong></span>
-            </li>
-          </ul>
-        </div>
-
-        <span class="btn-enter">
-          <span>Acessar Módulo John Deere G5</span>
-          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </span>
-      </a>
-
-      <!-- CARD 2: JACTO / TRIMBLE AGGPS -->
-      <a href="/jacto" class="machine-card card-jacto">
-        <div>
-          <div class="card-top">
-            <div class="card-header-icon">
-              <i data-lucide="spray-can" style="width: 30px; height: 30px;"></i>
-            </div>
-            <span class="badge-brand">Jacto • Trimble AgGPS</span>
-          </div>
-
-          <div class="card-title">
-            <h3>Pulverizador Uniport</h3>
-            <p>Aplicação em Taxa Variável e Cobertura • Shapefiles AgGPS</p>
-          </div>
-
-          <ul class="specs-list">
-            <li>
-              <i data-lucide="folder-git-2" style="width: 16px; height: 16px;"></i>
-              <span>Fonte: <strong>Coverage.shp, Swaths.shp e EventHistory</strong></span>
-            </li>
-            <li>
-              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
-              <span>Área Total: <strong>Cobertura calculada dos arquivos importados</strong></span>
-            </li>
-            <li>
-              <i data-lucide="crosshair" style="width: 16px; height: 16px;"></i>
-              <span>Linhas Guia: <strong>Curvas e retas do arquivo Swaths.shp</strong></span>
-            </li>
-            <li>
-              <i data-lucide="droplet" style="width: 16px; height: 16px;"></i>
-              <span>Barra de Aplicação: <strong>Largura, velocidade e taxa quando disponíveis</strong></span>
-            </li>
-            <li>
-              <i data-lucide="user-check" style="width: 16px; height: 16px;"></i>
-              <span>Operação: <strong>Fazendas, talhões e operadores dos seus arquivos</strong></span>
-            </li>
-          </ul>
-        </div>
-
-        <span class="btn-enter">
-          <span>Acessar Módulo Jacto / Trimble</span>
-          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </span>
-      </a>
-
-
-      <!-- CARD 4: MASSEY FERGUSON 7318 / TRIMBLE TMX-2050 -->
-      <a href="/massey" class="machine-card card-massey">
-        <div>
-          <div class="card-top">
-            <div class="card-header-icon">
-              <i data-lucide="tractor" style="width: 30px; height: 30px;"></i>
-            </div>
-            <span class="badge-brand">Massey Ferguson • TMX-2050</span>
-          </div>
-
-          <div class="card-title">
-            <h3>Trator MF 7318</h3>
-            <p>Operações e talhões • KML, SHP, GeoJSON e ZIP</p>
-          </div>
-
-          <ul class="specs-list">
-            <li>
-              <i data-lucide="database" style="width: 16px; height: 16px;"></i>
-              <span>Fonte: <strong>Exportações abertas do monitor Trimble</strong></span>
-            </li>
-            <li>
-              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
-              <span>Operações: <strong>Histórico de operações importadas</strong></span>
-            </li>
-            <li>
-              <i data-lucide="map" style="width: 16px; height: 16px;"></i>
-              <span>SIG: <strong>Talhões, áreas e fazendas dos seus arquivos</strong></span>
-            </li>
-            <li>
-              <i data-lucide="crosshair" style="width: 16px; height: 16px;"></i>
-              <span>Piloto: <strong>Trajetórias e linhas exportadas do monitor</strong></span>
-            </li>
-            <li>
-              <i data-lucide="package" style="width: 16px; height: 16px;"></i>
-              <span>Insumos: <strong>Taxa e quantidade quando fornecidas no arquivo</strong></span>
-            </li>
-          </ul>
-        </div>
-
-        <span class="btn-enter">
-          <span>Acessar Módulo Massey Ferguson</span>
-          <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-        </span>
-      </a>
-
-    </div>
-
-    <!-- FOOTER STATS SUMMARY -->
-    <div class="footer-stats">
-      <div class="stat-pill">
-        <i data-lucide="tractor" style="width: 15px; height: 15px; color: #10b981;"></i>
-        <span>John Deere: <strong>Telemetria e histórico</strong></span>
-      </div>
-      <div class="stat-pill">
-        <i data-lucide="spray-can" style="width: 15px; height: 15px; color: #ea580c;"></i>
-        <span>Jacto / Trimble: <strong>Cobertura e aplicação</strong></span>
-      </div>
-      <div class="stat-pill">
-        <i data-lucide="tractor" style="width: 15px; height: 15px; color: #ef4444;"></i>
-        <span>Massey MF 7318: <strong>Operações e talhões</strong></span>
-      </div>
-      <div class="stat-pill">
-        <i data-lucide="compass" style="width: 15px; height: 15px; color: #06b6d4;"></i>
-        <span>Navegação: <strong>Mapas, filtros e exportações</strong></span>
-      </div>
-    </div>
-
-  </main>
-
   <script>
     // Autenticação validada no servidor. Nenhuma senha ou sessão é confiada ao localStorage.
     function showLoggedIn(email) {
@@ -689,11 +479,10 @@
       if (userBadge) userBadge.style.display = 'flex';
       if (userEmail) userEmail.textContent = email;
       // Dashboard inspirado no Drone é a tela inicial após autenticação.
-      // O hub original permanece disponível em /?hub=1.
       const urlParams = new URLSearchParams(window.location.search);
-      if (!urlParams.has('hub')) {
+      {
         const next = urlParams.get('next');
-        const pages = ['/painel', '/johndeere', '/jacto', '/massey', '/importacoes'];
+        const pages = ['/painel', '/importacoes'];
         window.location.replace(pages.includes(next) ? next : '/painel');
       }
     }

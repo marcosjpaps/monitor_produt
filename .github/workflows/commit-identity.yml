@@ -1,0 +1,35 @@
+name: Validar identidade Git dos commits novos
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  identidade-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Inspeciona o commit da branch, nao o merge temporario da PR.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Recusar emails locais/incompletos no commit HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          author="$(git log -1 --format='%ae')"
+          committer="$(git log -1 --format='%ce')"
+          for email in "$author" "$committer"; do
+            case "$email" in
+              ""|*@localhost|*@local|*@localdomain|*@invalid|*@example.com)
+                echo "::error::Email Git do commit invalido. Configure com 'sh scripts/configurar-identidade-git.sh' antes de commitar."
+                exit 1
+                ;;
+            esac
+          done
+          echo "Identidade do commit HEAD sem endereco Git local/invalido."

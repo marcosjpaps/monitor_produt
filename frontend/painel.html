@@ -15,7 +15,7 @@
 <body class="mobile-map">
   <section class="top-shell" id="topSection">
     <header class="topbar">
-      <a class="brand" href="/?hub=1" title="Portal de máquinas">
+      <a class="brand" href="/painel" title="Mapa operacional">
         <span class="brand-mark"><i data-lucide="tractor" class="icon"></i></span>
         <span><b>Monitor<span>Agrícola</span></b><small>Mapa de aplicação e operações</small></span>
       </a>
@@ -33,7 +33,7 @@
         <button class="btn desktop-action" id="btnTrash" title="Arquivamentos e lixeira"><i data-lucide="trash-2" class="icon"></i> Lixeira</button>
         <button class="btn" id="btnTheme" title="Alternar tema claro e escuro" aria-label="Alternar tema claro e escuro"><i data-lucide="sun-moon" class="icon"></i></button>
         <button class="btn mobile-actions" id="openActions" aria-expanded="false" aria-controls="mobileActions" title="Mostrar ações"><i data-lucide="menu" class="icon"></i></button>
-        <button class="btn" id="logout" title="Sair da conta" aria-label="Sair da conta"><i data-lucide="log-out" class="icon"></i></button>\n        <a class="btn" href="/?hub=1" title="Abrir portal com três módulos" aria-label="Voltar ao portal"><i data-lucide="home" class="icon"></i></a>
+        <button class="btn" id="logout" title="Sair da conta" aria-label="Sair da conta"><i data-lucide="log-out" class="icon"></i></button>
       </div>
       <div class="mobile-actions" id="mobileActions" hidden style="flex:0 0 100%;gap:7px;flex-wrap:wrap">
         <a href="/importacoes" class="btn primary">Importar</a>
@@ -64,7 +64,7 @@
         <label class="btn small" title="Mostrar ou ocultar a camada das operações" style="cursor:pointer"><input type="checkbox" id="toggleOperations" checked> Operações</label>
         <label class="btn small" title="Selecionar registros filtrados" style="cursor:pointer"><input type="checkbox" id="selectAll" checked> Todos</label>
         <select id="baseLayer" aria-label="Estilo do mapa"><option value="sat">Satélite</option><option value="street">Estradas</option></select>
-        <a class="btn small" id="moduleLink" href="/johndeere" title="Abrir cockpit completo"><i data-lucide="external-link" class="icon"></i><span class="hide-mobile">Detalhes do módulo</span></a>
+
       </div>
       <div class="map-hud"><span id="coordsLabel">Lat / lon —</span><span>Zoom <strong id="zoomValue">—</strong></span><span>Visíveis <strong id="visibleCount">0</strong></span></div>
       <div class="map-empty" id="mapEmpty" hidden><i data-lucide="map" class="icon"></i><b id="emptyMapTitle">Sem rastros no período</b><p id="emptyMapDesc">Importe arquivos reais para visualizar as operações e os talhões cadastrados.</p><a class="btn primary" href="/importacoes">Importar arquivos</a></div>

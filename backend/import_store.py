@@ -11,6 +11,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+import threading
 from pathlib import Path
 
 from .archive_utils import safe_extract, safe_name, extract_rar
@@ -19,6 +20,7 @@ from .pg_adapter import connect as pg_connect
 MODULES = {"johndeere", "jacto", "massey"}
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_REHYDRATE_FILES = 1500
+_HYDRATE_LOCK = threading.RLock()
 
 
 def init_import_store():
@@ -123,6 +125,11 @@ def change_archive(item_id: str, archived: bool):
 
 
 def hydrate_jacto_imports(*, reset: bool = False):
+    with _HYDRATE_LOCK:
+        return _hydrate_jacto_imports(reset=reset)
+
+
+def _hydrate_jacto_imports(*, reset: bool = False):
     """Reconstrói temporariamente o diretório de leitura do Jacto a partir do DB.
     Em nuvem, o diretório é efêmero; o PostgreSQL é a fonte persistente.
     """
@@ -131,7 +138,18 @@ def hydrate_jacto_imports(*, reset: bool = False):
     from .aggps_parser import _find_aggps_dir, get_active_aggps_path
     root = Path(_find_aggps_dir(get_active_aggps_path())) / "Importados_Jacto"
     root.mkdir(parents=True, exist_ok=True)
-    if reset and root.exists():
+    # Refresh warm instances when another instance imported/archived a package.
+    # Only fetch binary payloads when the active manifest actually changed.
+    with pg_connect() as conn:
+        manifest = conn.execute("""SELECT filename,sha256 FROM monitor_imports
+            WHERE module='jacto' AND status='imported' AND archived_at IS NULL
+              AND file_data IS NOT NULL ORDER BY imported_at ASC,id ASC LIMIT ?""",
+            (MAX_REHYDRATE_FILES,)).fetchall()
+    snapshot = hashlib.sha256(repr([(r['filename'],r['sha256']) for r in manifest]).encode()).hexdigest()
+    marker = root / '.snapshot'
+    if not reset and marker.exists() and marker.read_text() == snapshot:
+        return {"hydrated": 0, "mode": "cloud"}
+    if root.exists():
         # Limita a limpeza ao diretório temporário, nunca ao banco de dados.
         if str(root.resolve()).startswith(str(Path(tempfile.gettempdir()).resolve()) + os.sep):
             shutil.rmtree(root)
@@ -141,7 +159,7 @@ def hydrate_jacto_imports(*, reset: bool = False):
             """SELECT filename, sha256, file_data FROM monitor_imports
                WHERE module='jacto' AND status='imported'
                  AND archived_at IS NULL AND file_data IS NOT NULL
-               ORDER BY imported_at ASC LIMIT ?""",
+               ORDER BY imported_at ASC,id ASC LIMIT ?""",
             (MAX_REHYDRATE_FILES,),
         ).fetchall()
     hydrated = 0
@@ -166,6 +184,7 @@ def hydrate_jacto_imports(*, reset: bool = False):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
         hydrated += 1
+    marker.write_text(snapshot)
     return {"hydrated": hydrated, "mode": "cloud"}
 
 

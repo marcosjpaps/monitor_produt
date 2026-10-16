@@ -35,6 +35,7 @@ def _json(v): return json.dumps(v,ensure_ascii=False) if isinstance(v,(dict,list
 
 def save_feature(conn,feature,name,operation=False):
     geometry=feature.get('geometry');props=feature.get('properties') or {}
+    props={k:(v.isoformat() if hasattr(v,'isoformat') else v) for k,v in props.items()}
     if not geometry: raise ValueError('Geometria ausente')
     geom=shape(geometry)
     if geom.is_empty or not geom.is_valid: raise ValueError('Geometria inválida')
@@ -64,7 +65,9 @@ def import_file(conn,file,source=None):
         with tempfile.TemporaryDirectory() as tmp:
             with zipfile.ZipFile(file) as archive: safe_extract(archive,tmp)
             candidates=[p for p in Path(tmp).rglob('*') if p.suffix.lower() in ('.kml','.shp','.geojson','.json')]
-            if not candidates: raise ValueError('Pacote sem geometria aberta. Payload criptografado exige exportação pelo monitor Trimble.')
+            if not candidates:
+                encrypted=list(Path(tmp).rglob('*.agf'))
+                raise ValueError(f'Pacote sem geometria aberta ({len(encrypted)} arquivos AGF). Payload Trimble criptografado exige exportação KML, SHP ou GeoJSON pelo monitor.')
             for p in candidates: count+=import_file(conn,p,str(Path(name)/p.relative_to(tmp)))
     elif ext in ('.geojson','.json'):
         raw=json.loads(file.read_text(encoding='utf-8-sig'))

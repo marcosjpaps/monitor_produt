@@ -27,14 +27,14 @@ test('mapa e filtros: javascript compilável e sem acesso direto a credenciais',
  assert.match(code,/escape|xml\s*=/);
  assert.match(code,/document\.createElement\('td'\)/);
 });
-test('rotas e login levam ao novo mapa sem apagar o portal anterior',()=>{
+test('rotas e login levam ao mapa único, inclusive links antigos do portal',()=>{
  const cfg=JSON.parse(read('vercel.json'));
  assert.ok(cfg.routes.some(x=>x.src==='/painel'&&x.dest==='/painel.html'));
  assert.match(read('server.js'),/'\/painel':'frontend\/painel.html'/);
  for(const p of ['frontend/index.html','frontend/portal.html','index.html']){
    const code=read(p);
-   assert.match(code,/Abrir mapa operacional no estilo Drone/);
-   assert.match(code,/\/\?hub=1/);
+   assert.ok(!code.includes('machine-card card-'));
+   assert.ok(!code.includes("if (!urlParams.has('hub'))"));
    assert.match(code,/window\.location\.replace\(pages\.includes\(next\)/);
    assert.ok(!code.includes('AUTH_CONFIG'));
  }
